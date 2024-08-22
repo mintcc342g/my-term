@@ -14,6 +14,8 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 
 echo "\033[33;1m→\033[0m install brew…"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ./.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
 
 echo "\033[33;1m→\033[0m install useful features with Homebrew…"
 brew install zsh-autosuggestions
