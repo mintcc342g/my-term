@@ -27,7 +27,7 @@ brew install tree
 brew install maccy
 brew install rectangle
 
-echo -e "\033[33;1m→\033[0m add shell startup settings…"
+echo "\033[33;1m→\033[0m add shell startup settings…"
 echo "\n# Homebrew 설정\neval \"\$($brew_prefix/bin/brew shellenv)\"" >> ./.zshrc
 echo "\n# zsh-syntax-highlighting 설정\nsource $brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ./.zshrc
 echo "\n# zsh-autosuggestions 설정\nsource $brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ./.zshrc
