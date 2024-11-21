@@ -20,16 +20,20 @@
 
 ## 각 프로그램 설정값
 ### iTerm2
-- 한글 자소분리 해결
-  1. Settings
-  2. Profiles
-  3. 설정한 프로필 선택
-  4. Text 탭 클릭
-  5. Unicode normalization form 을 HFS+ 로 변경
-  6. iTerm2 종료 후 재구동
+- 한글 자소분리 해결  
+  - Settings → Profiles → 설정한 프로필 선택 → Text 탭 → `Unicode normalization form` 셀렉트 박스 클릭 → HFS+ 로 변경 → iTerm2 종료 후 재구동
 
 ### maccy
-- TODO
+- General
+  - Search: Fuzzy
+  - Behavior: Past without formatting
+  - Open: Option + Command + vππ
+- Appearance
+  - Popup at: Menu icon
+  - Pin to: Top
+  - 체크박스 Show recent copy next to menu icon 빼고 전부 선택
+- Advanced
+  - 전부 선택 해제  
 
 ### rectangle
-- TODO
+- `RectangleConfig.json` 파일 사용
