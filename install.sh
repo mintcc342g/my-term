@@ -26,11 +26,14 @@ brew install ripgrep
 brew install tree
 brew install maccy
 brew install rectangle
+brew install television
 
 echo "\033[33;1m→\033[0m add shell startup settings…"
 echo "\n# Homebrew 설정\neval \"\$($brew_prefix/bin/brew shellenv)\"" >> ./.zshrc
 echo "\n# zsh-syntax-highlighting 설정\nsource $brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ./.zshrc
 echo "\n# zsh-autosuggestions 설정\nsource $brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ./.zshrc
+echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> ./.zshrc
+echo "\n# vscode 설정\ncode () { VSCODE_CWD=\"\$PWD\" open -n -b \"com.microsoft.VSCode\" --args \$* ;}" >> ./.zshrc
 
 echo "\033[33;1m→\033[0m install newro theme…"
 git clone https://gitlab.com/newrovp/develconfig.git ./Documents/newrovp

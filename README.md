@@ -8,7 +8,6 @@
 
 ## 설치 프로그램 목록
 - oh-my-zsh
-- nord theme (리눅스 한정)
 - newro theme
 - brew
   - zsh-autosuggestions
@@ -17,6 +16,7 @@
   - tree
   - maccy
   - rectangle
+  - television
 
 ## 각 프로그램 설정값
 ### iTerm2
@@ -27,7 +27,7 @@
 - General
   - Search: Fuzzy
   - Behavior: Past without formatting
-  - Open: Option + Command + vππ
+  - Open: Option + Command + v
 - Appearance
   - Popup at: Menu icon
   - Pin to: Top
