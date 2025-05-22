@@ -34,6 +34,8 @@ brew install ripgrep
 brew install tree
 brew install maccy
 brew install rectangle
+brew install --cask macs-fan-control
+brew install --cask alt-tab
 brew install television
 
 # 환경변수 셋팅
