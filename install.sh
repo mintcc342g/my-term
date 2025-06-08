@@ -37,6 +37,7 @@ brew install rectangle
 brew install --cask macs-fan-control
 brew install --cask alt-tab
 brew install television
+brew install awscli
 
 # 환경변수 셋팅
 echo "\033[33;1m→\033[0m add shell startup settings…"
