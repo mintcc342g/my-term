@@ -16,7 +16,12 @@
   - tree
   - maccy
   - rectangle
+  - fan controller
+  - alttab
   - television
+  - awscli
+  - asdf
+  - k9s
 
 ## 각 프로그램 설정값
 ### iTerm2
