@@ -52,16 +52,14 @@ if ! grep -q 'asdf/shims' "$zshrc_dir"; then
   printf "\n# asdf shims PATH 설정\n%s\n" "$asdf_block" >> "$zshrc_dir"
 fi
 
-
 # .zshrc 셋팅
 echo "\033[34;1m===>\033[0m add shell startup settings…"
-echo "\n# Homebrew 설정\neval \"\$($brew_prefix/bin/brew shellenv)\"" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# zsh-syntax-highlighting 설정\nsource $brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# zsh-autosuggestions 설정\nsource $brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
+echo "\n# Homebrew 설정\neval \"\$(\$(brew --prefix)/bin/brew shellenv)\"" >> ${ZDOTDIR:-$HOME}/.zshrc
+echo "\n# zsh-syntax-highlighting 설정\nsource \$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
+echo "\n# zsh-autosuggestions 설정\nsource \$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
 echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> ${ZDOTDIR:-$HOME}/.zshrc
 echo "\n# vscode 설정\ncode () { VSCODE_CWD=\"\$PWD\" open -n -b \"com.microsoft.VSCode\" --args \$* ;}" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# asdf 함수 설정, type asdf\n. $(brew --prefix asdf)/libexec/asdf.sh" >> ${ZDOTDIR:-$HOME}/.zshrc
-
+echo "\n# asdf 함수 설정, type asdf\n. \$(brew --prefix asdf)/libexec/asdf.sh" >> ${ZDOTDIR:-$HOME}/.zshrc
 
 # 쉘 테마 설정
 echo "\033[34;1m===>\033[0m install newro theme…"
@@ -88,7 +86,7 @@ read -p "asdf의 golang 설정을 진행하시겠습니까? (y/N) " answer
 case "$answer" in
   [yY])
     # asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    echo "\n# asdf golang 환경 설정\n. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh" >> "${ZDOTDIR:-$HOME}/.zshrc"
+    echo "\n# asdf golang 환경 설정\n. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> "${ZDOTDIR:-$HOME}/.zshrc"
     echo "\033[32;1m===>\033[0m asdf의 golang 설정이 .zshrc에 추가되었습니다"
     ;;
   *)
