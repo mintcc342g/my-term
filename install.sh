@@ -173,7 +173,7 @@ ask_asdf_config "Golang" yn
 case "$yn" in
   [yY])
     asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    echo "\n# asdf Golang 환경 설정\n. #\${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> ${ZPROFILE}
+    echo "\n# asdf Golang 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> ${ZPROFILE}
     print_env_uncomment_warning "Golang"
     ;;
   *)
@@ -186,7 +186,7 @@ ask_asdf_config "Java" yn
 case "$yn" in
   [yY])
     asdf plugin add java https://github.com/halcyon/asdf-java.git
-    echo "\n# asdf Java 환경 설정\n. #\${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/java/set-java-home.zsh" >> ${ZPROFILE}
+    echo "\n# asdf Java 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/java/set-java-home.zsh" >> ${ZPROFILE}
     print_env_uncomment_warning "Java"
     ;;
   *)
