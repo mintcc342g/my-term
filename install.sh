@@ -1,98 +1,212 @@
 
 #!/bin/bash
+YELLOW='\033[93m'
+YELLOW_BOLD='\033[33;1m'
+BLUE='\033[94m'
+BLUE_BOLD='\033[34;1m'
+RED_BOLD='\033[31;1m'
+PINK='\033[38;5;205m'
+PURPLE='\033[35m'
+GREEN='\033[92m'
+GREEN_BOLD='\033[32;1m'
+RESET='\033[0m'
+
+log_start() {
+  echo "${BLUE_BOLD}➜${RESET} $*"
+}
+
+log_step() {
+  echo "${YELLOW_BOLD}⚙${RESET} $*"
+}
+
+log_fail() {
+  echo "${RED_BOLD}✖${RESET} $*"
+}
+
+log_done() {
+  echo "${GREEN_BOLD}✔${RESET} $*"
+}
+
+
+### 셋업 시작
 cd $HOME
 
 if [ "$(uname -s)" = "Linux" ]; then
     OS="Linux"
-    echo "\033[31;1mNOT SUPPORT OS\033[0m…"
+    echo "${RED_BOLD}NOT SUPPORT OS${RESET}…\n"
     exit 0
 else
     OS="Darwin"
 fi
 
-# oh-my-zsh 설치
-echo "\033[34;1m===>\033[0m install oh-my-zsh…"
+
+
+### oh-my-zsh 설치
+log_start "install oh-my-zsh…\n"
 RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
-# homebrew 설치 또는 업뎃
-echo "\033[34;1m===>\033[0m install brew…"
+ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
+
+
+
+### homebrew 설치 또는 업뎃
+log_start "install brew…\n"
 if ! command -v brew &>/dev/null; then
-  echo "\033[33;1mHomebrew not found. Installing…\033[0m"
+  log_step "Homebrew not found. Installing…\n"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 else
-  echo "\033[32;1mHomebrew found. Updating…\033[0m"
+  log_step "Homebrew found. Updating…\n"
   brew update
 fi
 
-brew_prefix=$(brew --prefix)
-echo "eval \"\$($brew_prefix/bin/brew shellenv)\"" >> ${HOME}/.zprofile
-eval "$($brew_prefix/bin/brew shellenv)"
+BREW_PREFIX=$(brew --prefix)
+echo "# Homebrew 설정\neval \"\$($BREW_PREFIX/bin/brew shellenv)\"" >> ${ZPROFILE}
+eval "$($BREW_PREFIX/bin/brew shellenv)"
 
-# brew로 유틸 설치
-echo "\033[34;1m===>\033[0m install useful features with Homebrew…"
+
+
+### brew로 유틸 설치
+log_start "install useful features with Homebrew…\n"
 brew install zsh-autosuggestions
 brew install zsh-syntax-highlighting
-brew install ripgrep
+brew install ripgrep television
 brew install tree
-brew install maccy
-brew install rectangle
+brew install maccy rectangle
 brew install --cask macs-fan-control
 brew install --cask alt-tab
-brew install television
 brew install awscli
 brew install asdf
-brew install k9s
+brew install mockery
+brew install pyenv pyenv-virtualenv
+brew install helm argocd istioctl k9s
 
-# PATH 셋팅
-zshrc_dir="${ZDOTDIR:-$HOME}/.zshrc"
-asdf_block='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
+
+
+### PATH 셋팅
+# zprofile
+log_step "add shell login environment settings…\n"
+
+ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
   export PATH="$HOME/.asdf/shims:$PATH"
 fi'
-if ! grep -q 'asdf/shims' "$zshrc_dir"; then
-  printf "\n# asdf shims PATH 설정\n%s\n" "$asdf_block" >> "$zshrc_dir"
+if ! grep -q 'asdf/shims' "$ZPROFILE"; then
+  printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
 fi
 
-# .zshrc 셋팅
-echo "\033[34;1m===>\033[0m add shell startup settings…"
-echo "\n# Homebrew 설정\neval \"\$(\$(brew --prefix)/bin/brew shellenv)\"" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# zsh-syntax-highlighting 설정\nsource \$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# zsh-autosuggestions 설정\nsource \$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# vscode 설정\ncode () { VSCODE_CWD=\"\$PWD\" open -n -b \"com.microsoft.VSCode\" --args \$* ;}" >> ${ZDOTDIR:-$HOME}/.zshrc
-echo "\n# asdf 함수 설정, type asdf\n. \$(brew --prefix asdf)/libexec/asdf.sh" >> ${ZDOTDIR:-$HOME}/.zshrc
-
-# 쉘 테마 설정
-echo "\033[34;1m===>\033[0m install newro theme…"
-doc_dir="$HOME/Documents"
-if [ ! -d "$doc_dir" ]; then
-  mkdir -p "$doc_dir"
+PYENV_BLOCK='if [[ ":$PATH:" != *":$HOME/.pyenv/bin:"* ]]; then
+  export PATH="$HOME/.pyenv/bin:$PATH"
+  export PATH="$PYENV_ROOT/bin:$PATH"
+fi'
+if ! grep -q 'pyenv/bin' "$ZPROFILE"; then
+  printf "\n# pyenv PATH 설정\n%s\n" "$PYENV_BLOCK" >> "$ZPROFILE"
 fi
-echo "clone newro theme to $doc_dir"
-git clone https://gitlab.com/newrovp/develconfig.git "$doc_dir/newrovp"
-cp "$doc_dir/newrovp/newro_vcs.zsh-theme" "${HOME}/.oh-my-zsh/themes/newro_vcs.zsh-theme"
-sed -i -E 's/robbyrussell/newro_vcs/g' "$zshrc_path"
 
-# TODO: for linux
-# if [ "$OS" != "" ]; then
-#     echo "\033[34;1m===>\033[0m install nord colors…"
-#     git clone https://github.com/nordtheme/dircolors.git ./custom_colors/nord_color
-#     ln -srfv "./custom_colors/nord_color/src/dir_colors" ./.dir_colors
-#     echo -e "\n# nord color 설정\neval \"\$(dircolors ./.dir_colors)\"" >> ./.zshrc
-# fi
+# zshrc
+log_step "add shell startup settings…\n"
+echo "\n# zsh-syntax-highlighting 설정\nsource \$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZSHRC}
+echo "\n# zsh-autosuggestions 설정\nsource \$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ${ZSHRC}
+echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> ${ZSHRC}
+if ! grep -q 'pyenv 설정' "$ZSHRC" 2>/dev/null; then
+  cat <<'EOF' >> "$ZSHRC"
 
-# asdf - Golang 설정
-echo "\033[34;1m===>\033[0m 프로그래밍 언어 설정 작업을 시작합니다."
-read -p "asdf의 golang 설정을 진행하시겠습니까? (y/N) " answer
-case "$answer" in
+# pyenv 설정
+if command -v pyenv 1>/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+  if command -v pyenv-virtualenv-init 1>/dev/null 2>&1; then
+    eval "$(pyenv virtualenv-init -)"
+  fi
+fi
+
+EOF
+fi
+# NOTE: cursor 사용으로 잠시 중단
+# cat <<'FUNC_EOF' >> "$ZSHRC"
+#
+# # vscode 설정
+# code () {
+#   VSCODE_CWD="$PWD" open -n -b "com.microsoft.VSCode" --args "$@"
+# }
+#
+# FUNC_EOF
+
+
+
+### 쉘 테마 설정
+log_start "install newro theme…\n"
+DOC_DIR="$HOME/Documents"
+if [ ! -d "$DOC_DIR" ]; then
+  mkdir -p "$DOC_DIR"
+fi
+
+log_step "clone newro theme to $DOC_DIR\n"
+git clone https://gitlab.com/newrovp/develconfig.git "$DOC_DIR/newrovp"
+cp "$DOC_DIR/newrovp/newro_vcs.zsh-theme" "${HOME}/.oh-my-zsh/themes/newro_vcs.zsh-theme"
+sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
+
+
+
+### asdf 설정
+log_start "Starting programming language setup…\n"
+
+ask_asdf_config() {
+  local lang="$1"
+  local __varname="$2"
+  local answer
+
+  read -r -p "Would you like to configure ${lang} with asdf? (y/N) " answer
+  printf -v "$__varname" '%s' "$answer"
+}
+
+print_env_uncomment_warning() {
+  local lang="$1"
+
+  echo
+  log_done "${lang} configuration for asdf has been added to .zprofile."
+  echo
+  echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing ${lang}${RESET}, please ${RED_BOLD}uncomment${RESET} the ${lang} environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
+  echo
+}
+
+# Golang 설정
+ask_asdf_config "Golang" yn
+case "$yn" in
   [yY])
-    # asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    echo "\n# asdf golang 환경 설정\n. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> "${ZDOTDIR:-$HOME}/.zshrc"
-    echo "\033[32;1m===>\033[0m asdf의 golang 설정이 .zshrc에 추가되었습니다"
+    asdf plugin add golang https://github.com/kennyp/asdf-golang.git
+    echo "\n# asdf Golang 환경 설정\n. #\${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> ${ZPROFILE}
+    print_env_uncomment_warning "Golang"
     ;;
   *)
-    echo "\033[31;1m===>\033[0m asdf의 golang 설정을 진행하지 않습니다."
+    log_fail "Skipping Golang configuration for asdf.\n"
     ;;
 esac
 
-echo "\033[32;1m===>\033[0m 모든 설치가 완료되었습니다. 'source \${HOME}/.zshrc' 를 실행시키거나 쉘을 재시작 해주세요."
-echo "==========> It's MyGO\!\!\!\!\!"
+# Java 설정
+ask_asdf_config "Java" yn
+case "$yn" in
+  [yY])
+    asdf plugin add java https://github.com/halcyon/asdf-java.git
+    echo "\n# asdf Java 환경 설정\n. #\${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/java/set-java-home.zsh" >> ${ZPROFILE}
+    print_env_uncomment_warning "Java"
+    ;;
+  *)
+    log_fail "Skipping Java configuration for asdf.\n"
+    ;;
+esac
+
+
+
+### done
+log_done "${GREEN_BOLD}All installations are complete!${RESET} 🎉"
+echo "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
+
+cat << EOF
+::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET}) 
+    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET}) 
+    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET}) 
+    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET}) 
+    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET}) 
+    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#                     
+###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET}) 
+EOF
+echo "\n"

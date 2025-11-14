@@ -1,6 +1,6 @@
 # my-term
 
-터미널 개인 설정 (M1 이후 MacOS 기준)
+터미널 개인 설정 (애플 실리콘 기준)
 
 ## 사전 작업
 - 서체 설치
@@ -9,19 +9,7 @@
 ## 설치 프로그램 목록
 - oh-my-zsh
 - newro theme
-- brew
-  - zsh-autosuggestions
-  - zsh-syntax-highlighting
-  - ripgrep
-  - tree
-  - maccy
-  - rectangle
-  - fan controller
-  - alttab
-  - television
-  - awscli
-  - asdf
-  - k9s
+- brew 설치 프로그램은 스크립트 참고
 
 ## 각 프로그램 설정값
 ### iTerm2
