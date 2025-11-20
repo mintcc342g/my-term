@@ -68,10 +68,9 @@ eval "$($BREW_PREFIX/bin/brew shellenv)"
 
 ### brew로 유틸 설치
 log_start "install useful features with Homebrew…\n"
-brew install zsh-autosuggestions
-brew install zsh-syntax-highlighting
-brew install ripgrep television
-brew install tree
+brew install zsh-autosuggestions zsh-syntax-highlighting
+brew install ripgrep television tree
+brew install telnet
 brew install maccy rectangle
 brew install --cask macs-fan-control
 brew install --cask alt-tab
