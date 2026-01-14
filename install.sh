@@ -119,15 +119,16 @@ fi
 
 EOF
 fi
-# NOTE: cursor 사용으로 잠시 중단
-# cat <<'FUNC_EOF' >> "$ZSHRC"
-#
-# # vscode 설정
-# code () {
-#   VSCODE_CWD="$PWD" open -n -b "com.microsoft.VSCode" --args "$@"
-# }
-#
-# FUNC_EOF
+
+# vscode code 설정
+cat <<'FUNC_EOF' >> "$ZSHRC"
+
+# vscode 설정
+code () {
+  VSCODE_CWD="$PWD" open -n -b "com.microsoft.VSCode" --args "$@"
+}
+
+FUNC_EOF
 
 
 
