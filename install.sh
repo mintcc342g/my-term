@@ -131,6 +131,11 @@ fi
 EOF
 fi
 
+# claude alias
+if ! grep -q "^alias cl=" "$HOME/.zshrc" 2>/dev/null; then
+  echo 'alias cl="claude"' >> "$HOME/.zshrc"
+fi
+
 # vscode code 설정
 cat <<'FUNC_EOF' >> "$ZSHRC"
 
