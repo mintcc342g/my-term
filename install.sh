@@ -84,6 +84,15 @@ brew install opencode
 brew install oven-sh/bun/bun
 bunx oh-my-opencode install
 
+
+### claude statusline 스크립트 이동
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+mkdir -p "$HOME/.claude"
+cp -f "$SCRIPT_DIR/claude-statusline.sh" "$HOME/.claude/statusline-command.sh"
+chmod +x "$HOME/.claude/statusline-command.sh"
+
+
+
 ### PATH 셋팅
 # zprofile
 log_step "add shell login environment settings…\n"
