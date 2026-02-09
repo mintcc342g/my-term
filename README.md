@@ -15,6 +15,10 @@
 ### iTerm2
 - 한글 자소분리 해결  
   - Settings → Profiles → 설정한 프로필 선택 → Text 탭 → `Unicode normalization form` 셀렉트 박스 클릭 → HFS+ 로 변경 → iTerm2 종료 후 재구동
+- Nerd 폰트 설정
+  - Settings → Profile → Text → Text Rendering 항목의 Use built-in Powerline glyphs 체크박스 켜기
+- 커서 깜박임 활상화
+  - Settings → Profiles → 프로필 선택 → Text → Cursor 항목에서 Blink 체크
 
 ### maccy
 - General
