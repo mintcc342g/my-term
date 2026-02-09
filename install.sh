@@ -79,10 +79,10 @@ brew install asdf
 brew install mockery
 brew install pyenv pyenv-virtualenv
 brew install helm argocd istioctl k9s
+brew install --cask claude-code
 brew install opencode
 brew install oven-sh/bun/bun
 bunx oh-my-opencode install
-
 
 ### PATH 셋팅
 # zprofile
