@@ -132,8 +132,8 @@ EOF
 fi
 
 # claude alias
-if ! grep -q "^alias cl=" "$HOME/.zshrc" 2>/dev/null; then
-  echo 'alias cl="claude"' >> "$HOME/.zshrc"
+if ! grep -q "^alias c=" "$HOME/.zshrc" 2>/dev/null; then
+  echo 'alias c="claude"' >> "$HOME/.zshrc"
 fi
 
 # vscode code 설정
