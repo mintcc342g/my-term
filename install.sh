@@ -70,6 +70,10 @@ eval "$($BREW_PREFIX/bin/brew shellenv)"
 log_start "install useful features with Homebrew…\n"
 brew install zsh-autosuggestions zsh-syntax-highlighting
 brew install ripgrep fd bat television tree
+
+if ! command -v jq &>/dev/null; then
+  brew install jq
+fi
 brew install telnet
 brew install maccy rectangle
 brew install --cask macs-fan-control
@@ -83,14 +87,6 @@ brew install --cask claude-code
 brew install opencode
 brew install oven-sh/bun/bun
 bunx oh-my-opencode install
-
-
-### claude statusline 스크립트 이동
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-mkdir -p "$HOME/.claude"
-cp -f "$SCRIPT_DIR/claude-statusline.sh" "$HOME/.claude/statusline-command.sh"
-chmod +x "$HOME/.claude/statusline-command.sh"
-
 
 
 ### PATH 셋팅
@@ -159,6 +155,54 @@ log_step "clone newro theme to $DOC_DIR\n"
 git clone https://gitlab.com/newrovp/develconfig.git "$DOC_DIR/newrovp"
 cp "$DOC_DIR/newrovp/newro_vcs.zsh-theme" "${HOME}/.oh-my-zsh/themes/newro_vcs.zsh-theme"
 sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
+
+
+
+### claude hud 테마 설정
+log_start "install claude hud theme…\n"
+mkdir -p "$HOME/.claude/hud"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cp -f "$SCRIPT_DIR/hud/"* "$HOME/.claude/hud/"
+chmod +x "$HOME/.claude/hud/"*.sh
+
+### claude settings.json 설정
+log_start "configure claude settings…\n"
+SETTINGS="$HOME/.claude/settings.json"
+mkdir -p "$HOME/.claude"
+if [ ! -f "$SETTINGS" ]; then
+  printf "%s\n" "{}" > "$SETTINGS"
+fi
+
+STATUS_CMD="bash $HOME/.claude/hud/powerline-statusline.sh"
+PROTECT_CMD="bash $HOME/.claude/hud/protect-statusline.sh"
+PRUNE_CMD="bash $HOME/.claude/hud/prune-claude-hud-cache.sh"
+
+tmp="$(mktemp)"
+if jq --arg statusCmd "$STATUS_CMD" --arg protectCmd "$PROTECT_CMD" --arg pruneCmd "$PRUNE_CMD" \
+  '.statusLine = {"type": "command", "command": $statusCmd}
+   | .hooks.PostToolUse = [
+       {
+         "matcher": "Write|Edit",
+         "hooks": [
+           {
+             "type": "command",
+             "command": $protectCmd,
+             "async": true
+            },
+            {
+              "type": "command",
+              "command": $pruneCmd,
+              "async": true
+            }
+          ]
+        }
+      ]' \
+  "$SETTINGS" > "$tmp"; then
+  mv "$tmp" "$SETTINGS"
+else
+  rm -f "$tmp"
+  log_fail "Failed to update $SETTINGS (jq error)\n"
+fi
 
 
 
