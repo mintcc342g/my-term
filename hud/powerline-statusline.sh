@@ -20,7 +20,7 @@ mkdir -p "$cache_dir" 2>/dev/null || true
 chmod 700 "$cache_dir" 2>/dev/null || true
 
 # ── Parse stdin JSON (single jq call) ────────────────────────────────────────
-IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read transcript_path < <(
+IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms < <(
   printf '%s' "$input" | jq -r '[
     (.cwd // ""),
     (.model.display_name // "Unknown"),
@@ -28,7 +28,7 @@ IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read transc
     (.context_window.current_usage.input_tokens // 0),
     (.context_window.current_usage.cache_creation_input_tokens // 0),
     (.context_window.current_usage.cache_read_input_tokens // 0),
-    (.transcript_path // "")
+    (.cost.total_duration_ms // 0)
   ] | @tsv'
 )
 
@@ -198,40 +198,12 @@ rl_wk_reset_fmt=$(format_reset "$rl_wk_reset")
 [ -n "$rl_5h_pct" ] && rl_5h_pct=$(printf "%.0f" "$rl_5h_pct" 2>/dev/null)
 [ -n "$rl_wk_pct" ] && rl_wk_pct=$(printf "%.0f" "$rl_wk_pct" 2>/dev/null)
 
-# ── Session duration (cached 10s) ────────────────────────────────────────────
-SESS_CACHE="$cache_dir/session-start"
-sess_minutes=0
+# ── Session duration (from cost.total_duration_ms) ───────────────────────────
+[ -z "$total_duration_ms" ] && total_duration_ms=0
+total_duration_ms=${total_duration_ms%%.*}
+[ -z "$total_duration_ms" ] && total_duration_ms=0
+sess_minutes=$((total_duration_ms / 60000))
 sess_health="healthy"
-
-if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
-  refresh_sess=false
-  if [ ! -f "$SESS_CACHE" ]; then
-    refresh_sess=true
-  elif [ $(($(date +%s) - $(stat -f %m "$SESS_CACHE" 2>/dev/null || echo 0))) -gt 10 ]; then
-    refresh_sess=true
-  fi
-  if $refresh_sess; then
-    first_ts=$(head -1 "$transcript_path" 2>/dev/null | jq -r '.timestamp // empty' 2>/dev/null)
-    if [ -n "$first_ts" ]; then
-      tmp_sess="$(mktemp "$cache_dir/session-start.XXXXXX" 2>/dev/null || mktemp)"
-      if printf '%s' "$first_ts" > "$tmp_sess"; then
-        mv "$tmp_sess" "$SESS_CACHE"
-      else
-        rm -f "$tmp_sess" 2>/dev/null || true
-      fi
-    fi
-  fi
-  if [ -f "$SESS_CACHE" ]; then
-    start_ts=$(cat "$SESS_CACHE" 2>/dev/null || true)
-    if [ -n "$start_ts" ]; then
-      clean_ts=$(printf '%s' "$start_ts" | sed 's/\.[0-9]*Z$//' | sed 's/Z$//' | sed 's/[+-][0-9][0-9]:[0-9][0-9]$//' | sed 's/T/ /')
-      start_epoch=$(date -j -f "%Y-%m-%d %H:%M:%S" "$clean_ts" +%s 2>/dev/null)
-      if [ -n "$start_epoch" ]; then
-        sess_minutes=$(( ($(date +%s) - start_epoch) / 60 ))
-      fi
-    fi
-  fi
-fi
 
 # Session health
 if [ "$sess_minutes" -gt 120 ] || [ "$pct" -gt 85 ]; then
