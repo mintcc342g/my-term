@@ -272,30 +272,42 @@ fi
 # 3. Model — Nord4 #D8DEE9, dark fg
 segments+=("${model_name}|216|222|233|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
-# 4. 5h rate — Nord15 #B48EAD, light fg (optional)
+# 4. 5h rate — dynamic color by usage (optional)
 if [ -n "$rl_5h_pct" ]; then
   rl_5h_txt="5h:${rl_5h_pct}%"
   [ -n "$rl_5h_reset_fmt" ] && rl_5h_txt="${rl_5h_txt}(${rl_5h_reset_fmt})"
-  segments+=("${rl_5h_txt}|180|142|173|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+  if [ "$rl_5h_pct" -ge 80 ] 2>/dev/null; then
+    segments+=("${rl_5h_txt}|191|97|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+  elif [ "$rl_5h_pct" -ge 50 ] 2>/dev/null; then
+    segments+=("${rl_5h_txt}|235|213|169|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  else
+    segments+=("${rl_5h_txt}|107|125|150|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+  fi
 fi
 
-# 5. wk rate — Nord12 #D08770, dark fg (optional)
+# 5. wk rate — dynamic color by usage (optional)
 if [ -n "$rl_wk_pct" ]; then
   rl_wk_txt="wk:${rl_wk_pct}%"
   [ -n "$rl_wk_reset_fmt" ] && rl_wk_txt="${rl_wk_txt}(${rl_wk_reset_fmt})"
-  segments+=("${rl_wk_txt}|208|135|112|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  if [ "$rl_wk_pct" -ge 80 ] 2>/dev/null; then
+    segments+=("${rl_wk_txt}|191|97|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+  elif [ "$rl_wk_pct" -ge 50 ] 2>/dev/null; then
+    segments+=("${rl_wk_txt}|235|213|169|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  else
+    segments+=("${rl_wk_txt}|148|165|190|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+  fi
 fi
 
 # 6. Session — dynamic color by health
 case "$sess_health" in
   critical) S_BR=191; S_BG=97;  S_BB=106; S_FR=$FG_LIGHT_R; S_FG=$FG_LIGHT_G; S_FB=$FG_LIGHT_B ;;
-  warning)  S_BR=208; S_BG=135; S_BB=112; S_FR=$FG_DARK_R;  S_FG=$FG_DARK_G;  S_FB=$FG_DARK_B ;;
-  *)        S_BR=235; S_BG=203; S_BB=139; S_FR=$FG_DARK_R;  S_FG=$FG_DARK_G;  S_FB=$FG_DARK_B ;;
+  warning)  S_BR=235; S_BG=213; S_BB=169; S_FR=$FG_DARK_R;  S_FG=$FG_DARK_G;  S_FB=$FG_DARK_B ;;
+  *)        S_BR=195; S_BG=218; S_BB=220; S_FR=$FG_DARK_R;  S_FG=$FG_DARK_G;  S_FB=$FG_DARK_B ;;
 esac
 segments+=("${sess_fmt}|${S_BR}|${S_BG}|${S_BB}|${S_FR}|${S_FG}|${S_FB}")
 
-# 7. Tokens — Nord14 #A3BE8C, dark fg
-segments+=("${tok_fmt}|163|190|140|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+# 7. Tokens — #8ED2C6 mint, dark fg
+segments+=("${tok_fmt}|142|210|198|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
 # 8. Cache — Nord9 #81A1C1, dark fg
 segments+=("cache:${cache_pct}%|129|161|193|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
