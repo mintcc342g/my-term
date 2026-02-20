@@ -306,8 +306,8 @@ case "$sess_health" in
 esac
 segments+=("${sess_fmt}|${S_BR}|${S_BG}|${S_BB}|${S_FR}|${S_FG}|${S_FB}")
 
-# 7. Tokens — #8ED2C6 mint, dark fg
-segments+=("${tok_fmt}|142|210|198|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+# 7. Tokens — #A8C8C2 ash mint, dark fg
+segments+=("${tok_fmt}|168|200|194|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
 # 8. Cache — Nord9 #81A1C1, dark fg
 segments+=("cache:${cache_pct}%|129|161|193|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
