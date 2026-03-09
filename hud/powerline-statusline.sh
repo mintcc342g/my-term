@@ -105,6 +105,16 @@ if [ ! -f "$RL_CACHE" ]; then
   refresh_rl=true
 elif [ $(($(date +%s) - $(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0))) -gt 30 ]; then
   refresh_rl=true
+else
+  # Force refresh if any reset time has passed (cached data is stale)
+  _cached_5h_reset=$(jq -r '.five_hour.resets_at // ""' < "$RL_CACHE" 2>/dev/null)
+  if [ -n "$_cached_5h_reset" ]; then
+    _clean=$(printf '%s' "$_cached_5h_reset" | sed -E 's/T/ /; s/\.[0-9]+//; s/Z$/ +0000/; s/([+-][0-9]{2}):([0-9]{2})$/ \1\2/')
+    printf '%s' "$_clean" | grep -Eq ' [+-][0-9]{4}$' || _clean="${_clean} +0000"
+    _reset_ep=$(date -j -f "%Y-%m-%d %H:%M:%S %z" "$_clean" +%s 2>/dev/null)
+    [ -n "$_reset_ep" ] && [ "$(date +%s)" -ge "$_reset_ep" ] && refresh_rl=true
+  fi
+  unset _cached_5h_reset _clean _reset_ep
 fi
 
 if $refresh_rl; then
@@ -141,12 +151,18 @@ EOF
       else
         rm -f "$tmp_rl" 2>/dev/null || true
       fi
+    elif [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.error' >/dev/null 2>&1; then
+      # API returned error (e.g. rate limited) — mark cache as error state
+      printf '{"_error":true}' > "$RL_CACHE"
     fi
   fi
   unset RL_RESP
 fi
 
-if [ -f "$RL_CACHE" ]; then
+rl_error=false
+if [ -f "$RL_CACHE" ] && jq -e '._error' < "$RL_CACHE" >/dev/null 2>&1; then
+  rl_error=true
+elif [ -f "$RL_CACHE" ]; then
   IFS=$'\t' read -r rl_5h_pct rl_5h_reset rl_wk_pct rl_wk_reset < <(
     jq -r '[
       (.five_hour.utilization // ""),
@@ -156,6 +172,9 @@ if [ -f "$RL_CACHE" ]; then
     ] | @tsv' < "$RL_CACHE" 2>/dev/null
   )
 fi
+
+# If in error state (rate limited), force refresh on next invocation by keeping cache age short
+# but still show RL indicator this round
 
 # Format reset time (ISO → relative like "2h13m")
 format_reset() {
@@ -273,7 +292,9 @@ fi
 segments+=("${model_name}|216|222|233|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
 # 4. 5h rate — dynamic color by usage (optional)
-if [ -n "$rl_5h_pct" ]; then
+if $rl_error; then
+  segments+=("5h:--|107|125|150|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+elif [ -n "$rl_5h_pct" ]; then
   rl_5h_txt="5h:${rl_5h_pct}%"
   [ -n "$rl_5h_reset_fmt" ] && rl_5h_txt="${rl_5h_txt}(${rl_5h_reset_fmt})"
   if [ "$rl_5h_pct" -ge 80 ] 2>/dev/null; then
