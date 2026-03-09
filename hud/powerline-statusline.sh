@@ -93,17 +93,31 @@ if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   git_branch=$(tr -d '\n' < "$GIT_CACHE_SHARED" 2>/dev/null || true)
 fi
 
-# ── Rate limits (cached 30s) ─────────────────────────────────────────────────
+# ── Rate limits (cached 30s, backoff 5m on error) ────────────────────────────
 RL_CACHE="$cache_dir/ratelimit.json"
+RL_ERR_MARKER="$cache_dir/ratelimit.err"
 rl_5h_pct=""
 rl_5h_reset=""
 rl_wk_pct=""
 rl_wk_reset=""
 
+RL_NORMAL_TTL=30   # seconds between successful refreshes
+RL_ERROR_TTL=300   # seconds to wait after an API error before retrying
+
 refresh_rl=false
-if [ ! -f "$RL_CACHE" ]; then
+_now=$(date +%s)
+
+# Check error backoff first
+if [ -f "$RL_ERR_MARKER" ]; then
+  _err_age=$((_now - $(stat -f %m "$RL_ERR_MARKER" 2>/dev/null || echo 0)))
+  if [ "$_err_age" -gt "$RL_ERROR_TTL" ]; then
+    rm -f "$RL_ERR_MARKER" 2>/dev/null || true
+    refresh_rl=true
+  fi
+  # else: still in backoff, skip refresh
+elif [ ! -f "$RL_CACHE" ]; then
   refresh_rl=true
-elif [ $(($(date +%s) - $(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0))) -gt 30 ]; then
+elif [ $((_now - $(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0))) -gt "$RL_NORMAL_TTL" ]; then
   refresh_rl=true
 else
   # Force refresh if any reset time has passed (cached data is stale)
@@ -112,57 +126,80 @@ else
     _clean=$(printf '%s' "$_cached_5h_reset" | sed -E 's/T/ /; s/\.[0-9]+//; s/Z$/ +0000/; s/([+-][0-9]{2}):([0-9]{2})$/ \1\2/')
     printf '%s' "$_clean" | grep -Eq ' [+-][0-9]{4}$' || _clean="${_clean} +0000"
     _reset_ep=$(date -j -f "%Y-%m-%d %H:%M:%S %z" "$_clean" +%s 2>/dev/null)
-    [ -n "$_reset_ep" ] && [ "$(date +%s)" -ge "$_reset_ep" ] && refresh_rl=true
+    [ -n "$_reset_ep" ] && [ "$_now" -ge "$_reset_ep" ] && refresh_rl=true
   fi
   unset _cached_5h_reset _clean _reset_ep
 fi
+unset _now _err_age
+
+RL_LOCK="$cache_dir/ratelimit.lock"
 
 if $refresh_rl; then
-  ACCESS_TOKEN=""
-  # macOS Keychain first
-  CRED_JSON=$(/usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
-  # Fallback to credentials file
-  if [ -z "$CRED_JSON" ] && [ -f "$HOME/.claude/.credentials.json" ]; then
-    cred_file="$HOME/.claude/.credentials.json"
-    perm=$(stat -f '%Lp' "$cred_file" 2>/dev/null || echo "")
-    if [ -n "$perm" ] && [ $((8#$perm & 077)) -ne 0 ]; then
-      chmod 600 "$cred_file" 2>/dev/null || true
+  # Acquire lock (atomic via mkdir) to prevent concurrent API calls across tmux panes
+  if mkdir "$RL_LOCK" 2>/dev/null; then
+    # Stale lock guard: remove if older than 15s (curl timeout is 5s)
+    trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
+    ACCESS_TOKEN=""
+    # macOS Keychain first
+    CRED_JSON=$(/usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
+    # Fallback to credentials file
+    if [ -z "$CRED_JSON" ] && [ -f "$HOME/.claude/.credentials.json" ]; then
+      cred_file="$HOME/.claude/.credentials.json"
+      perm=$(stat -f '%Lp' "$cred_file" 2>/dev/null || echo "")
+      if [ -n "$perm" ] && [ $((8#$perm & 077)) -ne 0 ]; then
+        chmod 600 "$cred_file" 2>/dev/null || true
+      fi
+      CRED_JSON=$(< "$cred_file")
     fi
-    CRED_JSON=$(< "$cred_file")
-  fi
-  if [ -n "$CRED_JSON" ]; then
-    ACCESS_TOKEN=$(printf '%s' "$CRED_JSON" | jq -r '.claudeAiOauth.accessToken // .accessToken // empty' 2>/dev/null)
-  fi
-  unset CRED_JSON
-  if [ -n "$ACCESS_TOKEN" ]; then
-    esc_token=${ACCESS_TOKEN//\\/\\\\}
-    esc_token=${esc_token//\"/\\\"}
-    RL_RESP=$(curl -s --max-time 5 --config - 2>/dev/null <<EOF
+    if [ -n "$CRED_JSON" ]; then
+      ACCESS_TOKEN=$(printf '%s' "$CRED_JSON" | jq -r '.claudeAiOauth.accessToken // .accessToken // empty' 2>/dev/null)
+    fi
+    unset CRED_JSON
+    if [ -n "$ACCESS_TOKEN" ]; then
+      esc_token=${ACCESS_TOKEN//\\/\\\\}
+      esc_token=${esc_token//\"/\\\"}
+      RL_RESP=$(curl -s --max-time 5 --config - 2>/dev/null <<EOF
 url = "https://api.anthropic.com/api/oauth/usage"
 header = "Authorization: Bearer ${esc_token}"
 header = "anthropic-beta: oauth-2025-04-20"
 EOF
 )
-    unset ACCESS_TOKEN
-    if [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.five_hour' >/dev/null 2>&1; then
-      tmp_rl="$(mktemp "$cache_dir/ratelimit.XXXXXX" 2>/dev/null || mktemp)"
-      if printf '%s' "$RL_RESP" > "$tmp_rl"; then
-        mv "$tmp_rl" "$RL_CACHE"
-      else
-        rm -f "$tmp_rl" 2>/dev/null || true
+      unset ACCESS_TOKEN
+      if [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.five_hour' >/dev/null 2>&1; then
+        # Success — update cache and clear any error marker
+        tmp_rl="$(mktemp "$cache_dir/ratelimit.XXXXXX" 2>/dev/null || mktemp)"
+        if printf '%s' "$RL_RESP" > "$tmp_rl"; then
+          mv "$tmp_rl" "$RL_CACHE"
+          rm -f "$RL_ERR_MARKER" 2>/dev/null || true
+        else
+          rm -f "$tmp_rl" 2>/dev/null || true
+        fi
+      elif [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.error' >/dev/null 2>&1; then
+        # API error (e.g. rate limited) — set error marker for backoff
+        # Do NOT overwrite RL_CACHE so stale-but-valid data is preserved
+        touch "$RL_ERR_MARKER"
       fi
-    elif [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.error' >/dev/null 2>&1; then
-      # API returned error (e.g. rate limited) — mark cache as error state
-      printf '{"_error":true}' > "$RL_CACHE"
     fi
+    unset RL_RESP
+    rm -rf "$RL_LOCK" 2>/dev/null
+    trap - EXIT
+  else
+    # Another pane is already fetching — check for stale lock
+    _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
+    if [ "$_lock_age" -gt 15 ]; then
+      rm -rf "$RL_LOCK" 2>/dev/null || true
+    fi
+    unset _lock_age
   fi
-  unset RL_RESP
 fi
 
 rl_error=false
-if [ -f "$RL_CACHE" ] && jq -e '._error' < "$RL_CACHE" >/dev/null 2>&1; then
+if [ -f "$RL_ERR_MARKER" ]; then
   rl_error=true
-elif [ -f "$RL_CACHE" ]; then
+fi
+if [ -f "$RL_CACHE" ] && jq -e '.five_hour' < "$RL_CACHE" >/dev/null 2>&1; then
+  # Valid cached data exists — use it (even if stale during error backoff)
+  rl_error=false
   IFS=$'\t' read -r rl_5h_pct rl_5h_reset rl_wk_pct rl_wk_reset < <(
     jq -r '[
       (.five_hour.utilization // ""),
