@@ -307,7 +307,9 @@ elif [ -n "$rl_5h_pct" ]; then
 fi
 
 # 5. wk rate — dynamic color by usage (optional)
-if [ -n "$rl_wk_pct" ]; then
+if $rl_error; then
+  segments+=("wk:--|148|165|190|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+elif [ -n "$rl_wk_pct" ]; then
   rl_wk_txt="wk:${rl_wk_pct}%"
   [ -n "$rl_wk_reset_fmt" ] && rl_wk_txt="${rl_wk_txt}(${rl_wk_reset_fmt})"
   if [ "$rl_wk_pct" -ge 80 ] 2>/dev/null; then
