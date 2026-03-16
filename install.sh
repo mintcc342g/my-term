@@ -161,9 +161,11 @@ sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
 ### claude hud 테마 설정
 log_start "install claude hud theme…\n"
 mkdir -p "$HOME/.claude/hud"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cp -f "$SCRIPT_DIR/hud/"* "$HOME/.claude/hud/"
 chmod +x "$HOME/.claude/hud/"*.sh
+
+### claude CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
+cp -f "$SCRIPT_DIR/hud/codex-collab.md" "$HOME/.claude/CLAUDE.md"
 
 ### claude settings.json 설정
 log_start "configure claude settings…\n"
