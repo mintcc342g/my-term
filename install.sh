@@ -176,10 +176,22 @@ fi
 STATUS_CMD="bash $HOME/.claude/hud/powerline-statusline.sh"
 PROTECT_CMD="bash $HOME/.claude/hud/protect-statusline.sh"
 PRUNE_CMD="bash $HOME/.claude/hud/prune-claude-hud-cache.sh"
+CODEX_COLLAB_CMD="bash $HOME/.claude/hud/codex-collab.sh"
 
 tmp="$(mktemp)"
-if jq --arg statusCmd "$STATUS_CMD" --arg protectCmd "$PROTECT_CMD" --arg pruneCmd "$PRUNE_CMD" \
+if jq --arg statusCmd "$STATUS_CMD" --arg protectCmd "$PROTECT_CMD" --arg pruneCmd "$PRUNE_CMD" --arg codexCollabCmd "$CODEX_COLLAB_CMD" \
   '.statusLine = {"type": "command", "command": $statusCmd}
+   | .hooks.UserPromptSubmit = [
+       {
+         "matcher": "@co",
+         "hooks": [
+           {
+             "type": "command",
+             "command": $codexCollabCmd
+           }
+         ]
+       }
+     ]
    | .hooks.PostToolUse = [
        {
          "matcher": "Write|Edit",
