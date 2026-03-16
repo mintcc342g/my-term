@@ -320,9 +320,9 @@ segments=()
 # 1. CWD — Nord10 #5E81AC, light fg
 segments+=("${short_dir}|94|129|172|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
 
-# 2. Git branch — Nord7 #8FBCBB, dark fg (optional)
+# 2. Git branch — Nord3 #4C566A, light fg (optional)
 if [ -n "$git_branch" ]; then
-  segments+=("${GIT_ICON} ${git_branch}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  segments+=("${GIT_ICON} ${git_branch}|76|86|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
 fi
 
 # 3. Model — Nord4 #D8DEE9, dark fg
@@ -366,11 +366,32 @@ case "$sess_health" in
 esac
 segments+=("${sess_fmt}|${S_BR}|${S_BG}|${S_BB}|${S_FR}|${S_FG}|${S_FB}")
 
-# 7. Tokens — #A8C8C2 ash mint, dark fg
-segments+=("${tok_fmt}|168|200|194|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+# 7. Claude Tokens — #A8C8C2 ash mint, dark fg
+segments+=("claude:${tok_fmt}|168|200|194|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
-# 8. Cache — Nord9 #81A1C1, dark fg
-segments+=("cache:${cache_pct}%|129|161|193|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+# 7.5 Codex Tokens — Nord7 #8FBCBB, dark fg
+codex_tok_fmt=""
+CODEX_TOKEN_CACHE="$cache_dir/codex-tokens.json"
+if [ -f "$CODEX_TOKEN_CACHE" ]; then
+  codex_total_input=$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
+  codex_total_output=$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
+  codex_total=$(( ${codex_total_input:-0} + ${codex_total_output:-0} ))
+  if [ "$codex_total" -gt 0 ]; then
+    codex_tok_fmt=$(format_tokens "$codex_total")
+  fi
+fi
+if [ -n "$codex_tok_fmt" ]; then
+  segments+=("codex:${codex_tok_fmt}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+fi
+
+# 8. Cache — dynamic color by hit rate (low cache = bad)
+if [ "$cache_pct" -le 20 ] 2>/dev/null; then
+  segments+=("cache:${cache_pct}%|191|97|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+elif [ "$cache_pct" -le 50 ] 2>/dev/null; then
+  segments+=("cache:${cache_pct}%|235|213|169|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+else
+  segments+=("cache:${cache_pct}%|129|161|193|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+fi
 
 # 9. Context — Nord8 #88C0D0, dark fg
 segments+=("ctx:${pct}%|136|192|208|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
