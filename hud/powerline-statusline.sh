@@ -370,14 +370,22 @@ segments+=("${sess_fmt}|${S_BR}|${S_BG}|${S_BB}|${S_FR}|${S_FG}|${S_FB}")
 segments+=("claude:${tok_fmt}|168|200|194|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
 # 7.5 Codex Tokens — Nord7 #8FBCBB, dark fg
+# 5h 윈도우 리셋 시 Codex 토큰도 함께 리셋
 codex_tok_fmt=""
 CODEX_TOKEN_CACHE="$cache_dir/codex-tokens.json"
 if [ -f "$CODEX_TOKEN_CACHE" ]; then
-  codex_total_input=$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
-  codex_total_output=$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
-  codex_total=$(( ${codex_total_input:-0} + ${codex_total_output:-0} ))
-  if [ "$codex_total" -gt 0 ]; then
-    codex_tok_fmt=$(format_tokens "$codex_total")
+  # 캐시된 resets_at과 현재 ratelimit의 resets_at 비교
+  codex_cached_reset=$(jq -r '.resets_at // ""' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
+  if [ -n "$rl_5h_reset" ] && [ -n "$codex_cached_reset" ] && [ "$codex_cached_reset" != "$rl_5h_reset" ]; then
+    # 윈도우가 바뀜 → 토큰 캐시 리셋
+    rm -f "$CODEX_TOKEN_CACHE" 2>/dev/null
+  else
+    codex_total_input=$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
+    codex_total_output=$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
+    codex_total=$(( ${codex_total_input:-0} + ${codex_total_output:-0} ))
+    if [ "$codex_total" -gt 0 ]; then
+      codex_tok_fmt=$(format_tokens "$codex_total")
+    fi
   fi
 fi
 if [ -n "$codex_tok_fmt" ]; then

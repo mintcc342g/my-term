@@ -63,19 +63,35 @@ if raw_output="$(timeout "$TIMEOUT" codex exec --json --skip-git-repo-check "$cl
   turn_input="${turn_input:-0}"
   turn_output="${turn_output:-0}"
 
-  # 기존 누적값 읽기
+  # 현재 5h 윈도우의 resets_at 가져오기 (rate limit 리셋 시 토큰도 리셋)
+  RL_CACHE="$cache_dir/ratelimit.json"
+  current_resets_at=""
+  if [ -f "$RL_CACHE" ]; then
+    current_resets_at="$(jq -r '.five_hour.resets_at // ""' < "$RL_CACHE" 2>/dev/null)"
+  fi
+
+  # 기존 누적값 읽기 (윈도우가 바뀌었으면 리셋)
   prev_input=0
   prev_output=0
   if [ -f "$CODEX_TOKEN_CACHE" ]; then
-    prev_input="$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
-    prev_output="$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
+    cached_resets_at="$(jq -r '.resets_at // ""' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
+    if [ -n "$current_resets_at" ] && [ "$cached_resets_at" != "$current_resets_at" ]; then
+      # 5h 윈도우가 변경됨 → 누적값 리셋
+      prev_input=0
+      prev_output=0
+    else
+      prev_input="$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
+      prev_output="$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
+    fi
   fi
 
-  # 누적 저장
+  # 누적 저장 (resets_at 포함)
   new_input=$((prev_input + turn_input))
   new_output=$((prev_output + turn_output))
-  printf '{"total_input":%d,"total_output":%d,"last_input":%d,"last_output":%d}\n' \
-    "$new_input" "$new_output" "$turn_input" "$turn_output" > "$CODEX_TOKEN_CACHE"
+  resets_at_field=""
+  [ -n "$current_resets_at" ] && resets_at_field="\"resets_at\":\"$current_resets_at\","
+  printf '{%s"total_input":%d,"total_output":%d,"last_input":%d,"last_output":%d}\n' \
+    "$resets_at_field" "$new_input" "$new_output" "$turn_input" "$turn_output" > "$CODEX_TOKEN_CACHE"
 
   if [ -n "$codex_result" ]; then
     cat <<EOF
