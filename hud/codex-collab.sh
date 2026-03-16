@@ -9,7 +9,6 @@
 
 set -euo pipefail
 
-TIMEOUT="${CODEX_COLLAB_TIMEOUT:-60}"
 KEYWORD="@co"
 
 # --- 캐시 디렉토리 ---
@@ -47,7 +46,7 @@ raw_stderr=""
 raw_stderr="$(mktemp)"
 trap 'rm -f "$raw_stderr"' EXIT
 
-if raw_output="$(timeout "$TIMEOUT" codex exec --json --skip-git-repo-check "$clean_prompt" 2>"$raw_stderr")"; then
+if raw_output="$(codex exec --json --skip-git-repo-check "$clean_prompt" 2>"$raw_stderr")"; then
   # rate limit 감지 (stdout JSONL 또는 stderr에서)
   if printf '%s' "$raw_output" | grep -qi 'rate.limit\|quota.*exceeded\|too.many.requests\|429'; then
     echo "[codex-collab] Codex rate limit에 도달했습니다. Codex 응답 없이 Claude 단독으로 응답합니다."
@@ -110,8 +109,6 @@ else
   # stderr에서 rate limit 감지
   if printf '%s' "$stderr_content" | grep -qi 'rate.limit\|quota.*exceeded\|too.many.requests\|429'; then
     echo "[codex-collab] Codex rate limit에 도달했습니다. Codex 응답 없이 Claude 단독으로 응답합니다."
-  elif [[ $exit_code -eq 124 ]]; then
-    echo "[codex-collab] Codex 응답 시간 초과 (${TIMEOUT}초). Claude 단독으로 응답합니다."
   else
     echo "[codex-collab] Codex 실행 실패 (exit: $exit_code). Claude 단독으로 응답합니다."
   fi
