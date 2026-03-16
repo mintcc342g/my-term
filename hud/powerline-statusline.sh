@@ -10,14 +10,10 @@ input=$(cat)
 
 umask 077
 
-cache_dir=""
-if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR%/}" ]; then
-  cache_dir="${TMPDIR%/}/claude-hud"
-else
-  cache_dir="$HOME/Library/Caches/claude-hud"
-fi
-mkdir -p "$cache_dir" 2>/dev/null || true
-chmod 700 "$cache_dir" 2>/dev/null || true
+cache_dir="$HOME/.claude/my-hud/cache"
+tmp_dir="$HOME/.claude/my-hud/tmp"
+mkdir -p "$cache_dir" "$tmp_dir" 2>/dev/null || true
+chmod 700 "$cache_dir" "$tmp_dir" 2>/dev/null || true
 
 # ── Parse stdin JSON (single jq call) ────────────────────────────────────────
 IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms < <(
@@ -83,7 +79,7 @@ if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
     refresh=true
   fi
   if $refresh; then
-    tmp_git="$(mktemp "$cache_dir/git-branch.XXXXXX" 2>/dev/null || mktemp)"
+    tmp_git="$(mktemp "$tmp_dir/git-branch.XXXXXX")"
     if git -C "$cwd" branch --show-current 2>/dev/null > "$tmp_git"; then
       mv "$tmp_git" "$GIT_CACHE_SHARED"
     else
@@ -156,18 +152,11 @@ if $refresh_rl; then
     fi
     unset CRED_JSON
     if [ -n "$ACCESS_TOKEN" ]; then
-      esc_token=${ACCESS_TOKEN//\\/\\\\}
-      esc_token=${esc_token//\"/\\\"}
-      RL_RESP=$(curl -s --max-time 5 --config - 2>/dev/null <<EOF
-url = "https://api.anthropic.com/api/oauth/usage"
-header = "Authorization: Bearer ${esc_token}"
-header = "anthropic-beta: oauth-2025-04-20"
-EOF
-)
+      RL_RESP=$(printf 'url = "https://api.anthropic.com/api/oauth/usage"\nheader = "Authorization: Bearer %s"\nheader = "anthropic-beta: oauth-2025-04-20"\n' "$ACCESS_TOKEN" | curl -s --max-time 5 --config - 2>/dev/null)
       unset ACCESS_TOKEN
       if [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.five_hour' >/dev/null 2>&1; then
         # Success — update cache and clear any error marker
-        tmp_rl="$(mktemp "$cache_dir/ratelimit.XXXXXX" 2>/dev/null || mktemp)"
+        tmp_rl="$(mktemp "$tmp_dir/ratelimit.XXXXXX")"
         if printf '%s' "$RL_RESP" > "$tmp_rl"; then
           mv "$tmp_rl" "$RL_CACHE"
           rm -f "$RL_ERR_MARKER" 2>/dev/null || true
@@ -390,6 +379,8 @@ if [ -f "$CODEX_TOKEN_CACHE" ]; then
 fi
 if [ -n "$codex_tok_fmt" ]; then
   segments+=("codex:${codex_tok_fmt}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+else
+  segments+=("codex:-|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 fi
 
 # 8. Cache — dynamic color by hit rate (low cache = bad)

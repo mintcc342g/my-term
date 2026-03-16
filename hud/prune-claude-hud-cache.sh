@@ -3,15 +3,11 @@
 set -u
 umask 077
 
-cache_dir=""
-if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR%/}" ]; then
-  cache_dir="${TMPDIR%/}/claude-hud"
-else
-  cache_dir="$HOME/Library/Caches/claude-hud"
-fi
+cache_dir="$HOME/.claude/my-hud/cache"
+tmp_dir="$HOME/.claude/my-hud/tmp"
 
-mkdir -p "$cache_dir" 2>/dev/null || exit 0
-chmod 700 "$cache_dir" 2>/dev/null || true
+mkdir -p "$cache_dir" "$tmp_dir" 2>/dev/null || exit 0
+chmod 700 "$cache_dir" "$tmp_dir" 2>/dev/null || true
 
 stamp="$cache_dir/prune.stamp"
 prune_every_seconds=3600
@@ -44,7 +40,15 @@ for f in "$cache_dir"/*; do
   esac
 done
 
-tmp_stamp="$(mktemp "$cache_dir/prune.stamp.XXXXXX" 2>/dev/null || mktemp)"
+# tmp 디렉토리 내 고아 파일 정리
+for f in "$tmp_dir"/*; do
+  [ -f "$f" ] || continue
+  m=$(stat -f %m "$f" 2>/dev/null || echo 0)
+  fage=$((now - m))
+  [ "$fage" -gt "$orphan_tmp_seconds" ] && rm -f "$f" 2>/dev/null || true
+done
+
+tmp_stamp="$(mktemp "$tmp_dir/prune.stamp.XXXXXX")"
 if printf '%s\n' "$now" > "$tmp_stamp"; then
   mv "$tmp_stamp" "$stamp"
 else

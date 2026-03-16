@@ -1,5 +1,6 @@
 
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 YELLOW='\033[93m'
 YELLOW_BOLD='\033[33;1m'
 BLUE='\033[94m'
@@ -160,9 +161,9 @@ sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
 
 ### claude hud 테마 설정
 log_start "install claude hud theme…\n"
-mkdir -p "$HOME/.claude/hud"
-cp -f "$SCRIPT_DIR/hud/"* "$HOME/.claude/hud/"
-chmod +x "$HOME/.claude/hud/"*.sh
+mkdir -p "$HOME/.claude/my-hud"
+cp -f "$SCRIPT_DIR/hud/"* "$HOME/.claude/my-hud/"
+chmod +x "$HOME/.claude/my-hud/"*.sh
 
 ### claude CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
 cp -f "$SCRIPT_DIR/hud/codex-collab.md" "$HOME/.claude/CLAUDE.md"
@@ -175,10 +176,10 @@ if [ ! -f "$SETTINGS" ]; then
   printf "%s\n" "{}" > "$SETTINGS"
 fi
 
-STATUS_CMD="bash $HOME/.claude/hud/powerline-statusline.sh"
-PROTECT_CMD="bash $HOME/.claude/hud/protect-statusline.sh"
-PRUNE_CMD="bash $HOME/.claude/hud/prune-claude-hud-cache.sh"
-CODEX_COLLAB_CMD="bash $HOME/.claude/hud/codex-collab.sh"
+STATUS_CMD="bash $HOME/.claude/my-hud/powerline-statusline.sh"
+PROTECT_CMD="bash $HOME/.claude/my-hud/protect-statusline.sh"
+PRUNE_CMD="bash $HOME/.claude/my-hud/prune-claude-hud-cache.sh"
+CODEX_COLLAB_CMD="bash $HOME/.claude/my-hud/codex-collab.sh"
 
 tmp="$(mktemp)"
 if jq --arg statusCmd "$STATUS_CMD" --arg protectCmd "$PROTECT_CMD" --arg pruneCmd "$PRUNE_CMD" --arg codexCollabCmd "$CODEX_COLLAB_CMD" \

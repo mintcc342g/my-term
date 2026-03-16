@@ -5,7 +5,9 @@
 #
 
 SETTINGS="$HOME/.claude/settings.json"
-EXPECTED_CMD="bash $HOME/.claude/hud/powerline-statusline.sh"
+EXPECTED_CMD="bash $HOME/.claude/my-hud/powerline-statusline.sh"
+tmp_dir="$HOME/.claude/my-hud/tmp"
+mkdir -p "$tmp_dir" 2>/dev/null || true
 
 # Read hook input from stdin
 input=$(cat)
@@ -22,7 +24,7 @@ esac
 # Check if statusLine command was changed
 current_cmd=$(jq -r '.statusLine.command // ""' "$SETTINGS" 2>/dev/null)
 if [ "$current_cmd" != "$EXPECTED_CMD" ]; then
-  tmp=$(mktemp)
+  tmp=$(mktemp "$tmp_dir/settings.XXXXXX")
   if jq --arg cmd "$EXPECTED_CMD" '.statusLine = {"type": "command", "command": $cmd}' "$SETTINGS" > "$tmp"; then
     mv "$tmp" "$SETTINGS"
   else

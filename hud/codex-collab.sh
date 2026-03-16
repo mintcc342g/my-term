@@ -12,12 +12,7 @@ set -euo pipefail
 KEYWORD="@co"
 
 # --- 캐시 디렉토리 ---
-cache_dir=""
-if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR%/}" ]; then
-  cache_dir="${TMPDIR%/}/claude-hud"
-else
-  cache_dir="$HOME/Library/Caches/claude-hud"
-fi
+cache_dir="$HOME/.claude/my-hud/cache"
 mkdir -p "$cache_dir" 2>/dev/null || true
 
 CODEX_TOKEN_CACHE="$cache_dir/codex-tokens.json"
@@ -87,10 +82,15 @@ if raw_output="$(codex exec --json --skip-git-repo-check "$clean_prompt" 2>"$raw
   # 누적 저장 (resets_at 포함)
   new_input=$((prev_input + turn_input))
   new_output=$((prev_output + turn_output))
-  resets_at_field=""
-  [ -n "$current_resets_at" ] && resets_at_field="\"resets_at\":\"$current_resets_at\","
-  printf '{%s"total_input":%d,"total_output":%d,"last_input":%d,"last_output":%d}\n' \
-    "$resets_at_field" "$new_input" "$new_output" "$turn_input" "$turn_output" > "$CODEX_TOKEN_CACHE"
+  jq -n \
+    --arg resets_at "${current_resets_at:-}" \
+    --argjson ti "$new_input" \
+    --argjson to "$new_output" \
+    --argjson li "$turn_input" \
+    --argjson lo "$turn_output" \
+    '{ total_input: $ti, total_output: $to, last_input: $li, last_output: $lo }
+     | if $resets_at != "" then .resets_at = $resets_at else . end' \
+    > "$CODEX_TOKEN_CACHE"
 
   if [ -n "$codex_result" ]; then
     cat <<EOF
