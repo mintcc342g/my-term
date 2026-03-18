@@ -402,7 +402,7 @@ if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_
 fi
 
 if [ -n "$codex_left_pct" ]; then
-  codex_txt="co ·left:${codex_left_pct}%"
+  codex_txt="coLeft:${codex_left_pct}%"
   codex_reset_fmt=$(format_reset_epoch "$codex_reset_epoch")
   if [ -n "$codex_reset_fmt" ]; then
     codex_txt="${codex_txt}(${codex_reset_fmt})"
@@ -417,7 +417,7 @@ if [ -n "$codex_left_pct" ]; then
     segments+=("${codex_txt}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
   fi
 else
-  segments+=("co:--|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  segments+=("coLeft:--|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 fi
 
 # 4. Model — Nord4 #D8DEE9, dark fg
