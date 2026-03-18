@@ -2,7 +2,7 @@
 #
 # Powerline StatusLine for Claude Code (pure bash, no OMC dependency)
 #
-# Segments: cwd | git | model | 5h rate | wk rate | sess | tokens | cache | ctx
+# Segments: cwd | git | model | 5h rate | wk rate | sess | tokens | codex | cache | ctx
 # Nord color theme, truecolor ANSI, powerline separators
 #
 
@@ -67,26 +67,11 @@ else
   cache_pct=0
 fi
 
-# ── Git branch (cached 5s) ───────────────────────────────────────────────────
-GIT_CACHE_SHARED="$cache_dir/git-branch"
+# ── Git branch (current cwd) ─────────────────────────────────────────────────
 git_branch=""
 
 if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
-  refresh=false
-  if [ ! -f "$GIT_CACHE_SHARED" ]; then
-    refresh=true
-  elif [ $(($(date +%s) - $(stat -f %m "$GIT_CACHE_SHARED" 2>/dev/null || echo 0))) -gt 5 ]; then
-    refresh=true
-  fi
-  if $refresh; then
-    tmp_git="$(mktemp "$tmp_dir/git-branch.XXXXXX")"
-    if git -C "$cwd" branch --show-current 2>/dev/null > "$tmp_git"; then
-      mv "$tmp_git" "$GIT_CACHE_SHARED"
-    else
-      rm -f "$tmp_git" 2>/dev/null || true
-    fi
-  fi
-  git_branch=$(tr -d '\n' < "$GIT_CACHE_SHARED" 2>/dev/null || true)
+  git_branch=$(git -C "$cwd" branch --show-current 2>/dev/null | tr -d '\n')
 fi
 
 # ── Rate limits (cached 30s, backoff 5m on error) ────────────────────────────
@@ -236,6 +221,25 @@ format_reset() {
   fi
 }
 
+format_reset_epoch() {
+  local reset_epoch="${1//[^0-9]/}"
+  [ -z "$reset_epoch" ] && return
+  local now diff mins hrs days
+  now=$(date +%s)
+  diff=$((reset_epoch - now))
+  [ "$diff" -le 0 ] && return
+  mins=$((diff / 60))
+  hrs=$((mins / 60))
+  days=$((hrs / 24))
+  if [ "$days" -gt 0 ]; then
+    printf "%dd%dh" "$days" $((hrs % 24))
+  elif [ "$hrs" -gt 0 ]; then
+    printf "%dh%dm" "$hrs" $((mins % 60))
+  else
+    printf "%dm" "$mins"
+  fi
+}
+
 rl_5h_reset_fmt=$(format_reset "$rl_5h_reset")
 rl_wk_reset_fmt=$(format_reset "$rl_wk_reset")
 
@@ -314,10 +318,112 @@ if [ -n "$git_branch" ]; then
   segments+=("${GIT_ICON} ${git_branch}|76|86|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
 fi
 
-# 3. Model — Nord4 #D8DEE9, dark fg
+# 3. Codex usage — global cache based on latest Codex session rate limits
+CODEX_USAGE_CACHE="$cache_dir/codex-usage.json"
+CODEX_USAGE_LOCK="$cache_dir/codex-usage.lock"
+CODEX_USAGE_NORMAL_TTL=30
+codex_left_pct=""
+codex_used_pct=""
+codex_reset_epoch=""
+
+refresh_codex_usage=false
+_now=$(date +%s)
+if [ ! -f "$CODEX_USAGE_CACHE" ]; then
+  refresh_codex_usage=true
+elif [ $((_now - $(stat -f %m "$CODEX_USAGE_CACHE" 2>/dev/null || echo 0))) -gt "$CODEX_USAGE_NORMAL_TTL" ]; then
+  refresh_codex_usage=true
+else
+  _cached_codex_reset=$(jq -r '.primary.resets_at // 0' < "$CODEX_USAGE_CACHE" 2>/dev/null)
+  if [ -n "$_cached_codex_reset" ] && [ "$_cached_codex_reset" -gt 0 ] 2>/dev/null && [ "$_now" -ge "$_cached_codex_reset" ]; then
+    refresh_codex_usage=true
+  fi
+  unset _cached_codex_reset
+fi
+unset _now
+
+if $refresh_codex_usage; then
+  if mkdir "$CODEX_USAGE_LOCK" 2>/dev/null; then
+    trap 'rm -rf "$CODEX_USAGE_LOCK" 2>/dev/null' EXIT
+    codex_usage_line=""
+    while IFS= read -r session_file; do
+      [ -z "$session_file" ] && continue
+      codex_usage_line=$(grep '"type":"token_count"' "$session_file" 2>/dev/null | tail -n 1)
+      [ -n "$codex_usage_line" ] && break
+    done < <(
+      find "$HOME/.codex/sessions" "$HOME/.codex/archived_sessions" -type f -name '*.jsonl' -exec stat -f '%m %N' {} + 2>/dev/null \
+        | sort -rn \
+        | awk 'NR <= 10 { $1 = ""; sub(/^ /, ""); print }'
+    )
+
+    if [ -n "$codex_usage_line" ] && printf '%s' "$codex_usage_line" | jq -e '.payload.rate_limits.primary.used_percent' >/dev/null 2>&1; then
+      tmp_codex="$(mktemp "$tmp_dir/codex-usage.XXXXXX")"
+      if printf '%s' "$codex_usage_line" | jq '{
+          primary: {
+            used_percent: (.payload.rate_limits.primary.used_percent // 0),
+            left_percent: (100 - ((.payload.rate_limits.primary.used_percent // 0) | floor)),
+            resets_at: (.payload.rate_limits.primary.resets_at // 0),
+            window_minutes: (.payload.rate_limits.primary.window_minutes // 0)
+          },
+          secondary: {
+            used_percent: (.payload.rate_limits.secondary.used_percent // 0),
+            left_percent: (100 - ((.payload.rate_limits.secondary.used_percent // 0) | floor)),
+            resets_at: (.payload.rate_limits.secondary.resets_at // 0),
+            window_minutes: (.payload.rate_limits.secondary.window_minutes // 0)
+          },
+          plan_type: (.payload.rate_limits.plan_type // null),
+          updated_at: now
+        }' > "$tmp_codex"; then
+        mv "$tmp_codex" "$CODEX_USAGE_CACHE"
+      else
+        rm -f "$tmp_codex" 2>/dev/null || true
+      fi
+    fi
+    unset codex_usage_line
+    rm -rf "$CODEX_USAGE_LOCK" 2>/dev/null
+    trap - EXIT
+  else
+    _lock_age=$(($(date +%s) - $(stat -f %m "$CODEX_USAGE_LOCK" 2>/dev/null || echo 0)))
+    if [ "$_lock_age" -gt 15 ]; then
+      rm -rf "$CODEX_USAGE_LOCK" 2>/dev/null || true
+    fi
+    unset _lock_age
+  fi
+fi
+
+if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_CACHE" >/dev/null 2>&1; then
+  IFS=$'\t' read -r codex_left_pct codex_used_pct codex_reset_epoch < <(
+    jq -r '[
+      (.primary.left_percent // ""),
+      (.primary.used_percent // ""),
+      (.primary.resets_at // "")
+    ] | @tsv' < "$CODEX_USAGE_CACHE" 2>/dev/null
+  )
+  codex_left_pct=$(printf "%.0f" "$codex_left_pct" 2>/dev/null)
+fi
+
+if [ -n "$codex_left_pct" ]; then
+  codex_txt="co ·left:${codex_left_pct}%"
+  codex_reset_fmt=$(format_reset_epoch "$codex_reset_epoch")
+  if [ -n "$codex_reset_fmt" ]; then
+    codex_txt="${codex_txt}(${codex_reset_fmt})"
+  else
+    codex_txt="${codex_txt}"
+  fi
+  if [ "$codex_left_pct" -le 10 ] 2>/dev/null; then
+    segments+=("${codex_txt}|191|97|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
+  elif [ "$codex_left_pct" -le 50 ] 2>/dev/null; then
+    segments+=("${codex_txt}|235|213|169|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  else
+    segments+=("${codex_txt}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  fi
+else
+  segments+=("co:--|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+fi
+
+# 4. Model — Nord4 #D8DEE9, dark fg
 segments+=("${model_name}|216|222|233|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 
-# 4. 5h rate — dynamic color by usage (optional)
+# 5. 5h rate — dynamic color by usage (optional)
 if $rl_error; then
   segments+=("5h:--|107|125|150|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
 elif [ -n "$rl_5h_pct" ]; then
@@ -332,7 +438,7 @@ elif [ -n "$rl_5h_pct" ]; then
   fi
 fi
 
-# 5. wk rate — dynamic color by usage (optional)
+# 6. wk rate — dynamic color by usage (optional)
 if $rl_error; then
   segments+=("wk:--|148|165|190|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
 elif [ -n "$rl_wk_pct" ]; then
@@ -347,41 +453,13 @@ elif [ -n "$rl_wk_pct" ]; then
   fi
 fi
 
-# 6. Session — dynamic color by health
+# 7. Session — dynamic color by health
 case "$sess_health" in
   critical) S_BR=191; S_BG=97;  S_BB=106; S_FR=$FG_LIGHT_R; S_FG=$FG_LIGHT_G; S_FB=$FG_LIGHT_B ;;
   warning)  S_BR=235; S_BG=213; S_BB=169; S_FR=$FG_DARK_R;  S_FG=$FG_DARK_G;  S_FB=$FG_DARK_B ;;
   *)        S_BR=195; S_BG=218; S_BB=220; S_FR=$FG_DARK_R;  S_FG=$FG_DARK_G;  S_FB=$FG_DARK_B ;;
 esac
 segments+=("${sess_fmt}|${S_BR}|${S_BG}|${S_BB}|${S_FR}|${S_FG}|${S_FB}")
-
-# 7. Claude Tokens — #A8C8C2 ash mint, dark fg
-segments+=("claude:${tok_fmt}|168|200|194|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
-
-# 7.5 Codex Tokens — Nord7 #8FBCBB, dark fg
-# 5h 윈도우 리셋 시 Codex 토큰도 함께 리셋
-codex_tok_fmt=""
-CODEX_TOKEN_CACHE="$cache_dir/codex-tokens.json"
-if [ -f "$CODEX_TOKEN_CACHE" ]; then
-  # 캐시된 resets_at과 현재 ratelimit의 resets_at 비교
-  codex_cached_reset=$(jq -r '.resets_at // ""' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
-  if [ -n "$rl_5h_reset" ] && [ -n "$codex_cached_reset" ] && [ "$codex_cached_reset" != "$rl_5h_reset" ]; then
-    # 윈도우가 바뀜 → 토큰 캐시 리셋
-    rm -f "$CODEX_TOKEN_CACHE" 2>/dev/null
-  else
-    codex_total_input=$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
-    codex_total_output=$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)
-    codex_total=$(( ${codex_total_input:-0} + ${codex_total_output:-0} ))
-    if [ "$codex_total" -gt 0 ]; then
-      codex_tok_fmt=$(format_tokens "$codex_total")
-    fi
-  fi
-fi
-if [ -n "$codex_tok_fmt" ]; then
-  segments+=("codex:${codex_tok_fmt}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
-else
-  segments+=("codex:-|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
-fi
 
 # 8. Cache — dynamic color by hit rate (low cache = bad)
 if [ "$cache_pct" -le 20 ] 2>/dev/null; then
