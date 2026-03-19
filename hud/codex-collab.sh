@@ -1,115 +1,88 @@
 #!/usr/bin/env bash
 #
-# codex-collab.sh — @co 키워드로 Codex 협업 응답을 Claude 컨텍스트에 주입
+# codex-collab.sh — @co 키워드로 멀티 에이전트 협업 모드를 Claude에 주입
 #
 # Hook: UserPromptSubmit (동기)
 # 트리거: 프롬프트에 "@co" 포함 시 (위치 무관)
-# 동작: @co 제거 후 codex exec --json으로 전달, 토큰 누적 저장, stdout으로 결과 출력
+# 동작: @co 제거 후 에이전트 설정을 읽어 Claude에 협업 지시문을 주입
+#        (실제 에이전트 호출은 Claude가 Bash 도구로 병렬 수행)
 #
 
 set -euo pipefail
 
 KEYWORD="@co"
+AGENTS_CONFIG="$HOME/.claude/my-hud/co-agents.json"
 
-# --- 캐시 디렉토리 ---
-cache_dir="$HOME/.claude/my-hud/cache"
-mkdir -p "$cache_dir" 2>/dev/null || true
+# --- stdin에서 JSON 파싱 ---
+raw_input="$(cat)"
 
-CODEX_TOKEN_CACHE="$cache_dir/codex-tokens.json"
+if printf '%s' "$raw_input" | jq -e '.prompt' >/dev/null 2>&1; then
+  prompt="$(printf '%s' "$raw_input" | jq -r '.prompt // ""')"
+else
+  prompt="$raw_input"
+fi
 
-# --- stdin에서 프롬프트 읽기 ---
-prompt="$(cat)"
-
-# --- @co 키워드 없으면 즉시 종료 (출력 없음 → Claude에 영향 없음) ---
+# --- @co 키워드 없으면 즉시 종료 ---
 if [[ "$prompt" != *"$KEYWORD"* ]]; then
   exit 0
 fi
 
 # --- @co 제거 후 프롬프트 추출 ---
-clean_prompt="${prompt//$KEYWORD /}"
-clean_prompt="${clean_prompt//$KEYWORD/}"
-clean_prompt="$(echo "$clean_prompt" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+clean_prompt="$(printf '%s' "$prompt" | jq -Rrs 'gsub("@co\\s*"; "") | gsub("^\\s+|\\s+$"; "")')"
 
-if [[ -z "$clean_prompt" ]]; then
-  echo "[codex-collab] 프롬프트가 비어 있습니다."
+if [[ -z "$clean_prompt" || "$clean_prompt" == '""' ]]; then
+  printf '%s\n' "[co-mux] 프롬프트가 비어 있습니다."
   exit 0
 fi
 
-# --- Codex exec 실행 (--json으로 토큰 정보 포함, stderr도 캡처) ---
-raw_output=""
-raw_stderr=""
-raw_stderr="$(mktemp)"
-trap 'rm -f "$raw_stderr"' EXIT
-
-if raw_output="$(codex exec --json --skip-git-repo-check "$clean_prompt" 2>"$raw_stderr")"; then
-  # rate limit 감지 (stdout JSONL 또는 stderr에서)
-  if printf '%s' "$raw_output" | grep -qi 'rate.limit\|quota.*exceeded\|too.many.requests\|429'; then
-    echo "[codex-collab] Codex rate limit에 도달했습니다. Codex 응답 없이 Claude 단독으로 응답합니다."
-    rm -f "$raw_stderr" 2>/dev/null; exit 0
-  fi
-
-  # JSONL에서 텍스트 응답 추출
-  codex_result="$(printf '%s' "$raw_output" | grep '"type":"item.completed"' | jq -r '.item.text // empty' 2>/dev/null)"
-
-  # JSONL에서 토큰 사용량 추출 및 누적
-  turn_input="$(printf '%s' "$raw_output" | grep '"type":"turn.completed"' | jq -r '.usage.input_tokens // 0' 2>/dev/null)"
-  turn_output="$(printf '%s' "$raw_output" | grep '"type":"turn.completed"' | jq -r '.usage.output_tokens // 0' 2>/dev/null)"
-  turn_input="${turn_input:-0}"
-  turn_output="${turn_output:-0}"
-
-  # 현재 5h 윈도우의 resets_at 가져오기 (rate limit 리셋 시 토큰도 리셋)
-  RL_CACHE="$cache_dir/ratelimit.json"
-  current_resets_at=""
-  if [ -f "$RL_CACHE" ]; then
-    current_resets_at="$(jq -r '.five_hour.resets_at // ""' < "$RL_CACHE" 2>/dev/null)"
-  fi
-
-  # 기존 누적값 읽기 (윈도우가 바뀌었으면 리셋)
-  prev_input=0
-  prev_output=0
-  if [ -f "$CODEX_TOKEN_CACHE" ]; then
-    cached_resets_at="$(jq -r '.resets_at // ""' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
-    if [ -n "$current_resets_at" ] && [ "$cached_resets_at" != "$current_resets_at" ]; then
-      # 5h 윈도우가 변경됨 → 누적값 리셋
-      prev_input=0
-      prev_output=0
-    else
-      prev_input="$(jq -r '.total_input // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
-      prev_output="$(jq -r '.total_output // 0' < "$CODEX_TOKEN_CACHE" 2>/dev/null)"
-    fi
-  fi
-
-  # 누적 저장 (resets_at 포함)
-  new_input=$((prev_input + turn_input))
-  new_output=$((prev_output + turn_output))
-  jq -n \
-    --arg resets_at "${current_resets_at:-}" \
-    --argjson ti "$new_input" \
-    --argjson to "$new_output" \
-    --argjson li "$turn_input" \
-    --argjson lo "$turn_output" \
-    '{ total_input: $ti, total_output: $to, last_input: $li, last_output: $lo }
-     | if $resets_at != "" then .resets_at = $resets_at else . end' \
-    > "$CODEX_TOKEN_CACHE"
-
-  if [ -n "$codex_result" ]; then
-    cat <<EOF
-━━━ Codex 응답 ━━━
-$codex_result
-━━━━━━━━━━━━━━━━━━
-위 Codex 응답과 당신의 분석을 비교·합성하여 최선의 답변을 제공하세요. 의견이 다른 부분은 명시하세요.
-EOF
-  else
-    echo "[codex-collab] Codex가 빈 응답을 반환했습니다. Claude 단독으로 응답합니다."
-  fi
-else
-  exit_code=$?
-  stderr_content="$(cat "$raw_stderr" 2>/dev/null)"
-
-  # stderr에서 rate limit 감지
-  if printf '%s' "$stderr_content" | grep -qi 'rate.limit\|quota.*exceeded\|too.many.requests\|429'; then
-    echo "[codex-collab] Codex rate limit에 도달했습니다. Codex 응답 없이 Claude 단독으로 응답합니다."
-  else
-    echo "[codex-collab] Codex 실행 실패 (exit: $exit_code). Claude 단독으로 응답합니다."
-  fi
+# --- 에이전트 설정 로드 ---
+if [[ ! -f "$AGENTS_CONFIG" ]]; then
+  printf '%s\n' "[co-mux] 에이전트 설정 파일이 없습니다: $AGENTS_CONFIG"
+  exit 0
 fi
+
+agent_count="$(jq 'length' "$AGENTS_CONFIG" 2>/dev/null || printf '0')"
+if [[ "$agent_count" -eq 0 ]]; then
+  printf '%s\n' "[co-mux] 설정된 에이전트가 없습니다."
+  exit 0
+fi
+
+# --- 에이전트 목록을 텍스트로 구성 ---
+agent_list=""
+while IFS=$'\t' read -r name command; do
+  agent_list="${agent_list}
+- **${name}**: \`${command}\`"
+done < <(jq -r '.[] | [.name, .command] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
+
+# --- Claude에 협업 지시문 주입 ---
+cat <<EOF
+[멀티 에이전트 협업 모드 활성화]
+
+아래 절차를 반드시 따르세요:
+
+1. 현재 대화에서 유저의 질문과 관련된 컨텍스트를 정리하세요.
+   - plan이 있으면 plan 전문 포함
+   - 분석 중인 데이터, 설계 결정, 관련 파일 목록 등 포함
+   - 관련 없는 대화는 제외
+
+2. 아래 에이전트들을 Bash 도구로 호출하세요.
+   - 에이전트가 여러 개일 경우: 한 메시지에서 여러 Bash 도구 호출을 동시에 보내세요 (병렬 실행).
+   - run_in_background는 사용하지 마세요. 일반 foreground Bash 호출을 여러 개 병렬로 보내면 됩니다.
+   - 각 에이전트에 [정리한 컨텍스트 + 유저 프롬프트]를 전달합니다.
+${agent_list}
+
+3. 중요: 모든 에이전트의 응답이 도착할 때까지 기다리세요.
+   응답이 오기 전에 최종 답변을 작성하지 마세요.
+
+4. 모든 에이전트의 응답이 도착한 후, 당신의 자체 분석과 함께 아래 형식으로 비판적 분석 + 병합 응답을 작성하세요:
+   - 각 에이전트의 핵심 의견을 요약
+   - 에이전트 간 의견이 다른 부분을 명시하고, 당신의 판단을 근거와 함께 제시
+   - 에이전트 간 의견이 같은 부분은 간결하게 정리
+   - 최종 종합 답변 제시
+
+5. 에이전트가 에러/타임아웃으로 실패한 경우:
+   - 반드시 "[에이전트명 실패]"를 명시
+   - 나머지 에이전트 결과 + 당신의 분석으로 응답
+
+6. 반드시 한국어(Korean)로 응답하세요.
+EOF

@@ -1,0 +1,6 @@
+[
+  {
+    "name": "Codex",
+    "command": "codex exec --skip-git-repo-check"
+  }
+]
