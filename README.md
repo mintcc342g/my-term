@@ -19,6 +19,9 @@
   - Settings → Profile → Text → Text Rendering 항목의 Use built-in Powerline glyphs 체크박스 켜기
 - 커서 깜박임 활상화
   - Settings → Profiles → 프로필 선택 → Text → Cursor 항목에서 Blink 체크
+- tmux split spans 활성화
+  - Settings → General → Magic → Python API 활성화 후 재시작
+  - claude code 팀 모드 활성화 후 `c --teammate-mode tmux` 로 실행 시 확인 가능
 
 ### maccy
 - General
@@ -35,8 +38,8 @@
 ### rectangle
 - `RectangleConfig.json` 파일 사용
 
-## AI 코딩 어시스턴트 (Claude Code)
+## AI 어시스턴트 (Claude Code & Codex)
 - `hud/` 디렉토리의 설정을 `~/.claude`에 동기화하여 사용
-- 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 외부 에이전트 병렬 호출 후 종합 답변
+- 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 외부 에이전트(현재는 Codex) 병렬 호출 후 종합 답변
 - Powerline 상태줄: API 사용량, 세션, 토큰, 캐시 등 실시간 모니터링
 - 상태줄 보호 훅 및 캐시 자동 정리 스크립트 포함
