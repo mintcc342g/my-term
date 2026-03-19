@@ -183,7 +183,33 @@ CODEX_COLLAB_CMD="bash $HOME/.claude/my-hud/codex-collab.sh"
 
 tmp="$(mktemp)"
 if jq --arg statusCmd "$STATUS_CMD" --arg protectCmd "$PROTECT_CMD" --arg pruneCmd "$PRUNE_CMD" --arg codexCollabCmd "$CODEX_COLLAB_CMD" \
-  '.statusLine = {"type": "command", "command": $statusCmd}
+  '.permissions.deny = [
+       "Read(**/.env)",
+       "Read(**/.env.*)",
+       "Read(**/.env.local)",
+       "Edit(**/.env)",
+       "Edit(**/.env.*)",
+       "Edit(**/.env.local)",
+       "Read(~/.ssh/**)",
+       "Edit(~/.ssh/**)",
+       "Read(**/secrets/**)",
+       "Edit(**/secrets/**)",
+       "Read(**/.credentials*)",
+       "Edit(**/.credentials*)",
+       "Read(**/.secret*)",
+       "Edit(**/.secret*)",
+       "Read(**/*.pem)",
+       "Edit(**/*.pem)",
+       "Read(**/*.key)",
+       "Edit(**/*.key)",
+       "Read(**/.aws/**)",
+       "Edit(**/.aws/**)",
+       "Read(**/.gcp/**)",
+       "Edit(**/.gcp/**)",
+       "Read(**/.kube/config)",
+       "Edit(**/.kube/config)"
+     ]
+   | .statusLine = {"type": "command", "command": $statusCmd}
    | .hooks.UserPromptSubmit = [
        {
          "matcher": "@co",
