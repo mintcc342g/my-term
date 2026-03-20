@@ -1,5 +1,6 @@
 
 #!/bin/bash
+set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 YELLOW='\033[93m'
 YELLOW_BOLD='\033[33;1m'
@@ -30,7 +31,7 @@ log_done() {
 
 
 ### 셋업 시작
-cd $HOME
+cd "$HOME"
 
 if [ "$(uname -s)" = "Linux" ]; then
     OS="Linux"
@@ -87,7 +88,9 @@ brew install helm argocd istioctl k9s
 brew install --cask claude-code
 brew install opencode codex
 brew install oven-sh/bun/bun
-bunx oh-my-opencode install
+# oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
+# 최신 버전 확인: npm view oh-my-opencode version
+# 설치: bunx oh-my-opencode@<version> install
 
 
 ### PATH 셋팅
@@ -162,11 +165,15 @@ sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
 ### claude hud 테마 설정
 log_start "install claude hud theme…\n"
 mkdir -p "$HOME/.claude/my-hud"
+chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
 cp -f "$SCRIPT_DIR/hud/"* "$HOME/.claude/my-hud/"
 chmod +x "$HOME/.claude/my-hud/"*.sh
+chmod 600 "$HOME/.claude/my-hud/co-agents.json"
 
 ### claude CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
 cp -f "$SCRIPT_DIR/hud/codex-collab.md" "$HOME/.claude/CLAUDE.md"
+chmod 600 "$HOME/.claude/CLAUDE.md"
+rm -f "$HOME/.claude/my-hud/codex-collab.md"
 
 ### claude settings.json 설정
 log_start "configure claude settings…\n"
@@ -175,6 +182,7 @@ mkdir -p "$HOME/.claude"
 if [ ! -f "$SETTINGS" ]; then
   printf "%s\n" "{}" > "$SETTINGS"
 fi
+chmod 600 "$SETTINGS"
 
 STATUS_CMD="bash $HOME/.claude/my-hud/powerline-statusline.sh"
 PROTECT_CMD="bash $HOME/.claude/my-hud/protect-statusline.sh"

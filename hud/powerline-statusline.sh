@@ -6,12 +6,15 @@
 # Nord color theme, truecolor ANSI, powerline separators
 #
 
+set -euo pipefail
+
 input=$(cat)
 
 umask 077
 
 cache_dir="$HOME/.claude/my-hud/cache"
 tmp_dir="$HOME/.claude/my-hud/tmp"
+
 mkdir -p "$cache_dir" "$tmp_dir" 2>/dev/null || true
 chmod 700 "$cache_dir" "$tmp_dir" 2>/dev/null || true
 
@@ -124,7 +127,7 @@ if $refresh_rl; then
     # macOS Keychain first
     CRED_JSON=$(/usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
     # Fallback to credentials file
-    if [ -z "$CRED_JSON" ] && [ -f "$HOME/.claude/.credentials.json" ]; then
+    if [ -z "$CRED_JSON" ] && [ -f "$HOME/.claude/.credentials.json" ] && [ ! -L "$HOME/.claude/.credentials.json" ]; then
       cred_file="$HOME/.claude/.credentials.json"
       perm=$(stat -f '%Lp' "$cred_file" 2>/dev/null || echo "")
       if [ -n "$perm" ] && [ $((8#$perm & 077)) -ne 0 ]; then

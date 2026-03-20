@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -u
+set -euo pipefail
 umask 077
 
 cache_dir="$HOME/.claude/my-hud/cache"
