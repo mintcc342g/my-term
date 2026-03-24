@@ -283,6 +283,20 @@ case "$yn" in
   [yY])
     asdf plugin add golang https://github.com/kennyp/asdf-golang.git
     echo "\n# asdf Golang 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> ${ZPROFILE}
+
+    # gofmt hook 추가 (Claude Code PostToolUse)
+    GOFMT_CMD='for f in $(echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"'); do [[ "$f" == *.go ]] && gofmt -w "$f"; done'
+    gofmt_tmp="$(mktemp)"
+    if jq --arg gofmtCmd "$GOFMT_CMD" \
+      '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
+      "$SETTINGS" > "$gofmt_tmp"; then
+      mv "$gofmt_tmp" "$SETTINGS"
+      log_done "Added gofmt hook to Claude settings."
+    else
+      rm -f "$gofmt_tmp"
+      log_fail "Failed to add gofmt hook (jq error)"
+    fi
+
     print_env_uncomment_warning "Golang"
     ;;
   *)
