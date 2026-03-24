@@ -30,7 +30,7 @@ log_done() {
 }
 
 
-### 셋업 시작
+### --- 셋업 시작 ---
 cd "$HOME"
 
 if [ "$(uname -s)" = "Linux" ]; then
@@ -43,7 +43,7 @@ fi
 
 
 
-### oh-my-zsh 설치
+### --- oh-my-zsh 설치 ---
 log_start "install oh-my-zsh…\n"
 RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
@@ -52,7 +52,7 @@ ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
 
 
 
-### homebrew 설치 또는 업뎃
+### --- homebrew 설치 또는 업뎃 ---
 log_start "install brew…\n"
 if ! command -v brew &>/dev/null; then
   log_step "Homebrew not found. Installing…\n"
@@ -63,12 +63,12 @@ else
 fi
 
 BREW_PREFIX=$(brew --prefix)
-echo "# Homebrew 설정\neval \"\$($BREW_PREFIX/bin/brew shellenv)\"" >> ${ZPROFILE}
+echo "# Homebrew 설정\neval \"\$($BREW_PREFIX/bin/brew shellenv)\"" >> "${ZPROFILE}"
 eval "$($BREW_PREFIX/bin/brew shellenv)"
 
 
 
-### brew로 유틸 설치
+### --- brew로 유틸 설치 ---
 log_start "install useful features with Homebrew…\n"
 brew install zsh-autosuggestions zsh-syntax-highlighting
 brew install ripgrep fd bat television tree tmux
@@ -93,7 +93,7 @@ brew install oven-sh/bun/bun
 # 설치: bunx oh-my-opencode@<version> install
 
 
-### PATH 셋팅
+### --- PATH 셋팅 ---
 # zprofile
 log_step "add shell login environment settings…\n"
 
@@ -114,9 +114,9 @@ fi
 
 # zshrc
 log_step "add shell startup settings…\n"
-echo "\n# zsh-syntax-highlighting 설정\nsource \$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZSHRC}
-echo "\n# zsh-autosuggestions 설정\nsource \$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ${ZSHRC}
-echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> ${ZSHRC}
+echo "\n# zsh-syntax-highlighting 설정\nsource \$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> "${ZSHRC}"
+echo "\n# zsh-autosuggestions 설정\nsource \$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> "${ZSHRC}"
+echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> "${ZSHRC}"
 if ! grep -q 'pyenv 설정' "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
 
@@ -148,7 +148,7 @@ FUNC_EOF
 
 
 
-### 쉘 테마 설정
+### --- 쉘 테마 설정 ---
 log_start "install newro theme…\n"
 DOC_DIR="$HOME/Documents"
 if [ ! -d "$DOC_DIR" ]; then
@@ -162,100 +162,7 @@ sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
 
 
 
-### claude hud 테마 설정
-log_start "install claude hud theme…\n"
-mkdir -p "$HOME/.claude/my-hud"
-chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
-cp -f "$SCRIPT_DIR/hud/"* "$HOME/.claude/my-hud/"
-chmod +x "$HOME/.claude/my-hud/"*.sh
-chmod 600 "$HOME/.claude/my-hud/co-agents.json"
-
-### claude CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
-cp -f "$SCRIPT_DIR/hud/codex-collab.md" "$HOME/.claude/CLAUDE.md"
-chmod 600 "$HOME/.claude/CLAUDE.md"
-rm -f "$HOME/.claude/my-hud/codex-collab.md"
-
-### claude settings.json 설정
-log_start "configure claude settings…\n"
-SETTINGS="$HOME/.claude/settings.json"
-mkdir -p "$HOME/.claude"
-if [ ! -f "$SETTINGS" ]; then
-  printf "%s\n" "{}" > "$SETTINGS"
-fi
-chmod 600 "$SETTINGS"
-
-STATUS_CMD="bash $HOME/.claude/my-hud/powerline-statusline.sh"
-PROTECT_CMD="bash $HOME/.claude/my-hud/protect-statusline.sh"
-PRUNE_CMD="bash $HOME/.claude/my-hud/prune-claude-hud-cache.sh"
-CODEX_COLLAB_CMD="bash $HOME/.claude/my-hud/codex-collab.sh"
-
-tmp="$(mktemp)"
-if jq --arg statusCmd "$STATUS_CMD" --arg protectCmd "$PROTECT_CMD" --arg pruneCmd "$PRUNE_CMD" --arg codexCollabCmd "$CODEX_COLLAB_CMD" \
-  '.permissions.deny = [
-       "Read(**/.env)",
-       "Read(**/.env.*)",
-       "Read(**/.env.local)",
-       "Edit(**/.env)",
-       "Edit(**/.env.*)",
-       "Edit(**/.env.local)",
-       "Read(~/.ssh/**)",
-       "Edit(~/.ssh/**)",
-       "Read(**/secrets/**)",
-       "Edit(**/secrets/**)",
-       "Read(**/.credentials*)",
-       "Edit(**/.credentials*)",
-       "Read(**/.secret*)",
-       "Edit(**/.secret*)",
-       "Read(**/*.pem)",
-       "Edit(**/*.pem)",
-       "Read(**/*.key)",
-       "Edit(**/*.key)",
-       "Read(**/.aws/**)",
-       "Edit(**/.aws/**)",
-       "Read(**/.gcp/**)",
-       "Edit(**/.gcp/**)",
-       "Read(**/.kube/config)",
-       "Edit(**/.kube/config)"
-     ]
-   | .statusLine = {"type": "command", "command": $statusCmd}
-   | .hooks.UserPromptSubmit = [
-       {
-         "matcher": "@co",
-         "hooks": [
-           {
-             "type": "command",
-             "command": $codexCollabCmd
-           }
-         ]
-       }
-     ]
-   | .hooks.PostToolUse = [
-       {
-         "matcher": "Write|Edit",
-         "hooks": [
-           {
-             "type": "command",
-             "command": $protectCmd,
-             "async": true
-            },
-            {
-              "type": "command",
-              "command": $pruneCmd,
-              "async": true
-            }
-          ]
-        }
-      ]' \
-  "$SETTINGS" > "$tmp"; then
-  mv "$tmp" "$SETTINGS"
-else
-  rm -f "$tmp"
-  log_fail "Failed to update $SETTINGS (jq error)\n"
-fi
-
-
-
-### asdf 설정
+### --- asdf 설정 ---
 log_start "Starting programming language setup…\n"
 
 ask_asdf_config() {
@@ -278,25 +185,11 @@ print_env_uncomment_warning() {
 }
 
 # Golang 설정
-ask_asdf_config "Golang" yn
-case "$yn" in
+ask_asdf_config "Golang" install_golang
+case "$install_golang" in
   [yY])
     asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    echo "\n# asdf Golang 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> ${ZPROFILE}
-
-    # gofmt hook 추가 (Claude Code PostToolUse)
-    GOFMT_CMD='for f in $(echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"'); do [[ "$f" == *.go ]] && gofmt -w "$f"; done'
-    gofmt_tmp="$(mktemp)"
-    if jq --arg gofmtCmd "$GOFMT_CMD" \
-      '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
-      "$SETTINGS" > "$gofmt_tmp"; then
-      mv "$gofmt_tmp" "$SETTINGS"
-      log_done "Added gofmt hook to Claude settings."
-    else
-      rm -f "$gofmt_tmp"
-      log_fail "Failed to add gofmt hook (jq error)"
-    fi
-
+    echo "\n# asdf Golang 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> "${ZPROFILE}"
     print_env_uncomment_warning "Golang"
     ;;
   *)
@@ -305,17 +198,65 @@ case "$yn" in
 esac
 
 # Java 설정
-ask_asdf_config "Java" yn
-case "$yn" in
+ask_asdf_config "Java" install_java
+case "$install_java" in
   [yY])
     asdf plugin add java https://github.com/halcyon/asdf-java.git
-    echo "\n# asdf Java 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/java/set-java-home.zsh" >> ${ZPROFILE}
+    echo "\n# asdf Java 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/java/set-java-home.zsh" >> "${ZPROFILE}"
     print_env_uncomment_warning "Java"
     ;;
   *)
     log_fail "Skipping Java configuration for asdf.\n"
     ;;
 esac
+
+
+
+### --- claude 설정 ---
+# hud 설정
+log_start "install claude hud theme…\n"
+mkdir -p "$HOME/.claude/my-hud"
+chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
+cp -f "$SCRIPT_DIR/my-claude/hud/"* "$HOME/.claude/my-hud/"
+chmod +x "$HOME/.claude/my-hud/"*.sh
+chmod 600 "$HOME/.claude/my-hud/co-agents.json"
+
+
+# CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
+cp -f "$SCRIPT_DIR/my-claude/instructions/codex-collab.md" "$HOME/.claude/CLAUDE.md"
+chmod 600 "$HOME/.claude/CLAUDE.md"
+
+# claude settings.json 설정
+log_start "configure claude settings…\n"
+SETTINGS="$HOME/.claude/settings.json"
+mkdir -p "$HOME/.claude"
+if [ ! -f "$SETTINGS" ]; then
+  printf "%s\n" "{}" > "$SETTINGS"
+fi
+chmod 600 "$SETTINGS"
+
+tmp="$(mktemp)"
+if jq -s '.[0] * .[1]' "$SETTINGS" "$SCRIPT_DIR/my-claude/settings/settings.json" > "$tmp"; then
+  mv "$tmp" "$SETTINGS"
+else
+  rm -f "$tmp"
+  log_fail "Failed to update $SETTINGS (jq error)\n"
+fi
+
+# gofmt hook 추가 (Golang 설치 시에만)
+if [[ "$install_golang" =~ [yY] ]]; then
+  GOFMT_CMD='for f in $(echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"'); do [[ "$f" == *.go ]] && gofmt -w "$f"; done'
+  gofmt_tmp="$(mktemp)"
+  if jq --arg gofmtCmd "$GOFMT_CMD" \
+    '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
+    "$SETTINGS" > "$gofmt_tmp"; then
+    mv "$gofmt_tmp" "$SETTINGS"
+    log_done "Added gofmt hook to Claude settings."
+  else
+    rm -f "$gofmt_tmp"
+    log_fail "Failed to add gofmt hook (jq error)"
+  fi
+fi
 
 
 

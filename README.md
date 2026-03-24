@@ -39,7 +39,13 @@
 - `RectangleConfig.json` 파일 사용
 
 ## AI 어시스턴트 (Claude Code & Codex)
-- `hud/` 디렉토리의 설정을 `~/.claude`에 동기화하여 사용
+- `my-claude/` 디렉토리의 설정을 `~/.claude`에 동기화하여 사용
 - 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 외부 에이전트(현재는 Codex) 병렬 호출 후 종합 답변
 - Powerline 상태줄: API 사용량, 세션, 토큰, 캐시 등 실시간 모니터링
+- SessionStart 훅: asdf 언어 환경변수(GOROOT, JAVA_HOME 등)를 Claude Code 세션에 자동 주입
+- gofmt 자동 포맷팅: Golang 설치 시 .go 파일 저장 시 자동 포맷 (PostToolUse 훅)
 - 상태줄 보호 훅 및 캐시 자동 정리 스크립트 포함
+
+### 민감 파일 접근 차단
+- 기본적으로 .env, .ssh, .pem, .key 등 주요 민감 파일의 읽기/수정이 차단되어 있음
+- 추가가 필요하면 `my-claude/settings/settings.json`의 `permissions.deny`에 패턴 추가

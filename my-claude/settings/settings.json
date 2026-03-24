@@ -1,0 +1,74 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/.env.local)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/.env.local)",
+      "Read(~/.ssh/**)",
+      "Edit(~/.ssh/**)",
+      "Read(**/secrets/**)",
+      "Edit(**/secrets/**)",
+      "Read(**/.credentials*)",
+      "Edit(**/.credentials*)",
+      "Read(**/.secret*)",
+      "Edit(**/.secret*)",
+      "Read(**/*.pem)",
+      "Edit(**/*.pem)",
+      "Read(**/*.key)",
+      "Edit(**/*.key)",
+      "Read(**/.aws/**)",
+      "Edit(**/.aws/**)",
+      "Read(**/.gcp/**)",
+      "Edit(**/.gcp/**)",
+      "Read(**/.kube/config)",
+      "Edit(**/.kube/config)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/.claude/my-hud/powerline-statusline.sh"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "zsh $HOME/.claude/my-hud/init-env.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "@co",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/my-hud/codex-collab.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/my-hud/protect-statusline.sh",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/my-hud/prune-claude-hud-cache.sh",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
