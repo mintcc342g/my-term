@@ -38,6 +38,11 @@
           {
             "type": "command",
             "command": "zsh $HOME/.claude/my-hud/init-env.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/my-hud/init-env-bg.sh",
+            "async": true
           }
         ]
       }

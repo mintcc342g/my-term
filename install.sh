@@ -150,7 +150,7 @@ FUNC_EOF
 
 ### --- 쉘 테마 설정 ---
 log_start "install newro theme…\n"
-DOC_DIR="$HOME/Documents"
+DOC_DIR="$HOME/Documents/my"
 if [ ! -d "$DOC_DIR" ]; then
   mkdir -p "$DOC_DIR"
 fi
