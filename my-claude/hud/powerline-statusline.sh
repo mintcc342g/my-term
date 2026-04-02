@@ -121,43 +121,9 @@ RL_LOCK="$cache_dir/ratelimit.lock"
 if $refresh_rl; then
   # Acquire lock (atomic via mkdir) to prevent concurrent API calls across tmux panes
   if mkdir "$RL_LOCK" 2>/dev/null; then
-    # Stale lock guard: remove if older than 15s (curl timeout is 5s)
     trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
-    ACCESS_TOKEN=""
-    # macOS Keychain first
-    CRED_JSON=$(/usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
-    # Fallback to credentials file
-    if [ -z "$CRED_JSON" ] && [ -f "$HOME/.claude/.credentials.json" ] && [ ! -L "$HOME/.claude/.credentials.json" ]; then
-      cred_file="$HOME/.claude/.credentials.json"
-      perm=$(stat -f '%Lp' "$cred_file" 2>/dev/null || echo "")
-      if [ -n "$perm" ] && [ $((8#$perm & 077)) -ne 0 ]; then
-        chmod 600 "$cred_file" 2>/dev/null || true
-      fi
-      CRED_JSON=$(< "$cred_file")
-    fi
-    if [ -n "$CRED_JSON" ]; then
-      ACCESS_TOKEN=$(printf '%s' "$CRED_JSON" | jq -r '.claudeAiOauth.accessToken // .accessToken // empty' 2>/dev/null)
-    fi
-    unset CRED_JSON
-    if [ -n "$ACCESS_TOKEN" ]; then
-      RL_RESP=$(printf 'url = "https://api.anthropic.com/api/oauth/usage"\nheader = "Authorization: Bearer %s"\nheader = "anthropic-beta: oauth-2025-04-20"\n' "$ACCESS_TOKEN" | curl -s --max-time 5 --config - 2>/dev/null)
-      unset ACCESS_TOKEN
-      if [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.five_hour' >/dev/null 2>&1; then
-        # Success — update cache and clear any error marker
-        tmp_rl="$(mktemp "$tmp_dir/ratelimit.XXXXXX")"
-        if printf '%s' "$RL_RESP" > "$tmp_rl"; then
-          mv "$tmp_rl" "$RL_CACHE"
-          rm -f "$RL_ERR_MARKER" 2>/dev/null || true
-        else
-          rm -f "$tmp_rl" 2>/dev/null || true
-        fi
-      elif [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.error' >/dev/null 2>&1; then
-        # API error (e.g. rate limited) — set error marker for backoff
-        # Do NOT overwrite RL_CACHE so stale-but-valid data is preserved
-        touch "$RL_ERR_MARKER"
-      fi
-    fi
-    unset RL_RESP
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh"
     rm -rf "$RL_LOCK" 2>/dev/null
     trap - EXIT
   else

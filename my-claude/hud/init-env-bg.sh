@@ -20,3 +20,15 @@ else
 fi
 
 chmod 600 "$codex_auth_cache" 2>/dev/null || true
+
+# ── Rate limit prefetch ──────────────────────────────────────────────────────
+# Clear stale markers and fetch fresh data (lock-protected)
+RL_LOCK="$cache_dir/ratelimit.lock"
+if mkdir "$RL_LOCK" 2>/dev/null; then
+  trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
+  rm -f "$cache_dir/ratelimit.err" 2>/dev/null || true
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  cache_dir="$cache_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" || true
+  rm -rf "$RL_LOCK" 2>/dev/null
+  trap - EXIT
+fi
