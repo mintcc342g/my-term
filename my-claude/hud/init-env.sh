@@ -18,11 +18,13 @@ for func in ${(k)functions[(I)asdf_update_*]}; do
   $func
 done
 
-# 변경된 환경변수를 CLAUDE_ENV_FILE에 write
+# 변경된 환경변수를 CLAUDE_ENV_FILE에 write (allowlist 방식)
+ALLOWED_VARS='^(PATH|GOROOT|GOPATH|JAVA_HOME|ASDF_.*|PYENV_.*|RUBY_.*|NVM_.*|VOLTA_.*|SDKMAN_.*|CARGO_HOME|RUSTUP_HOME|BREW_PREFIX|HOMEBREW_.*)$'
 {
   printf 'export PATH=%q\n' "$PATH"
   comm -13 <(echo "$env_before") <(env | sort) | while IFS='=' read -r key value; do
     [[ "$key" == "PATH" ]] && continue
+    [[ "$key" =~ $ALLOWED_VARS ]] || continue
     printf 'export %s=%q\n' "$key" "$value"
   done
 } >> "$CLAUDE_ENV_FILE"

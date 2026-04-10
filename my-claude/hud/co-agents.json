@@ -1,6 +1,7 @@
 [
   {
     "name": "Codex",
-    "command": "codex exec --skip-git-repo-check"
+    "command": "codex exec --skip-git-repo-check",
+    "timeout": 300000
   }
 ]

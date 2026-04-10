@@ -8,13 +8,20 @@ cache_dir="$HOME/.claude/my-hud/cache"
 mkdir -p "$cache_dir" 2>/dev/null || true
 chmod 700 "$cache_dir" 2>/dev/null || true
 
-# ── Codex auth check ─────────────────────────────────────────────────────────
+# ── Codex auth check & rate limit refresh ────────────────────────────────────
+# 1. `codex login status` verifies auth without token consumption
+# 2. `codex exec` generates a fresh session file with up-to-date rate limit data
 codex_auth_cache="$cache_dir/codex-auth"
 
 if ! command -v codex &>/dev/null; then
   printf 'unavailable' > "$codex_auth_cache"
-elif codex exec --skip-git-repo-check "echo ok" &>/dev/null; then
+elif codex login status &>/dev/null; then
   printf 'ok' > "$codex_auth_cache"
+  # Auth confirmed — run a minimal exec to fetch fresh rate limit data
+  codex exec --skip-git-repo-check "echo ok" &>/dev/null || true
+  # Parse latest session file to update codex-usage.json cache
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  cache_dir="$cache_dir" "$SCRIPT_DIR/refresh-codex-usage.sh" || true
 else
   printf 'unavailable' > "$codex_auth_cache"
 fi

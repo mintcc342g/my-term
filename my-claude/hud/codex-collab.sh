@@ -41,6 +41,21 @@ if [[ ! -f "$AGENTS_CONFIG" ]]; then
   exit 0
 fi
 
+# --- 에이전트 설정 파일 무결성 검증 ---
+if [[ -L "$AGENTS_CONFIG" ]]; then
+  printf '%s\n' "[co-mux] 에이전트 설정 파일이 symlink입니다. 거부합니다."
+  exit 1
+fi
+config_owner=$(stat -f %u "$AGENTS_CONFIG" 2>/dev/null)
+if [[ "$config_owner" != "$(id -u)" ]]; then
+  printf '%s\n' "[co-mux] 에이전트 설정 파일 소유자가 현재 사용자와 다릅니다."
+  exit 1
+fi
+config_perm=$(stat -f '%Lp' "$AGENTS_CONFIG" 2>/dev/null)
+if [[ -n "$config_perm" && $((8#$config_perm & 077)) -ne 0 ]]; then
+  chmod 600 "$AGENTS_CONFIG" 2>/dev/null || true
+fi
+
 agent_count="$(jq 'length' "$AGENTS_CONFIG" 2>/dev/null || printf '0')"
 if [[ "$agent_count" -eq 0 ]]; then
   printf '%s\n' "[co-mux] 설정된 에이전트가 없습니다."
@@ -49,10 +64,11 @@ fi
 
 # --- 에이전트 목록을 텍스트로 구성 ---
 agent_list=""
-while IFS=$'\t' read -r name command; do
+while IFS=$'\t' read -r name command timeout; do
+  [ -z "$timeout" ] || [ "$timeout" = "null" ] && timeout=300000
   agent_list="${agent_list}
-- **${name}**: \`${command}\`"
-done < <(jq -r '.[] | [.name, .command] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
+- **${name}**: \`${command}\` (timeout: ${timeout}ms)"
+done < <(jq -r '.[] | [.name, .command, (.timeout // empty)] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
 
 # --- Claude에 협업 지시문 주입 ---
 cat <<EOF
@@ -69,6 +85,8 @@ cat <<EOF
    - 에이전트가 여러 개일 경우: 한 메시지에서 여러 Bash 도구 호출을 동시에 보내세요 (병렬 실행).
    - run_in_background는 사용하지 마세요. 일반 foreground Bash 호출을 여러 개 병렬로 보내면 됩니다.
    - 각 에이전트에 [정리한 컨텍스트 + 유저 프롬프트]를 전달합니다.
+   - **중요**: 반드시 \`</dev/null\`을 명령 끝에 붙여 stdin을 닫으세요.
+   - 각 에이전트의 timeout 값을 Bash 도구의 timeout 파라미터로 전달하세요.
 ${agent_list}
 
 3. 중요: 모든 에이전트의 응답이 도착할 때까지 기다리세요.
@@ -84,5 +102,8 @@ ${agent_list}
    - 반드시 "[에이전트명 실패]"를 명시
    - 나머지 에이전트 결과 + 당신의 분석으로 응답
 
-6. 반드시 한국어(Korean)로 응답하세요.
+6. 모든 에이전트 호출이 완료된 후, Codex usage 캐시를 갱신하세요:
+   \`cache_dir="\$HOME/.claude/my-hud/cache" bash "\$HOME/.claude/my-hud/refresh-codex-usage.sh"\`
+
+7. 반드시 한국어(Korean)로 응답하세요.
 EOF

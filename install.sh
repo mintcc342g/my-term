@@ -245,7 +245,7 @@ fi
 
 # gofmt hook 추가 (Golang 설치 시에만)
 if [[ "$install_golang" =~ [yY] ]]; then
-  GOFMT_CMD='for f in $(echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"'); do [[ "$f" == *.go ]] && gofmt -w "$f"; done'
+  GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
   gofmt_tmp="$(mktemp)"
   if jq --arg gofmtCmd "$GOFMT_CMD" \
     '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \

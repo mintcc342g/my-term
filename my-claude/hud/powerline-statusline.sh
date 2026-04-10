@@ -287,106 +287,31 @@ if [ -n "$git_branch" ]; then
   segments+=("${GIT_ICON} ${git_branch}|76|86|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
 fi
 
-# 3. Codex usage — global cache based on latest Codex session rate limits
+# 3. Codex usage — read from cache (updated by init-env-bg.sh and @co usage)
 CODEX_AUTH_CACHE="$cache_dir/codex-auth"
 CODEX_USAGE_CACHE="$cache_dir/codex-usage.json"
-CODEX_USAGE_LOCK="$cache_dir/codex-usage.lock"
-CODEX_USAGE_NORMAL_TTL=30
 codex_left_pct=""
-codex_used_pct=""
 codex_reset_epoch=""
 
-# Check if Codex is available (set by init-env-bg.sh at SessionStart)
 codex_ok=false
 if [ -f "$CODEX_AUTH_CACHE" ] && [ "$(cat "$CODEX_AUTH_CACHE" 2>/dev/null)" = "ok" ]; then
   codex_ok=true
 fi
 
-if $codex_ok; then
-  refresh_codex_usage=false
-  _now=$(date +%s)
-  if [ ! -f "$CODEX_USAGE_CACHE" ]; then
-    refresh_codex_usage=true
-  elif [ $((_now - $(stat -f %m "$CODEX_USAGE_CACHE" 2>/dev/null || echo 0))) -gt "$CODEX_USAGE_NORMAL_TTL" ]; then
-    refresh_codex_usage=true
-  else
-    _cached_codex_reset=$(jq -r '.primary.resets_at // 0' < "$CODEX_USAGE_CACHE" 2>/dev/null)
-    if [ -n "$_cached_codex_reset" ] && [ "$_cached_codex_reset" -gt 0 ] 2>/dev/null && [ "$_now" -ge "$_cached_codex_reset" ]; then
-      refresh_codex_usage=true
-    fi
-    unset _cached_codex_reset
-  fi
-  unset _now
-
-  if $refresh_codex_usage; then
-    if mkdir "$CODEX_USAGE_LOCK" 2>/dev/null; then
-      trap 'rm -rf "$CODEX_USAGE_LOCK" 2>/dev/null' EXIT
-      codex_usage_line=""
-      while IFS= read -r session_file; do
-        [ -z "$session_file" ] && continue
-        codex_usage_line=$(grep '"type":"token_count"' "$session_file" 2>/dev/null | tail -n 1 || true)
-        [ -n "$codex_usage_line" ] && break
-      done < <(
-        find "$HOME/.codex/sessions" "$HOME/.codex/archived_sessions" -type f -name '*.jsonl' -exec stat -f '%m %N' {} + 2>/dev/null \
-          | sort -rn \
-          | awk 'NR <= 10 { $1 = ""; sub(/^ /, ""); print }'
-      )
-
-      if [ -n "$codex_usage_line" ] && printf '%s' "$codex_usage_line" | jq -e '.payload.rate_limits.primary.used_percent' >/dev/null 2>&1; then
-        tmp_codex="$(mktemp "$tmp_dir/codex-usage.XXXXXX")"
-        if printf '%s' "$codex_usage_line" | jq '{
-            primary: {
-              used_percent: (.payload.rate_limits.primary.used_percent // 0),
-              left_percent: (100 - ((.payload.rate_limits.primary.used_percent // 0) | floor)),
-              resets_at: (.payload.rate_limits.primary.resets_at // 0),
-              window_minutes: (.payload.rate_limits.primary.window_minutes // 0)
-            },
-            secondary: {
-              used_percent: (.payload.rate_limits.secondary.used_percent // 0),
-              left_percent: (100 - ((.payload.rate_limits.secondary.used_percent // 0) | floor)),
-              resets_at: (.payload.rate_limits.secondary.resets_at // 0),
-              window_minutes: (.payload.rate_limits.secondary.window_minutes // 0)
-            },
-            plan_type: (.payload.rate_limits.plan_type // null),
-            updated_at: now
-          }' > "$tmp_codex"; then
-          mv "$tmp_codex" "$CODEX_USAGE_CACHE"
-        else
-          rm -f "$tmp_codex" 2>/dev/null || true
-        fi
-      fi
-      unset codex_usage_line
-      rm -rf "$CODEX_USAGE_LOCK" 2>/dev/null
-      trap - EXIT
-    else
-      _lock_age=$(($(date +%s) - $(stat -f %m "$CODEX_USAGE_LOCK" 2>/dev/null || echo 0)))
-      if [ "$_lock_age" -gt 15 ]; then
-        rm -rf "$CODEX_USAGE_LOCK" 2>/dev/null || true
-      fi
-      unset _lock_age
-    fi
-  fi
-
-  if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_CACHE" >/dev/null 2>&1; then
-    IFS=$'\t' read -r codex_left_pct codex_used_pct codex_reset_epoch < <(
-      jq -r '[
-        (.primary.left_percent // ""),
-        (.primary.used_percent // ""),
-        (.primary.resets_at // "")
-      ] | @tsv' < "$CODEX_USAGE_CACHE" 2>/dev/null
-    )
-    codex_left_pct=$(printf "%.0f" "$codex_left_pct" 2>/dev/null)
-  fi
+if $codex_ok && [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_CACHE" >/dev/null 2>&1; then
+  IFS=$'\t' read -r codex_left_pct codex_reset_epoch < <(
+    jq -r '[
+      (.primary.left_percent // ""),
+      (.primary.resets_at // "")
+    ] | @tsv' < "$CODEX_USAGE_CACHE" 2>/dev/null
+  )
+  codex_left_pct=$(printf "%.0f" "$codex_left_pct" 2>/dev/null)
 fi
 
 if [ -n "$codex_left_pct" ]; then
   codex_txt="coLeft:${codex_left_pct}%"
   codex_reset_fmt=$(format_reset_epoch "$codex_reset_epoch")
-  if [ -n "$codex_reset_fmt" ]; then
-    codex_txt="${codex_txt}(${codex_reset_fmt})"
-  else
-    codex_txt="${codex_txt}"
-  fi
+  [ -n "$codex_reset_fmt" ] && codex_txt="${codex_txt}(${codex_reset_fmt})"
   if [ "$codex_left_pct" -le 10 ] 2>/dev/null; then
     segments+=("${codex_txt}|191|97|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")
   elif [ "$codex_left_pct" -le 50 ] 2>/dev/null; then
@@ -395,7 +320,7 @@ if [ -n "$codex_left_pct" ]; then
     segments+=("${codex_txt}|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
   fi
 else
-  segments+=("coLeft:-%|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
+  segments+=("coLeft:--%|143|188|187|${FG_DARK_R}|${FG_DARK_G}|${FG_DARK_B}")
 fi
 
 # 4. Model — Nord4 #D8DEE9, dark fg

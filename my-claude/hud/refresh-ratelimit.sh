@@ -34,8 +34,8 @@ unset CRED_JSON
 
 [ -z "$ACCESS_TOKEN" ] && exit 1
 
-# Reject tokens with CR/LF to prevent curl config injection
-case "$ACCESS_TOKEN" in *$'\n'*|*$'\r'*) exit 1;; esac
+# Reject tokens with dangerous characters to prevent curl config injection
+case "$ACCESS_TOKEN" in *$'\n'*|*$'\r'*|*'"'*|*'\\'*) exit 1;; esac
 
 RL_RESP=$(curl -s --max-time 5 \
   -K <(printf 'header = "Authorization: Bearer %s"\n' "$ACCESS_TOKEN") \
