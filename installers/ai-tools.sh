@@ -178,10 +178,10 @@ _install_hud() {
     fi
   fi
 
-  # Register slash command
-  mkdir -p "$HOME/.claude/commands"
-  cp -f "$SCRIPT_DIR/my-claude/commands/hud-config.md" "$HOME/.claude/commands/"
-  chmod 600 "$HOME/.claude/commands/hud-config.md"
+  # Register skill (slash command)
+  mkdir -p "$HOME/.claude/skills/hud-config"
+  cp -f "$SCRIPT_DIR/my-claude/skills/hud-config/SKILL.md" "$HOME/.claude/skills/hud-config/"
+  chmod 600 "$HOME/.claude/skills/hud-config/SKILL.md"
 
   log_done "HUD statusline installed."
 

@@ -1,3 +1,9 @@
+---
+name: hud-config
+description: Configure HUD statusline theme and sections
+user-invocable: true
+---
+
 Read the HUD statusline config at `~/.claude/my-hud/config.json` and show the user the current settings:
 
 - **Theme**: current theme name (mygo, eimes, ave-mujica)
