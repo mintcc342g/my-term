@@ -168,8 +168,44 @@ metric_row_inv() {
 # ── Section renderers ───────────────────────────────────────────
 render_workspace() {
   local cwd="$1" git_branch="$2"
-  local ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}"
+  local MAX_OW=$(( OW * 13 / 10 ))
+  [ "$MAX_OW" -gt "$TERM_WIDTH" ] && MAX_OW=$TERM_WIDTH
+
+  # workspace row: icon(2) + cwd + spacing(2) + sep(1) + spacing(1) + icon(2) + branch
   local ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+
+  # Try expanding OW if content is wider
+  if [ "$ws_vw" -gt "$((OW - 2))" ] && [ "$OW" -lt "$MAX_OW" ]; then
+    local needed=$((ws_vw + 2))
+    if [ "$needed" -le "$MAX_OW" ]; then
+      OW=$needed
+    else
+      OW=$MAX_OW
+    fi
+    IW=$((OW - 2))
+  fi
+
+  # If still too wide, truncate branch first (to 7+…)
+  if [ "$ws_vw" -gt "$IW" ] && [ ${#git_branch} -gt 8 ]; then
+    git_branch="${git_branch:0:7}…"
+    ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+  fi
+
+  # If still too wide, truncate dir to current dir only
+  if [ "$ws_vw" -gt "$IW" ]; then
+    cwd=$(basename "$cwd")
+    ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+  fi
+
+  # If STILL too wide (current dir itself is long), truncate dir with …
+  if [ "$ws_vw" -gt "$IW" ]; then
+    local avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - 1 ))
+    [ "$avail" -lt 3 ] && avail=3
+    cwd="${cwd:0:$avail}…"
+    ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+  fi
+
+  local ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}"
   sep_line "workspace"
   row "$ws_content" "$ws_vw"
 }

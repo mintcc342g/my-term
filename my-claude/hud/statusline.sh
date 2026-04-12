@@ -43,20 +43,40 @@ pct=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
 [ -z "$cache_create" ] && cache_create=0
 [ -z "$cache_read" ] && cache_read=0
 
-# ── Shorten path (3 depth max, truncate if too long) ───────────
-MAX_DIR_LEN=20  # visible chars for dir inside │ ... │
+# ── Shorten path ────────────────────────────────────────────────
+# Rules: max 5 depth, max 50 chars, always show current dir
+# Truncate from root with … if needed
+MAX_DIR_LEN=50
+MAX_DIR_DEPTH=5
 _escaped_home=$(printf '%s' "$HOME" | sed 's/[&/\]/\\&/g')
-short_dir=$(printf '%s' "$cwd" | sed "s|^${_escaped_home}|~|" | awk -F/ '{
-  if (NF <= 3) print $0
-  else printf "%s/%s/%s", $(NF-2), $(NF-1), $NF
-}')
-# If still too long, collapse middle to ..
-if [ ${#short_dir} -gt $MAX_DIR_LEN ]; then
-  short_dir=$(printf '%s' "$cwd" | sed "s|^${_escaped_home}|~|" | awk -F/ '{
-    if (NF <= 2) print $0
-    else printf "%s/../%s", $1, $NF
+short_dir=$(printf '%s' "$cwd" | sed "s|^${_escaped_home}|~|")
+
+# Limit depth to 5
+_depth=$(printf '%s' "$short_dir" | awk -F/ '{print NF}')
+if [ "$_depth" -gt "$MAX_DIR_DEPTH" ]; then
+  short_dir=$(printf '%s' "$short_dir" | awk -F/ -v max="$MAX_DIR_DEPTH" '{
+    start = NF - max + 2
+    printf "…"
+    for (i=start; i<=NF; i++) printf "/%s", $i
   }')
 fi
+
+# Limit length to MAX_DIR_LEN, truncate from root
+if [ ${#short_dir} -gt $MAX_DIR_LEN ]; then
+  _current_dir=$(basename "$short_dir")
+  # Try progressively shorter paths
+  short_dir=$(printf '%s' "$short_dir" | awk -F/ -v maxlen="$MAX_DIR_LEN" '{
+    # Try removing from left until it fits
+    for (start=2; start<=NF; start++) {
+      s = "…"
+      for (i=start; i<=NF; i++) s = s "/" $i
+      if (length(s) <= maxlen) { print s; exit }
+    }
+    # Last resort: just current dir
+    print $NF
+  }')
+fi
+unset _depth _current_dir
 
 # ── Cache hit rate ──────────────────────────────────────────────
 total_for_cache=$((input_tokens + cache_create))
@@ -66,10 +86,14 @@ else
   cache_pct=0
 fi
 
-# ── Git branch ──────────────────────────────────────────────────
+# ── Git branch (max 30 chars, truncate to 7+… if too long) ─────
+MAX_BRANCH_LEN=30
 git_branch=""
 if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   git_branch=$(git -C "$cwd" branch --show-current 2>/dev/null | tr -d '\n')
+fi
+if [ -n "$git_branch" ] && [ ${#git_branch} -gt $MAX_BRANCH_LEN ]; then
+  git_branch="${git_branch:0:7}…"
 fi
 
 # ── Rate limits (reuse existing refresh logic) ──────────────────
