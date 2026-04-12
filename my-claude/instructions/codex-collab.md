@@ -3,7 +3,7 @@
 When the user's prompt contains `@co`, a synchronous `UserPromptSubmit` hook injects a multi-agent collaboration directive into the conversation context.
 
 ### How It Works
-1. The hook reads the agent list from `~/.claude/my-hud/co-agents.json`
+1. The hook reads the agent list from `~/.claude/my-collab/co-agents.json`
 2. It injects a directive telling Claude to:
    - Gather relevant context from the current conversation
    - Call each configured agent via parallel foreground `Bash` tool calls (multiple tool calls in one message)
@@ -20,7 +20,7 @@ When the user's prompt contains `@co`, a synchronous `UserPromptSubmit` hook inj
 - ALWAYS respond to the user in Korean (한국어).
 
 ### Adding Agents
-Edit `~/.claude/my-hud/co-agents.json`:
+Edit `~/.claude/my-collab/co-agents.json`:
 ```json
 [
   { "name": "Codex", "command": "codex exec --skip-git-repo-check" },

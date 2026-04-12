@@ -67,11 +67,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "zsh $HOME/.claude/my-hud/init-env.sh"
+            "command": "zsh $HOME/.claude/my-hooks/init-env.sh"
           },
           {
             "type": "command",
-            "command": "bash $HOME/.claude/my-hud/init-env-bg.sh",
+            "command": "bash $HOME/.claude/my-hooks/init-env-bg.sh",
             "async": true
           }
         ]
@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash $HOME/.claude/my-hud/codex-collab.sh"
+            "command": "bash $HOME/.claude/my-collab/codex-collab.sh"
           }
         ]
       }

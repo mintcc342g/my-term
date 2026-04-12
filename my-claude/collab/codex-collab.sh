@@ -11,7 +11,7 @@
 set -euo pipefail
 
 KEYWORD="@co"
-AGENTS_CONFIG="$HOME/.claude/my-hud/co-agents.json"
+AGENTS_CONFIG="$HOME/.claude/my-collab/co-agents.json"
 
 # --- stdin에서 JSON 파싱 ---
 raw_input="$(cat)"

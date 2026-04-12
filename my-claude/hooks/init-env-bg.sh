@@ -20,8 +20,7 @@ elif codex login status &>/dev/null; then
   # Auth confirmed — run a minimal exec to fetch fresh rate limit data
   codex exec --skip-git-repo-check "echo ok" &>/dev/null || true
   # Parse latest session file to update codex-usage.json cache
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  cache_dir="$cache_dir" "$SCRIPT_DIR/refresh-codex-usage.sh" || true
+  cache_dir="$cache_dir" "$HOME/.claude/my-hud/refresh-codex-usage.sh" || true
 else
   printf 'unavailable' > "$codex_auth_cache"
 fi
@@ -34,8 +33,7 @@ RL_LOCK="$cache_dir/ratelimit.lock"
 if mkdir "$RL_LOCK" 2>/dev/null; then
   trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
   rm -f "$cache_dir/ratelimit.err" 2>/dev/null || true
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  cache_dir="$cache_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" || true
+  cache_dir="$cache_dir" "$HOME/.claude/my-hud/refresh-ratelimit.sh" || true
   rm -rf "$RL_LOCK" 2>/dev/null
   trap - EXIT
 fi

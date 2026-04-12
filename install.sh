@@ -219,7 +219,19 @@ mkdir -p "$HOME/.claude/my-hud"
 chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
 cp -f "$SCRIPT_DIR/my-claude/hud/"* "$HOME/.claude/my-hud/"
 chmod +x "$HOME/.claude/my-hud/"*.sh
-chmod 600 "$HOME/.claude/my-hud/co-agents.json"
+
+# hooks 설정
+mkdir -p "$HOME/.claude/my-hooks"
+chmod 700 "$HOME/.claude/my-hooks"
+cp -f "$SCRIPT_DIR/my-claude/hooks/"* "$HOME/.claude/my-hooks/"
+chmod +x "$HOME/.claude/my-hooks/"*.sh
+
+# collab 설정
+mkdir -p "$HOME/.claude/my-collab"
+chmod 700 "$HOME/.claude/my-collab"
+cp -f "$SCRIPT_DIR/my-claude/collab/"* "$HOME/.claude/my-collab/"
+chmod +x "$HOME/.claude/my-collab/"*.sh
+chmod 600 "$HOME/.claude/my-collab/co-agents.json"
 
 
 # memory 설정
