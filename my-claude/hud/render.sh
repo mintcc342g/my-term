@@ -140,10 +140,11 @@ metric_row() {
 metric_row_inv() {
   local label="$1" pct=$2
   local pct_str sc bar_color
+  [[ "$pct" =~ ^[0-9]+$ ]] || pct=0
   pct_str=$(printf "%3d%%" "$pct")
-  if [ "$pct" -le 10 ] 2>/dev/null; then
+  if [ "$pct" -le 10 ]; then
     sc="$C_CRIT"; bar_color="$C_CRIT"
-  elif [ "$pct" -le 50 ] 2>/dev/null; then
+  elif [ "$pct" -le 50 ]; then
     sc="$C_WARN"; bar_color="$C_WARN"
   else
     sc="$HI"; bar_color="$C_BAR"
