@@ -172,17 +172,38 @@ fi
 CONFIG="$SCRIPT_DIR/config.json"
 theme=$(jq -r '.theme // "mygo"' < "$CONFIG" 2>/dev/null)
 CONFIG_OW=$(jq -r '.outer_width // 60' < "$CONFIG" 2>/dev/null)
-TERM_WIDTH=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}')
-[ -z "$TERM_WIDTH" ] && TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
+
+# ── Detect terminal width (walk parent processes to find TTY) ───
+detect_term_width() {
+  local pid=$$ tty_dev="" width=""
+  local i=0
+  while [ $i -lt 8 ] && [ -n "$pid" ] && [ "$pid" != "0" ]; do
+    tty_dev=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+    if [ -n "$tty_dev" ] && [ "$tty_dev" != "??" ] && [ "$tty_dev" != "-" ]; then
+      # Normalize: add /dev/ prefix if missing
+      case "$tty_dev" in
+        /dev/*) ;;
+        *) tty_dev="/dev/$tty_dev" ;;
+      esac
+      width=$(stty size < "$tty_dev" 2>/dev/null | awk '{print $2}')
+      [ -n "$width" ] && [ "$width" -gt 0 ] 2>/dev/null && { echo "$width"; return; }
+    fi
+    pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    i=$((i + 1))
+  done
+  # Fallback
+  tput cols 2>/dev/null || echo 80
+}
+
+TERM_WIDTH=$(detect_term_width)
 # Use smaller of config width and terminal width
-if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ]; then
+if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ] 2>/dev/null; then
   OW=$TERM_WIDTH
 else
   OW=$CONFIG_OW
 fi
 BW=$(jq -r '.bar_width // 14' < "$CONFIG" 2>/dev/null)
-# Shrink bar if OW is too narrow
-if [ "$OW" -lt 50 ]; then
+if [ "$OW" -lt 50 ] 2>/dev/null; then
   BW=8
 fi
 IW=$(( OW - 2 ))
