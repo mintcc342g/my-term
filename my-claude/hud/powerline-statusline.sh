@@ -298,7 +298,7 @@ if [ -f "$CODEX_AUTH_CACHE" ] && [ "$(cat "$CODEX_AUTH_CACHE" 2>/dev/null)" = "o
   codex_ok=true
 fi
 
-if $codex_ok && [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_CACHE" >/dev/null 2>&1; then
+if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_CACHE" >/dev/null 2>&1; then
   IFS=$'\t' read -r codex_left_pct codex_reset_epoch < <(
     jq -r '[
       (.primary.left_percent // ""),
