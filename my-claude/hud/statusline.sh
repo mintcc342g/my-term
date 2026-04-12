@@ -125,12 +125,12 @@ RL_LOCK="$cache_dir/ratelimit.lock"
 if $refresh_rl; then
   if mkdir "$RL_LOCK" 2>/dev/null; then
     trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
-    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || log_err="ratelimit refresh failed"
+    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
     rm -rf "$RL_LOCK" 2>/dev/null
     trap - EXIT
   else
     _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
-    [ "$_lock_age" -gt 15 ] && rm -rf "$RL_LOCK" 2>/dev/null || true
+    if [ "$_lock_age" -gt 15 ]; then rm -rf "$RL_LOCK" 2>/dev/null; fi
     unset _lock_age
   fi
 fi

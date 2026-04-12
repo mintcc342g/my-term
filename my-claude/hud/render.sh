@@ -101,9 +101,7 @@ build_top() {
   else
     deco_color="${DECO_COLOR:-$(grad_fg $deco_pos $OW)}"
   fi
-  local deco_str
-  # shellcheck disable=SC2059
-  deco_str=$(printf "$DECO_FMT" "$DECO_ICON")
+  local deco_str="${DECO_FMT/\%s/$DECO_ICON}"
   printf '%s%s%s' "$deco_color" "$deco_str" "$rst"
 
   printf '%s─' "$(grad_fg $((OW-2)) $OW)"

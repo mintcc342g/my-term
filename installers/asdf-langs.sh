@@ -11,7 +11,7 @@ install_asdf_langs() {
   fi
   brew install asdf
 
-  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
+  local ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
   if ! grep -q 'asdf/shims' "$ZPROFILE" 2>/dev/null; then
     ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
   export PATH="$HOME/.asdf/shims:$PATH"

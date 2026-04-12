@@ -88,6 +88,7 @@ _install_claude_code() {
 
 _install_claude_settings() {
   log_step "configure claude settings…"
+  umask 077
 
   # memory
   mkdir -p "$HOME/.claude/memory"
@@ -114,7 +115,7 @@ _install_claude_settings() {
   chmod 600 "$HOME/.claude/my-collab/co-directive.md"
 
   # settings.json
-  SETTINGS="$HOME/.claude/settings.json"
+  local SETTINGS="$HOME/.claude/settings.json"
   mkdir -p "$HOME/.claude"
   if [ ! -f "$SETTINGS" ]; then
     printf "%s\n" "{}" > "$SETTINGS"
@@ -123,6 +124,7 @@ _install_claude_settings() {
 
   # Per-key merge: handle each top-level key with appropriate strategy
   local proj_settings="$SCRIPT_DIR/my-claude/settings/settings.json"
+  local tmp
   tmp="$(mktemp)"
   cp "$SETTINGS" "$tmp"
 
@@ -175,7 +177,8 @@ _install_claude_settings() {
         "Yes" \
         "No"
       if [ "$gofmt_choice" = "0" ]; then
-        GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
+        local GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
+        local gofmt_tmp
         gofmt_tmp="$(mktemp)"
         if jq --arg gofmtCmd "$GOFMT_CMD" \
           '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
