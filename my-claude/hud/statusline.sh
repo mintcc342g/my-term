@@ -171,8 +171,19 @@ fi
 # ── Load config ─────────────────────────────────────────────────
 CONFIG="$SCRIPT_DIR/config.json"
 theme=$(jq -r '.theme // "mygo"' < "$CONFIG" 2>/dev/null)
-OW=$(jq -r '.outer_width // 60' < "$CONFIG" 2>/dev/null)
+CONFIG_OW=$(jq -r '.outer_width // 60' < "$CONFIG" 2>/dev/null)
+TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
+# Use smaller of config width and terminal width
+if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ]; then
+  OW=$TERM_WIDTH
+else
+  OW=$CONFIG_OW
+fi
 BW=$(jq -r '.bar_width // 14' < "$CONFIG" 2>/dev/null)
+# Shrink bar if OW is too narrow
+if [ "$OW" -lt 50 ]; then
+  BW=8
+fi
 IW=$(( OW - 2 ))
 
 sec_workspace=$(jq -r '.sections.workspace.enabled // true' < "$CONFIG" 2>/dev/null)
