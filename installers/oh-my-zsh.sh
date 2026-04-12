@@ -22,10 +22,6 @@ install_oh_my_zsh() {
   if ! grep -q 'zsh-autosuggestions.zsh' "$ZSHRC" 2>/dev/null; then
     printf '\n# zsh-autosuggestions 설정\nsource $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n' >> "${ZSHRC}"
   fi
-  if ! grep -q 'tv init' "$ZSHRC" 2>/dev/null; then
-    printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
-  fi
-
   log_done "oh-my-zsh + plugins installed."
   export ZSHRC
 }

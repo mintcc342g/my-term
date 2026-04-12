@@ -37,5 +37,11 @@ install_convenience() {
   log_start "install package managers…"
   brew install oven-sh/bun/bun
 
+  # television shell integration
+  ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+  if ! grep -q 'tv init' "$ZSHRC" 2>/dev/null; then
+    printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
+  fi
+
   log_done "convenience tools installed."
 }

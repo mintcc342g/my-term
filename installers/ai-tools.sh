@@ -34,6 +34,9 @@ install_ai_tools() {
         sleep 1
         ;;
       3|255)
+        # oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
+        # 최신 버전 확인: npm view oh-my-opencode version
+        # 설치: bunx oh-my-opencode@<version> install
         break
         ;;
     esac
@@ -119,18 +122,24 @@ _install_claude_settings() {
     log_fail "Failed to update $SETTINGS (jq error)"
   fi
 
-  # gofmt hook (if golang was installed)
-  if [[ "${install_golang:-}" =~ [yY] ]]; then
-    GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
-    gofmt_tmp="$(mktemp)"
-    if jq --arg gofmtCmd "$GOFMT_CMD" \
-      '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
-      "$SETTINGS" > "$gofmt_tmp"; then
-      mv "$gofmt_tmp" "$SETTINGS"
-      log_done "Added gofmt hook to Claude settings."
-    else
-      rm -f "$gofmt_tmp"
-      log_fail "Failed to add gofmt hook (jq error)"
+  # gofmt hook — ask independently (don't rely on asdf module state)
+  if command -v gofmt &>/dev/null || command -v go &>/dev/null; then
+    local gofmt_choice=""
+    ui_menu "Go detected — add gofmt hook to Claude?" gofmt_choice \
+      "Yes" \
+      "No"
+    if [ "$gofmt_choice" = "0" ]; then
+      GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
+      gofmt_tmp="$(mktemp)"
+      if jq --arg gofmtCmd "$GOFMT_CMD" \
+        '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
+        "$SETTINGS" > "$gofmt_tmp"; then
+        mv "$gofmt_tmp" "$SETTINGS"
+        log_done "Added gofmt hook to Claude settings."
+      else
+        rm -f "$gofmt_tmp"
+        log_fail "Failed to add gofmt hook (jq error)"
+      fi
     fi
   fi
 

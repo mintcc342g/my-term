@@ -16,23 +16,21 @@ ui_read_key() {
   local key old_stty
   old_stty=$(stty -g < /dev/tty 2>/dev/null)
   stty raw -echo < /dev/tty 2>/dev/null
+  trap 'stty "$old_stty" < /dev/tty 2>/dev/null' RETURN
 
   key=$(dd bs=1 count=1 2>/dev/null < /dev/tty)
 
   if [[ "$key" == $'\x1b' ]]; then
     local seq
     seq=$(dd bs=1 count=2 2>/dev/null < /dev/tty)
-    stty "$old_stty" < /dev/tty 2>/dev/null
     case "$seq" in
       '[A') echo "up" ;;
       '[B') echo "down" ;;
       *)    echo "esc" ;;
     esac
   elif [[ "$key" == "" || "$key" == $'\n' || "$key" == $'\r' ]]; then
-    stty "$old_stty" < /dev/tty 2>/dev/null
     echo "enter"
   else
-    stty "$old_stty" < /dev/tty 2>/dev/null
     echo "$key"
   fi
 }

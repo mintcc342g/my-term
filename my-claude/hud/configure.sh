@@ -70,7 +70,7 @@ select_theme() {
 load_config
 
 while true; do
-  local choice
+  choice=""
   ui_menu "CLAUDE HUD Settings" choice \
     "Theme: ${theme}" \
     "workspace: $(on_off "$sec_workspace")" \
