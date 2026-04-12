@@ -165,6 +165,9 @@ _install_hud() {
     cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
   fi
 
+  # Store project root for future syncs
+  echo "$SCRIPT_DIR" > "$HOME/.claude/my-hud/.project-root"
+
   # Update statusLine command to use new statusline.sh
   SETTINGS="$HOME/.claude/settings.json"
   if [ -f "$SETTINGS" ]; then

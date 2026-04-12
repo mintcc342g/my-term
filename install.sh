@@ -97,12 +97,13 @@ while true; do
     pyenv)        install_pyenv ;;
     ai-tools)     install_ai_tools ;;
     hud-config)
-      # Sync latest HUD files before configure
-      cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
-      cp -f "$SCRIPT_DIR/my-claude/hud/"*.json "$HOME/.claude/my-hud/" 2>/dev/null
-      cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
+      # Store project root for sync, then run configure
+      echo "$SCRIPT_DIR" > "$HOME/.claude/my-hud/.project-root"
+      # Sync configure.sh + ui.sh first so menu itself is up to date
+      cp -f "$SCRIPT_DIR/my-claude/hud/configure.sh" "$HOME/.claude/my-hud/"
+      mkdir -p "$HOME/.claude/my-hud/lib"
       cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
-      chmod +x "$HOME/.claude/my-hud/"*.sh
+      chmod +x "$HOME/.claude/my-hud/configure.sh"
       bash "$HOME/.claude/my-hud/configure.sh"
       ;;
     everything)   run_everything ; break ;;
