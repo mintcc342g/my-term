@@ -8,7 +8,6 @@
 #          $cache_dir/ratelimit.err  on API error
 #
 
-set -euo pipefail
 [ -z "${cache_dir:-}" ] && exit 1
 
 umask 077
