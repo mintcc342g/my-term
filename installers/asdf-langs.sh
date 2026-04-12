@@ -1,57 +1,64 @@
 #!/bin/bash
-# installers/asdf-langs.sh — asdf language setup (Golang, Java)
-# source'd by install.sh — uses shared log functions and variables
+# installers/asdf-langs.sh — asdf + language plugins (arrow-key selection)
+# source'd by install.sh
 
 install_asdf_langs() {
-  log_start "Starting programming language setup…\n"
+  log_start "install asdf…"
 
-  ask_asdf_config() {
-    local lang="$1"
-    local __varname="$2"
-    local answer
-
-    read -r -p "Would you like to configure ${lang} with asdf? (y/N) " answer
-    printf -v "$__varname" '%s' "$answer"
-  }
-
-  print_env_uncomment_warning() {
-    local lang="$1"
-
-    echo
-    log_done "${lang} configuration for asdf has been added to .zprofile."
-    echo
-    echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing ${lang}${RESET}, please ${RED_BOLD}uncomment${RESET} the ${lang} environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
-    echo
-  }
+  if ! command -v brew &>/dev/null; then
+    log_fail "Homebrew not found. Please install convenience tools first."
+    return 1
+  fi
+  brew install asdf
 
   ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
+  if ! grep -q 'asdf/shims' "$ZPROFILE" 2>/dev/null; then
+    ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
+  export PATH="$HOME/.asdf/shims:$PATH"
+fi'
+    printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
+  fi
 
-  # Golang 설정
-  ask_asdf_config "Golang" install_golang
-  case "$install_golang" in
-    [yY])
-      asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-      printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
-      print_env_uncomment_warning "Golang"
-      ;;
-    *)
-      log_fail "Skipping Golang configuration for asdf.\n"
-      ;;
-  esac
+  log_done "asdf installed."
 
-  # Java 설정
-  ask_asdf_config "Java" install_java
-  case "$install_java" in
-    [yY])
-      asdf plugin add java https://github.com/halcyon/asdf-java.git
-      printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
-      print_env_uncomment_warning "Java"
-      ;;
-    *)
-      log_fail "Skipping Java configuration for asdf.\n"
-      ;;
-  esac
+  # Language selection
+  local langs=("Golang" "Java" "Skip")
+  local choice=""
+  local install_golang="n"
 
-  # Export for gofmt hook in claude installer
+  while true; do
+    ui_menu "asdf — select language to configure" choice \
+      "Golang" \
+      "Java" \
+      "Done"
+
+    case "$choice" in
+      0)
+        log_step "configure Golang…"
+        asdf plugin add golang https://github.com/kennyp/asdf-golang.git 2>/dev/null || true
+        printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
+        install_golang="y"
+        log_done "Golang plugin added."
+        echo
+        echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Golang${RESET}, please ${RED_BOLD}uncomment${RESET} the Golang environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
+        echo
+        sleep 2
+        ;;
+      1)
+        log_step "configure Java…"
+        asdf plugin add java https://github.com/halcyon/asdf-java.git 2>/dev/null || true
+        printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
+        log_done "Java plugin added."
+        echo
+        echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Java${RESET}, please ${RED_BOLD}uncomment${RESET} the Java environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
+        echo
+        sleep 2
+        ;;
+      2|255)
+        break
+        ;;
+    esac
+  done
+
   export install_golang
 }
