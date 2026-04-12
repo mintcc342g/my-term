@@ -1,4 +1,10 @@
 {
+  "mcpServers": {
+    "codex": {
+      "command": "codex",
+      "args": ["mcp-server"]
+    }
+  },
   "permissions": {
     "deny": [
       "Read(**/.env)",

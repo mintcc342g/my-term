@@ -1,7 +1,11 @@
 [
   {
     "name": "Codex",
-    "command": "codex exec --skip-git-repo-check",
-    "timeout": 300000
+    "server": "codex",
+    "tool": "codex",
+    "timeout": 300000,
+    "params": {
+      "sandbox": "read-only"
+    }
   }
 ]

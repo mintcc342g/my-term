@@ -5,7 +5,7 @@
 # Hook: UserPromptSubmit (동기)
 # 트리거: 프롬프트에 "@co" 포함 시 (위치 무관)
 # 동작: @co 제거 후 에이전트 설정을 읽어 Claude에 협업 지시문을 주입
-#        (실제 에이전트 호출은 Claude가 Bash 도구로 병렬 수행)
+#        (실제 에이전트 호출은 Claude가 MCP 도구로 병렬 수행)
 #
 
 set -euo pipefail
@@ -62,13 +62,27 @@ if [[ "$agent_count" -eq 0 ]]; then
   exit 0
 fi
 
-# --- 에이전트 목록을 텍스트로 구성 ---
+# --- 에이전트 목록을 텍스트로 구성 (MCP 전용) ---
 agent_list=""
-while IFS=$'\t' read -r name command timeout; do
+while IFS=$'\t' read -r name server tool timeout params_json; do
   [ -z "$timeout" ] || [ "$timeout" = "null" ] && timeout=300000
+  mcp_tool="mcp__${server}__${tool}"
+
+  # params가 있으면 호출 시 포함할 파라미터 안내 생성
+  params_note=""
+  if [ -n "$params_json" ] && [ "$params_json" != "null" ] && [ "$params_json" != "{}" ]; then
+    params_note=" (추가 파라미터: ${params_json})"
+  fi
+
   agent_list="${agent_list}
-- **${name}**: \`${command}\` (timeout: ${timeout}ms)"
-done < <(jq -r '.[] | [.name, .command, (.timeout // empty)] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
+- **${name}**: \`${mcp_tool}\` 도구를 호출하세요.${params_note} (timeout: ${timeout}ms)"
+done < <(jq -r '.[] | [
+  .name,
+  .server,
+  .tool,
+  (.timeout // empty),
+  (.params // {} | tostring)
+] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
 
 # --- Claude에 협업 지시문 주입 ---
 cat <<EOF
@@ -81,12 +95,12 @@ cat <<EOF
    - 분석 중인 데이터, 설계 결정, 관련 파일 목록 등 포함
    - 관련 없는 대화는 제외
 
-2. 아래 에이전트들을 Bash 도구로 호출하세요.
-   - 에이전트가 여러 개일 경우: 한 메시지에서 여러 Bash 도구 호출을 동시에 보내세요 (병렬 실행).
-   - run_in_background는 사용하지 마세요. 일반 foreground Bash 호출을 여러 개 병렬로 보내면 됩니다.
-   - 각 에이전트에 [정리한 컨텍스트 + 유저 프롬프트]를 전달합니다.
-   - **중요**: 반드시 \`</dev/null\`을 명령 끝에 붙여 stdin을 닫으세요.
-   - 각 에이전트의 timeout 값을 Bash 도구의 timeout 파라미터로 전달하세요.
+2. 아래 에이전트들을 MCP 도구로 호출하세요.
+   - 에이전트가 여러 개일 경우: 한 메시지에서 여러 도구 호출을 동시에 보내세요 (병렬 실행).
+   - run_in_background는 사용하지 마세요. 일반 foreground 호출을 여러 개 병렬로 보내면 됩니다.
+   - 각 에이전트의 prompt 파라미터에 [정리한 컨텍스트 + 유저 프롬프트]를 전달합니다.
+   - 추가 파라미터가 명시된 경우 해당 파라미터도 함께 전달하세요.
+   - 응답에 threadId가 포함되면, 후속 질문이 필요할 때 mcp__codex__codex_reply 도구에 해당 threadId와 prompt를 전달하세요.
 ${agent_list}
 
 3. 중요: 모든 에이전트의 응답이 도착할 때까지 기다리세요.
