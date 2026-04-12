@@ -1,16 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-YELLOW='\033[93m'
-YELLOW_BOLD='\033[33;1m'
-BLUE='\033[94m'
-BLUE_BOLD='\033[34;1m'
-RED_BOLD='\033[31;1m'
-PINK='\033[38;5;205m'
-PURPLE='\033[35m'
-GREEN='\033[92m'
-GREEN_BOLD='\033[32;1m'
-RESET='\033[0m'
+YELLOW=$'\033[93m'
+YELLOW_BOLD=$'\033[33;1m'
+BLUE=$'\033[94m'
+BLUE_BOLD=$'\033[34;1m'
+RED_BOLD=$'\033[31;1m'
+PINK=$'\033[38;5;205m'
+PURPLE=$'\033[35m'
+GREEN=$'\033[92m'
+GREEN_BOLD=$'\033[32;1m'
+RESET=$'\033[0m'
 
 log_start() { echo "${BLUE_BOLD}➜${RESET} $*"; }
 log_step()  { echo "${YELLOW_BOLD}⚙${RESET} $*"; }
@@ -68,7 +68,7 @@ done
 
 printf '\033[2J\033[H'
 log_done "${GREEN_BOLD}Installation complete!${RESET} 🎉"
-echo -e "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
+printf "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
 
 cat << EOF
 ::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  ${YELLOW}:::${BLUE} :::${PINK} :::${PURPLE} :::${GREEN} :::${RESET}
@@ -79,4 +79,4 @@ cat << EOF
     #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#
 ###########     ###         ########       ###       ###    ###     ########   ########  ${YELLOW}###${BLUE} ###${PINK} ###${PURPLE} ###${GREEN} ###${RESET}
 EOF
-echo -e "\n"
+echo
