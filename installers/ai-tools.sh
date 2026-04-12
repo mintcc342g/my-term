@@ -88,6 +88,8 @@ _install_claude_code() {
 
 _install_claude_settings() {
   log_step "configure claude settings…"
+  local _old_umask
+  _old_umask=$(umask)
   umask 077
 
   # memory
@@ -195,6 +197,7 @@ _install_claude_settings() {
     fi
   fi
 
+  umask "$_old_umask"
   log_done "claude settings configured."
 }
 
