@@ -134,9 +134,9 @@ while true; do
   if [ -n "$PROJECT_ROOT" ]; then
     ui_menu "CLAUDE HUD Settings" choice \
       "Theme: ${theme}" \
-      "workspace: $(on_off "$sec_workspace")" \
-      "claude: $(on_off "$sec_claude")" \
-      "codex: $(on_off "$sec_codex")" \
+      "Workspace: $(on_off "$sec_workspace")" \
+      "Claude: $(on_off "$sec_claude")" \
+      "Codex: $(on_off "$sec_codex")" \
       "Sync HUD (update from project)" \
       "Save & Exit" \
       "Exit"
@@ -162,9 +162,9 @@ while true; do
   else
     ui_menu "CLAUDE HUD Settings" choice \
       "Theme: ${theme}" \
-      "workspace: $(on_off "$sec_workspace")" \
-      "claude: $(on_off "$sec_claude")" \
-      "codex: $(on_off "$sec_codex")" \
+      "Workspace: $(on_off "$sec_workspace")" \
+      "Claude: $(on_off "$sec_claude")" \
+      "Codex: $(on_off "$sec_codex")" \
       "Save & Exit" \
       "Exit"
 

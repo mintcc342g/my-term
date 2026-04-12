@@ -48,7 +48,7 @@ while true; do
   menu_actions=()
 
   menu_items+=("Convenience tools (CLI, macOS apps, DevOps)"); menu_actions+=("convenience")
-  menu_items+=("oh-my-zsh + zsh plugins");                     menu_actions+=("oh-my-zsh")
+  menu_items+=("Oh-my-zsh + zsh plugins");                     menu_actions+=("oh-my-zsh")
   menu_items+=("Shell theme (newro)");                         menu_actions+=("shell-theme")
   menu_items+=("asdf + languages");                            menu_actions+=("asdf")
   menu_items+=("pyenv");                                       menu_actions+=("pyenv")

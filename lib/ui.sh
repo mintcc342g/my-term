@@ -58,11 +58,13 @@ ui_menu() {
     echo " ─────────────────────" > /dev/tty
     echo " ${UI_DIM}↑↓ move  Enter select${UI_RESET}\n" > /dev/tty
 
+    local UI_CYAN=$'\033[36;1m'
     for i in "${!items[@]}"; do
+      local num=$((i + 1))
       if [ "$i" -eq "$sel" ]; then
-        echo "  ${UI_REVERSE} ▸ ${items[$i]} ${UI_RESET}" > /dev/tty
+        echo "  ${UI_CYAN}❯ ${num}) ${items[$i]}${UI_RESET}" > /dev/tty
       else
-        echo "    ${items[$i]}" > /dev/tty
+        echo "  ${UI_DIM}  ${num}) ${items[$i]}${UI_RESET}" > /dev/tty
       fi
     done
 
