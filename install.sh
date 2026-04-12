@@ -42,31 +42,29 @@ run_everything() {
   install_ai_tools
 }
 
-choice=""
-ui_menu "my-term installer" choice \
-  "Convenience tools (CLI, macOS apps, DevOps)" \
-  "oh-my-zsh + zsh plugins" \
-  "Shell theme (newro)" \
-  "asdf + languages" \
-  "pyenv" \
-  "AI tools (Claude, OpenCode, Codex, Bun)" \
-  "Everything" \
-  "Exit"
+while true; do
+  choice=""
+  ui_menu "my-term installer" choice \
+    "Convenience tools (CLI, macOS apps, DevOps)" \
+    "oh-my-zsh + zsh plugins" \
+    "Shell theme (newro)" \
+    "asdf + languages" \
+    "pyenv" \
+    "AI tools (Claude, OpenCode, Codex)" \
+    "Everything" \
+    "Done"
 
-case "$choice" in
-  0) install_convenience ;;
-  1) install_oh_my_zsh ;;
-  2) install_shell_theme ;;
-  3) install_asdf_langs ;;
-  4) install_pyenv ;;
-  5) install_ai_tools ;;
-  6) run_everything ;;
-  7|255)
-    printf '\033[2J\033[H'
-    echo "Bye!"
-    exit 0
-    ;;
-esac
+  case "$choice" in
+    0) install_convenience ;;
+    1) install_oh_my_zsh ;;
+    2) install_shell_theme ;;
+    3) install_asdf_langs ;;
+    4) install_pyenv ;;
+    5) install_ai_tools ;;
+    6) run_everything ; break ;;
+    7|255) break ;;
+  esac
+done
 
 printf '\033[2J\033[H'
 log_done "${GREEN_BOLD}Installation complete!${RESET} 🎉"
