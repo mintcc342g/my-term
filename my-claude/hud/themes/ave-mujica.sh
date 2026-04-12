@@ -24,3 +24,9 @@ BOFF="$(fg 50 45 48)"
 C_WARN="$(fg 150 80 95)"
 C_CRIT="$(fg 170 35 50)"
 C_BAR="$(fg 138 55 68)"
+
+# Compact powerline segment colors (bg R G B, fg R G B)
+CSEG1_BG=(85 12 30);     CSEG1_FG=(200 178 180)   # dir — crimson bg
+CSEG2_BG=(105 50 62);    CSEG2_FG=(200 178 180)   # branch — dark wine bg
+CSEG3_BG=(60 45 50);     CSEG3_FG=(155 100 115)   # model — dark bg
+CSEG4_BG=(46 52 64);     CSEG4_FG=(138 55 68)     # 5H — Nord0 bg

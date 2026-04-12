@@ -25,3 +25,9 @@ BOFF="$(fg 59 66 82)"
 C_WARN="$(fg 180 142 173)"
 C_CRIT="$(fg 220 140 170)"
 C_BAR="$(fg 136 192 208)"
+
+# Compact powerline segment colors (bg R G B, fg R G B)
+CSEG1_BG=(136 192 208);  CSEG1_FG=(46 52 64)      # dir — Nord8 bg
+CSEG2_BG=(180 142 173);  CSEG2_FG=(46 52 64)      # branch — Nord15 bg
+CSEG3_BG=(76 86 106);    CSEG3_FG=(180 142 173)   # model — Nord3 bg
+CSEG4_BG=(46 52 64);     CSEG4_FG=(136 192 208)   # 5H — Nord0 bg
