@@ -306,6 +306,8 @@ if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_
     ] | @tsv' < "$CODEX_USAGE_CACHE" 2>/dev/null
   )
   codex_left_pct=$(printf "%.0f" "$codex_left_pct" 2>/dev/null)
+  # 숫자가 아니면 빈 문자열로 리셋 → fallback(--)으로 표시
+  [[ "$codex_left_pct" =~ ^[0-9]+$ ]] || codex_left_pct=""
 fi
 
 if [ -n "$codex_left_pct" ]; then
