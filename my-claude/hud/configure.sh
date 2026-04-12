@@ -1,39 +1,40 @@
 #!/usr/bin/env bash
 #
 # SF-HUD configuration UI — arrow key navigation
-# Called by installer after statusline install, or directly by user
+# Called by install.sh with --project-root <path>
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIG="$SCRIPT_DIR/config.json"
 
-# Source shared UI (try installed location, then project relative)
-if [ -f "$SCRIPT_DIR/lib/ui.sh" ]; then
-  source "$SCRIPT_DIR/lib/ui.sh"
-elif [ -f "$SCRIPT_DIR/../../lib/ui.sh" ]; then
+# Parse args
+PROJECT_ROOT=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --project-root) PROJECT_ROOT="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+
+# Config location: use installed config if exists, else project
+if [ -f "$HOME/.claude/my-hud/config.json" ]; then
+  CONFIG="$HOME/.claude/my-hud/config.json"
+elif [ -f "$SCRIPT_DIR/config.json" ]; then
+  CONFIG="$SCRIPT_DIR/config.json"
+else
+  echo "Error: config.json not found" >&2
+  exit 1
+fi
+
+# Source shared UI
+if [ -f "$SCRIPT_DIR/../../lib/ui.sh" ]; then
   source "$SCRIPT_DIR/../../lib/ui.sh"
+elif [ -f "$HOME/.claude/my-hud/lib/ui.sh" ]; then
+  source "$HOME/.claude/my-hud/lib/ui.sh"
 else
   echo "Error: lib/ui.sh not found" >&2
   exit 1
 fi
-
-# ── Project root detection ─────────────────────────────────────
-# Find the project root (where install.sh lives) for sync
-find_project_root() {
-  local dir="$SCRIPT_DIR"
-  # If running from ~/.claude/my-hud, check if project path is stored
-  if [ -f "$SCRIPT_DIR/.project-root" ]; then
-    cat "$SCRIPT_DIR/.project-root"
-    return
-  fi
-  # If running from project directly
-  if [ -f "$dir/../../install.sh" ]; then
-    echo "$(cd "$dir/../.." && pwd)"
-    return
-  fi
-  echo ""
-}
 
 # ── Load / Save config ──────────────────────────────────────────
 load_config() {
@@ -64,11 +65,9 @@ on_off() {
 
 # ── Sync HUD files from project ────────────────────────────────
 sync_hud() {
-  local project_root
-  project_root=$(find_project_root)
-  if [ -z "$project_root" ] || [ ! -d "$project_root/my-claude/hud" ]; then
+  if [ -z "$PROJECT_ROOT" ] || [ ! -d "$PROJECT_ROOT/my-claude/hud" ]; then
     printf '\033[2J\033[H' > /dev/tty
-    echo "${UI_RED_BOLD}✖${UI_RESET} Project root not found. Run install first." > /dev/tty
+    echo "${UI_RED_BOLD}✖${UI_RESET} Project root not found." > /dev/tty
     sleep 2
     return 1
   fi
@@ -80,31 +79,28 @@ sync_hud() {
   config_backup=$(mktemp)
   cp "$dest/config.json" "$config_backup" 2>/dev/null || true
 
-  # Remove old files and sync fresh (except config.json)
+  # Remove old files and sync fresh
   rm -f "$dest/"*.sh "$dest/"*.pl 2>/dev/null || true
   rm -rf "$dest/themes" "$dest/lib" 2>/dev/null || true
 
   # Copy latest
   mkdir -p "$dest/themes" "$dest/lib"
-  cp -f "$project_root/my-claude/hud/"*.sh "$dest/"
+  cp -f "$PROJECT_ROOT/my-claude/hud/"*.sh "$dest/"
   chmod +x "$dest/"*.sh
-  cp -f "$project_root/my-claude/hud/themes/"*.sh "$dest/themes/"
-  cp -f "$project_root/lib/ui.sh" "$dest/lib/"
+  cp -f "$PROJECT_ROOT/my-claude/hud/themes/"*.sh "$dest/themes/"
+  cp -f "$PROJECT_ROOT/lib/ui.sh" "$dest/lib/"
 
-  # Restore config.json (or copy default if didn't exist)
+  # Restore config.json
   if [ -s "$config_backup" ]; then
     cp "$config_backup" "$dest/config.json"
   else
-    cp -f "$project_root/my-claude/hud/config.json" "$dest/config.json"
+    cp -f "$PROJECT_ROOT/my-claude/hud/config.json" "$dest/config.json"
   fi
   rm -f "$config_backup"
 
-  # Store project root for future syncs
-  echo "$project_root" > "$dest/.project-root"
-
   printf '\033[2J\033[H' > /dev/tty
-  echo "${UI_GREEN_BOLD}✔${UI_RESET} HUD synced from ${project_root}" > /dev/tty
-  sleep 2
+  echo "${UI_GREEN_BOLD}✔${UI_RESET} HUD synced." > /dev/tty
+  sleep 1
 }
 
 # ── Theme submenu ───────────────────────────────────────────────
@@ -133,31 +129,61 @@ load_config
 
 while true; do
   choice=""
-  ui_menu "CLAUDE HUD Settings" choice \
-    "Theme: ${theme}" \
-    "workspace: $(on_off "$sec_workspace")" \
-    "claude: $(on_off "$sec_claude")" \
-    "codex: $(on_off "$sec_codex")" \
-    "Sync HUD (update from project)" \
-    "Save & Exit" \
-    "Exit without saving"
 
-  case "$choice" in
-    0) select_theme ;;
-    1) sec_workspace=$(toggle "$sec_workspace") ;;
-    2) sec_claude=$(toggle "$sec_claude") ;;
-    3) sec_codex=$(toggle "$sec_codex") ;;
-    4) sync_hud ;;
-    5)
-      save_config
-      printf '\033[2J\033[H'
-      echo "${UI_GREEN_BOLD}✔${UI_RESET} Settings saved."
-      exit 0
-      ;;
-    6|255)
-      printf '\033[2J\033[H'
-      echo "Bye!"
-      exit 0
-      ;;
-  esac
+  # Show sync option only if project root is available
+  if [ -n "$PROJECT_ROOT" ]; then
+    ui_menu "CLAUDE HUD Settings" choice \
+      "Theme: ${theme}" \
+      "workspace: $(on_off "$sec_workspace")" \
+      "claude: $(on_off "$sec_claude")" \
+      "codex: $(on_off "$sec_codex")" \
+      "Sync HUD (update from project)" \
+      "Save & Exit" \
+      "Exit without saving"
+
+    case "$choice" in
+      0) select_theme ;;
+      1) sec_workspace=$(toggle "$sec_workspace") ;;
+      2) sec_claude=$(toggle "$sec_claude") ;;
+      3) sec_codex=$(toggle "$sec_codex") ;;
+      4) sync_hud ;;
+      5)
+        save_config
+        printf '\033[2J\033[H'
+        echo "${UI_GREEN_BOLD}✔${UI_RESET} Settings saved."
+        exit 0
+        ;;
+      6|255)
+        printf '\033[2J\033[H'
+        echo "Bye!"
+        exit 0
+        ;;
+    esac
+  else
+    ui_menu "CLAUDE HUD Settings" choice \
+      "Theme: ${theme}" \
+      "workspace: $(on_off "$sec_workspace")" \
+      "claude: $(on_off "$sec_claude")" \
+      "codex: $(on_off "$sec_codex")" \
+      "Save & Exit" \
+      "Exit without saving"
+
+    case "$choice" in
+      0) select_theme ;;
+      1) sec_workspace=$(toggle "$sec_workspace") ;;
+      2) sec_claude=$(toggle "$sec_claude") ;;
+      3) sec_codex=$(toggle "$sec_codex") ;;
+      4)
+        save_config
+        printf '\033[2J\033[H'
+        echo "${UI_GREEN_BOLD}✔${UI_RESET} Settings saved."
+        exit 0
+        ;;
+      5|255)
+        printf '\033[2J\033[H'
+        echo "Bye!"
+        exit 0
+        ;;
+    esac
+  fi
 done
