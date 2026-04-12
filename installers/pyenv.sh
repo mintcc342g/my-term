@@ -3,7 +3,7 @@
 # source'd by install.sh
 
 install_pyenv() {
-  log_start "install pyenv…"
+  log_start "brew install pyenv…"
 
   if ! command -v brew &>/dev/null; then
     log_fail "Homebrew not found. Please install convenience tools first."

@@ -19,22 +19,22 @@ install_convenience() {
   fi
   eval "$($BREW_PREFIX/bin/brew shellenv)"
 
-  log_start "install CLI tools…"
+  log_start "brew install CLI tools…"
   brew install ripgrep fd bat television tree tmux telnet
   if ! command -v jq &>/dev/null; then
     brew install jq
   fi
 
-  log_start "install macOS apps…"
+  log_start "brew install macOS apps…"
   brew install maccy rectangle
   brew install --cask macs-fan-control
   brew install --cask alt-tab
 
-  log_start "install DevOps tools…"
+  log_start "brew install DevOps tools…"
   brew install awscli
   brew install helm argocd istioctl k9s
 
-  log_start "install package managers…"
+  log_start "brew install package managers…"
   brew install oven-sh/bun/bun
 
   # television shell integration

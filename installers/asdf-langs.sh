@@ -3,7 +3,7 @@
 # source'd by install.sh
 
 install_asdf_langs() {
-  log_start "install asdf…"
+  log_start "brew install asdf…"
 
   if ! command -v brew &>/dev/null; then
     log_fail "Homebrew not found. Please install convenience tools first."

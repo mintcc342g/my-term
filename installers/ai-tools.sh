@@ -22,13 +22,13 @@ install_ai_tools() {
     case "$choice" in
       0) _install_claude_code ;;
       1)
-        log_step "install opencode…"
+        log_step "brew install opencode…"
         brew install opencode
         log_done "opencode installed."
         sleep 1
         ;;
       2)
-        log_step "install codex…"
+        log_step "brew install codex…"
         brew install codex
         log_done "codex installed."
         sleep 1
@@ -44,7 +44,7 @@ install_ai_tools() {
 }
 
 _install_claude_code() {
-  log_step "install/update claude-code…"
+  log_step "brew install/update claude-code…"
   brew install --cask claude-code 2>/dev/null || brew upgrade --cask claude-code 2>/dev/null || true
   log_done "claude-code ready."
 
@@ -120,13 +120,51 @@ _install_claude_settings() {
   fi
   chmod 600 "$SETTINGS"
 
+  # Per-key merge: handle each top-level key with appropriate strategy
+  local proj_settings="$SCRIPT_DIR/my-claude/settings/settings.json"
   tmp="$(mktemp)"
-  if jq -s '.[0] * .[1]' "$SETTINGS" "$SCRIPT_DIR/my-claude/settings/settings.json" > "$tmp"; then
-    mv "$tmp" "$SETTINGS"
-  else
-    rm -f "$tmp"
-    log_fail "Failed to update $SETTINGS (jq error)"
+  cp "$SETTINGS" "$tmp"
+
+  # mcpServers: add missing servers only
+  if jq -e '.mcpServers' "$proj_settings" >/dev/null 2>&1; then
+    local mcp_tmp
+    mcp_tmp=$(mktemp)
+    jq -s '.[0].mcpServers as $user | .[1].mcpServers as $proj |
+      .[0] | .mcpServers = ($proj * ($user // {}))
+    ' "$tmp" "$proj_settings" > "$mcp_tmp" && mv "$mcp_tmp" "$tmp"
   fi
+
+  # permissions.deny: union (add new items, keep existing)
+  if jq -e '.permissions.deny' "$proj_settings" >/dev/null 2>&1; then
+    local perm_tmp
+    perm_tmp=$(mktemp)
+    jq -s '.[0].permissions.deny as $user | .[1].permissions.deny as $proj |
+      .[0] | .permissions.deny = (($user // []) + ($proj // []) | unique)
+    ' "$tmp" "$proj_settings" > "$perm_tmp" && mv "$perm_tmp" "$tmp"
+  fi
+
+  # hooks: keep user hooks, add project hooks that are missing
+  if jq -e '.hooks' "$proj_settings" >/dev/null 2>&1; then
+    local hooks_tmp
+    hooks_tmp=$(mktemp)
+    jq -s '
+      .[0].hooks as $user_hooks | .[1].hooks as $proj_hooks |
+      .[0] | .hooks = ($proj_hooks * ($user_hooks // {}))
+    ' "$tmp" "$proj_settings" > "$hooks_tmp" && mv "$hooks_tmp" "$tmp"
+
+    # Restore any extra user hooks inside PostToolUse[0].hooks that project doesnt have
+    local restore_tmp
+    restore_tmp=$(mktemp)
+    jq -s '
+      (.[0].hooks.PostToolUse[0].hooks // []) as $merged |
+      (.[1].hooks.PostToolUse[0].hooks // []) as $user_extra |
+      .[0] | .hooks.PostToolUse[0].hooks = ($merged + [$user_extra[] | select(. as $h | $merged | map(.command) | index($h.command) | not)])
+    ' "$tmp" "$SETTINGS" > "$restore_tmp" && mv "$restore_tmp" "$tmp"
+  fi
+
+  # statusLine: skip (handled by HUD installer separately)
+
+  mv "$tmp" "$SETTINGS"
 
   # gofmt hook — ask independently, skip if already added
   if command -v gofmt &>/dev/null || command -v go &>/dev/null; then

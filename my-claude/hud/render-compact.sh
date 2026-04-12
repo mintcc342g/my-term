@@ -36,11 +36,11 @@ _grad_at() {
 render_compact() {
   local cwd="$1" git_branch="$2" model="$3" rl_5h="$4"
 
-  # Dir: ../current_dir
+  # Dir: …/current_dir
   local dir_name
   dir_name=$(basename "$cwd")
   [ "$dir_name" = "~" ] && dir_name="~"
-  local compact_dir="../${dir_name}"
+  local compact_dir="…/${dir_name}"
   [ "$cwd" = "$HOME" ] || [ "$cwd" = "~" ] && compact_dir="~"
 
   # Branch: max 7 chars

@@ -8,7 +8,7 @@ install_oh_my_zsh() {
 
   ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 
-  log_start "install zsh plugins…"
+  log_start "brew install zsh plugins…"
   if ! command -v brew &>/dev/null; then
     log_fail "Homebrew not found. Please install convenience tools first."
     return 1
