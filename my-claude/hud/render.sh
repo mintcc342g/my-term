@@ -98,7 +98,7 @@ build_top() {
   if [ "${DECO_USE_GRAD:-0}" = "1" ]; then
     deco_color="$(grad_fg $deco_pos $OW)"
   else
-    deco_color="${DECO_COLOR}"
+    deco_color="${DECO_COLOR:-$(grad_fg $deco_pos $OW)}"
   fi
   # shellcheck disable=SC2059
   printf "${deco_color}$(printf "$DECO_FMT" "$DECO_ICON")${rst}"
