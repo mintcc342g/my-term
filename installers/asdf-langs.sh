@@ -11,10 +11,17 @@ install_asdf_langs() {
   fi
   brew install asdf
 
+  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
+  if ! grep -q 'asdf/shims' "$ZPROFILE" 2>/dev/null; then
+    ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
+  export PATH="$HOME/.asdf/shims:$PATH"
+fi'
+    printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
+  fi
+
   log_done "asdf installed."
 
   # Language selection
-  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
   local choice=""
 
   while true; do
@@ -49,14 +56,4 @@ install_asdf_langs() {
         ;;
     esac
   done
-
-  # asdf PATH — after plugins are configured
-  if ! grep -q 'asdf/shims' "$ZPROFILE" 2>/dev/null; then
-    ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
-  export PATH="$HOME/.asdf/shims:$PATH"
-fi'
-    printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
-  fi
-
-  log_done "asdf PATH configured."
 }
