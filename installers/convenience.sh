@@ -34,5 +34,8 @@ install_convenience() {
   brew install awscli
   brew install helm argocd istioctl k9s
 
+  log_start "install package managers…"
+  brew install oven-sh/bun/bun
+
   log_done "convenience tools installed."
 }

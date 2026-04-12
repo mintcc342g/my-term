@@ -1,5 +1,5 @@
 #!/bin/bash
-# installers/ai-tools.sh — AI tools (claude-code, opencode, codex, bun)
+# installers/ai-tools.sh — AI tools (claude-code, opencode, codex)
 # source'd by install.sh
 
 install_ai_tools() {
@@ -17,7 +17,6 @@ install_ai_tools() {
       "Claude Code" \
       "OpenCode" \
       "Codex" \
-      "Bun" \
       "Done"
 
     case "$choice" in
@@ -34,13 +33,7 @@ install_ai_tools() {
         log_done "codex installed."
         sleep 1
         ;;
-      3)
-        log_step "install bun…"
-        brew install oven-sh/bun/bun
-        log_done "bun installed."
-        sleep 1
-        ;;
-      4|255)
+      3|255)
         break
         ;;
     esac
