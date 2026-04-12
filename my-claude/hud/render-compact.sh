@@ -2,13 +2,18 @@
 # render-compact.sh — compact 1-line HUD renderer
 # source'd by statusline.sh — requires render.sh + theme already loaded
 #
-# ┌──  ~/my-term (main) │ Opus 4.6 │ 5H:56% ── ··✧★ ─┐
+# ┌── my-term (main) │ Opus 4.6 │ 5H:56% ── ··✧★ ─┐
 
 render_compact() {
   local cwd="$1" git_branch="$2" model="$3" rl_5h="$4"
 
-  # Build content segments
-  local seg1="${ICON_DIR} ${cwd}"
+  # Compact dir: show only last component (current dir name)
+  local compact_dir
+  compact_dir=$(basename "$cwd")
+  [ "$compact_dir" = "~" ] && compact_dir="~"
+
+  # Build content segments (no icons)
+  local seg1="${compact_dir}"
   [ -n "$git_branch" ] && seg1="${seg1} (${git_branch})"
   local seg2="${model}"
   local seg3="5H:${rl_5h}%"
@@ -21,7 +26,7 @@ render_compact() {
     seg2=""
     content_vw=$(( ${#seg1} + 3 + ${#seg3} ))
     if [ "$content_vw" -gt "$max_content" ]; then
-      # Still too long — truncate dir
+      # Still too long — truncate dir+branch
       local avail=$(( max_content - 3 - ${#seg3} ))
       [ "$avail" -lt 5 ] && avail=5
       seg1="${seg1:0:$avail}.."
