@@ -172,7 +172,8 @@ fi
 CONFIG="$SCRIPT_DIR/config.json"
 theme=$(jq -r '.theme // "mygo"' < "$CONFIG" 2>/dev/null)
 CONFIG_OW=$(jq -r '.outer_width // 60' < "$CONFIG" 2>/dev/null)
-TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
+TERM_WIDTH=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}')
+[ -z "$TERM_WIDTH" ] && TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
 # Use smaller of config width and terminal width
 if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ]; then
   OW=$TERM_WIDTH
