@@ -243,5 +243,6 @@ render_hud() {
   build_bottom
 }
 
-# Pipe through sed to replace spaces with nbsp
-render_hud | sed "s/ /${nbsp}/g"
+# Pipe: replace spaces with nbsp, prefix each line with ANSI reset
+rst_prefix=$'\033[0m'
+render_hud | sed "s/ /${nbsp}/g; s/^/${rst_prefix}/"
