@@ -2,14 +2,14 @@
 # lib/ui.sh — shared arrow-key menu UI
 # source'd by install.sh, configure.sh, etc.
 
-UI_REVERSE='\033[7m'
-UI_RESET='\033[0m'
-UI_DIM='\033[2m'
-UI_BOLD='\033[1m'
-UI_BLUE_BOLD='\033[34;1m'
-UI_GREEN_BOLD='\033[32;1m'
-UI_RED_BOLD='\033[31;1m'
-UI_YELLOW_BOLD='\033[33;1m'
+UI_REVERSE=$'\033[7m'
+UI_RESET=$'\033[0m'
+UI_DIM=$'\033[2m'
+UI_BOLD=$'\033[1m'
+UI_BLUE_BOLD=$'\033[34;1m'
+UI_GREEN_BOLD=$'\033[32;1m'
+UI_RED_BOLD=$'\033[31;1m'
+UI_YELLOW_BOLD=$'\033[33;1m'
 
 # ── Read single keypress (arrow keys, enter, q) ────────────────
 ui_read_key() {
@@ -54,15 +54,15 @@ ui_menu() {
   while true; do
     # Clear screen and draw
     printf '\033[2J\033[H' > /dev/tty
-    echo -e "${UI_BLUE_BOLD} ${title}${UI_RESET}" > /dev/tty
-    echo -e " ─────────────────────" > /dev/tty
-    echo -e " ${UI_DIM}↑↓ move  Enter select${UI_RESET}\n" > /dev/tty
+    echo "${UI_BLUE_BOLD} ${title}${UI_RESET}" > /dev/tty
+    echo " ─────────────────────" > /dev/tty
+    echo " ${UI_DIM}↑↓ move  Enter select${UI_RESET}\n" > /dev/tty
 
     for i in "${!items[@]}"; do
       if [ "$i" -eq "$sel" ]; then
-        echo -e "  ${UI_REVERSE} ▸ ${items[$i]} ${UI_RESET}" > /dev/tty
+        echo "  ${UI_REVERSE} ▸ ${items[$i]} ${UI_RESET}" > /dev/tty
       else
-        echo -e "    ${items[$i]}" > /dev/tty
+        echo "    ${items[$i]}" > /dev/tty
       fi
     done
 

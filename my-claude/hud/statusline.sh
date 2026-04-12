@@ -196,6 +196,7 @@ detect_term_width() {
 }
 
 TERM_WIDTH=$(detect_term_width)
+[[ "$TERM_WIDTH" =~ ^[0-9]+$ ]] || TERM_WIDTH=80
 # Use smaller of config width and terminal width
 if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ] 2>/dev/null; then
   OW=$TERM_WIDTH
@@ -214,7 +215,12 @@ sec_codex=$(jq -r '.sections.codex.enabled // false' < "$CONFIG" 2>/dev/null)
 
 # ── Load theme + render engine ──────────────────────────────────
 source "$SCRIPT_DIR/render.sh"
-source "$SCRIPT_DIR/themes/${theme}.sh"
+theme_file="$SCRIPT_DIR/themes/${theme}.sh"
+if [ ! -f "$theme_file" ]; then
+  theme="mygo"
+  theme_file="$SCRIPT_DIR/themes/mygo.sh"
+fi
+source "$theme_file"
 
 # ── Render HUD ──────────────────────────────────────────────────
 nbsp=$(printf '\302\240')

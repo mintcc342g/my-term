@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Protect custom powerline statusline from being overwritten by OMC setup.
+# Protect custom statusline from being overwritten by OMC setup.
 # Runs as a PostToolUse hook — zero token cost.
 #
 

@@ -5,6 +5,11 @@
 install_shell_theme() {
   log_start "install newro theme…"
 
+  if [ ! -d "${HOME}/.oh-my-zsh" ]; then
+    log_fail "oh-my-zsh not found. Please install oh-my-zsh first."
+    return 1
+  fi
+
   ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 
   # Clone to temp dir, extract theme, cleanup
