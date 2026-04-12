@@ -86,6 +86,10 @@ done < <(jq -r '.[] | [
 
 # --- Claude에 협업 지시문 주입 ---
 DIRECTIVE_FILE="$(dirname "$0")/co-directive.md"
+if [[ -L "$DIRECTIVE_FILE" ]]; then
+  printf '%s\n' "[co-mux] 지시문 파일이 symlink입니다. 거부합니다."
+  exit 1
+fi
 if [[ ! -f "$DIRECTIVE_FILE" ]]; then
   printf '%s\n' "[co-mux] 지시문 파일이 없습니다: $DIRECTIVE_FILE"
   exit 1

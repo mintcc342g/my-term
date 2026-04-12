@@ -156,7 +156,27 @@ fi
 # If in error state (rate limited), force refresh on next invocation by keeping cache age short
 # but still show RL indicator this round
 
-# Format reset time (ISO → relative like "2h13m")
+# Format epoch → relative time like "2h13m"
+format_relative() {
+  local epoch="${1//[^0-9]/}"
+  [ -z "$epoch" ] && return
+  local now diff mins hrs days
+  now=$(date +%s)
+  diff=$((epoch - now))
+  [ "$diff" -le 0 ] && return
+  mins=$((diff / 60))
+  hrs=$((mins / 60))
+  days=$((hrs / 24))
+  if [ "$days" -gt 0 ]; then
+    printf "%dd%dh" "$days" $((hrs % 24))
+  elif [ "$hrs" -gt 0 ]; then
+    printf "%dh%dm" "$hrs" $((mins % 60))
+  else
+    printf "%dm" "$mins"
+  fi
+}
+
+# Format ISO timestamp → relative time
 format_reset() {
   local iso="$1"
   [ -z "$iso" ] && return
@@ -174,39 +194,7 @@ format_reset() {
 
   reset_epoch=$(date -j -f "%Y-%m-%d %H:%M:%S %z" "$clean" +%s 2>/dev/null)
   [ -z "$reset_epoch" ] && return
-  local now diff mins hrs days
-  now=$(date +%s)
-  diff=$((reset_epoch - now))
-  [ "$diff" -le 0 ] && return
-  mins=$((diff / 60))
-  hrs=$((mins / 60))
-  days=$((hrs / 24))
-  if [ "$days" -gt 0 ]; then
-    printf "%dd%dh" "$days" $((hrs % 24))
-  elif [ "$hrs" -gt 0 ]; then
-    printf "%dh%dm" "$hrs" $((mins % 60))
-  else
-    printf "%dm" "$mins"
-  fi
-}
-
-format_reset_epoch() {
-  local reset_epoch="${1//[^0-9]/}"
-  [ -z "$reset_epoch" ] && return
-  local now diff mins hrs days
-  now=$(date +%s)
-  diff=$((reset_epoch - now))
-  [ "$diff" -le 0 ] && return
-  mins=$((diff / 60))
-  hrs=$((mins / 60))
-  days=$((hrs / 24))
-  if [ "$days" -gt 0 ]; then
-    printf "%dd%dh" "$days" $((hrs % 24))
-  elif [ "$hrs" -gt 0 ]; then
-    printf "%dh%dm" "$hrs" $((mins % 60))
-  else
-    printf "%dm" "$mins"
-  fi
+  format_relative "$reset_epoch"
 }
 
 rl_5h_reset_fmt=$(format_reset "$rl_5h_reset")
@@ -312,7 +300,7 @@ fi
 
 if [ -n "$codex_left_pct" ]; then
   codex_txt="coLeft:${codex_left_pct}%"
-  codex_reset_fmt=$(format_reset_epoch "$codex_reset_epoch")
+  codex_reset_fmt=$(format_relative "$codex_reset_epoch")
   [ -n "$codex_reset_fmt" ] && codex_txt="${codex_txt}(${codex_reset_fmt})"
   if [ "$codex_left_pct" -le 10 ] 2>/dev/null; then
     segments+=("${codex_txt}|191|97|106|${FG_LIGHT_R}|${FG_LIGHT_G}|${FG_LIGHT_B}")

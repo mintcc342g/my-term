@@ -63,7 +63,7 @@ else
 fi
 
 BREW_PREFIX=$(brew --prefix)
-echo "# Homebrew 설정\neval \"\$($BREW_PREFIX/bin/brew shellenv)\"" >> "${ZPROFILE}"
+printf '\n# Homebrew 설정\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "${ZPROFILE}"
 eval "$($BREW_PREFIX/bin/brew shellenv)"
 
 
@@ -114,9 +114,9 @@ fi
 
 # zshrc
 log_step "add shell startup settings…\n"
-echo "\n# zsh-syntax-highlighting 설정\nsource \$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> "${ZSHRC}"
-echo "\n# zsh-autosuggestions 설정\nsource \$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> "${ZSHRC}"
-echo "\n# television 설정\neval \"\$(tv init zsh)\"" >> "${ZSHRC}"
+printf '\n# zsh-syntax-highlighting 설정\nsource $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n' >> "${ZSHRC}"
+printf '\n# zsh-autosuggestions 설정\nsource $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n' >> "${ZSHRC}"
+printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
 if ! grep -q 'pyenv 설정' "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
 
@@ -189,7 +189,7 @@ ask_asdf_config "Golang" install_golang
 case "$install_golang" in
   [yY])
     asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    echo "\n# asdf Golang 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/golang/set-env.zsh" >> "${ZPROFILE}"
+    printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
     print_env_uncomment_warning "Golang"
     ;;
   *)
@@ -202,7 +202,7 @@ ask_asdf_config "Java" install_java
 case "$install_java" in
   [yY])
     asdf plugin add java https://github.com/halcyon/asdf-java.git
-    echo "\n# asdf Java 환경 설정\n#. \${ASDF_DATA_DIR:-\$HOME/.asdf}/plugins/java/set-java-home.zsh" >> "${ZPROFILE}"
+    printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
     print_env_uncomment_warning "Java"
     ;;
   *)
@@ -232,6 +232,7 @@ chmod 700 "$HOME/.claude/my-collab"
 cp -f "$SCRIPT_DIR/my-claude/collab/"* "$HOME/.claude/my-collab/"
 chmod +x "$HOME/.claude/my-collab/"*.sh
 chmod 600 "$HOME/.claude/my-collab/co-agents.json"
+chmod 600 "$HOME/.claude/my-collab/co-directive.md"
 
 
 # memory 설정
