@@ -44,25 +44,61 @@ run_everything() {
 
 while true; do
   choice=""
-  ui_menu "my-term installer" choice \
-    "Convenience tools (CLI, macOS apps, DevOps)" \
-    "oh-my-zsh + zsh plugins" \
-    "Shell theme (newro)" \
-    "asdf + languages" \
-    "pyenv" \
-    "AI tools (Claude, OpenCode, Codex)" \
-    "Everything" \
-    "Done"
+  menu_items=(
+    "Convenience tools (CLI, macOS apps, DevOps)"
+    "oh-my-zsh + zsh plugins"
+    "Shell theme (newro)"
+    "asdf + languages"
+    "pyenv"
+    "AI tools (Claude, OpenCode, Codex)"
+  )
 
+  # Show HUD config option if already installed
+  hud_installed=false
+  if [ -f "$HOME/.claude/my-hud/configure.sh" ]; then
+    hud_installed=true
+    menu_items+=("HUD settings")
+  fi
+
+  menu_items+=("Everything" "Done")
+
+  ui_menu "my-term installer" choice "${menu_items[@]}"
+
+  # Map selection to action
+  local action=""
   case "$choice" in
-    0) install_convenience ;;
-    1) install_oh_my_zsh ;;
-    2) install_shell_theme ;;
-    3) install_asdf_langs ;;
-    4) install_pyenv ;;
-    5) install_ai_tools ;;
-    6) run_everything ; break ;;
-    7|255) break ;;
+    0) action="convenience" ;;
+    1) action="oh-my-zsh" ;;
+    2) action="shell-theme" ;;
+    3) action="asdf" ;;
+    4) action="pyenv" ;;
+    5) action="ai-tools" ;;
+    *)
+      if $hud_installed; then
+        case "$choice" in
+          6) action="hud-config" ;;
+          7) action="everything" ;;
+          *) action="done" ;;
+        esac
+      else
+        case "$choice" in
+          6) action="everything" ;;
+          *) action="done" ;;
+        esac
+      fi
+      ;;
+  esac
+
+  case "$action" in
+    convenience)  install_convenience ;;
+    oh-my-zsh)    install_oh_my_zsh ;;
+    shell-theme)  install_shell_theme ;;
+    asdf)         install_asdf_langs ;;
+    pyenv)        install_pyenv ;;
+    ai-tools)     install_ai_tools ;;
+    hud-config)   bash "$HOME/.claude/my-hud/configure.sh" ;;
+    everything)   run_everything ; break ;;
+    done)         break ;;
   esac
 done
 
