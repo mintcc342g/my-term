@@ -54,7 +54,8 @@ while true; do
   menu_items+=("pyenv");                                       menu_actions+=("pyenv")
   menu_items+=("AI tools (Claude, OpenCode, Codex)");          menu_actions+=("ai-tools")
 
-  if [ -f "$HOME/.claude/my-hud/configure.sh" ]; then
+  # Detect HUD (new or legacy)
+  if [ -f "$HOME/.claude/my-hud/configure.sh" ] || [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ]; then
     menu_items+=("HUD settings"); menu_actions+=("hud-config")
   fi
 

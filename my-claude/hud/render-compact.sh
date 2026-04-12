@@ -45,7 +45,15 @@ render_compact() {
 
   # Branch: max 7 chars
   if [ -n "$git_branch" ] && [ ${#git_branch} -gt 7 ]; then
-    git_branch="${git_branch:0:7}.."
+    git_branch="${git_branch:0:7}…"
+  fi
+
+  # Model: keep up to version number (e.g. "Opus 4.6..")
+  if [ -n "$model" ]; then
+    local short_model
+    short_model=$(printf '%s' "$model" | sed -E 's/^([A-Za-z]+ [0-9]+\.[0-9]+).*/\1…/')
+    # If sed didn't shorten it, keep original
+    [ ${#short_model} -lt ${#model} ] && model="$short_model"
   fi
 
   # Build segment texts with padding spaces
