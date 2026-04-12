@@ -18,6 +18,7 @@ ICON_SESS=$'\xef\x80\x97'      # U+F017 clock
 # ── Gradient ────────────────────────────────────────────────────
 grad_fg() {
   local pos=$1 max=$2
+  [ "$max" -lt 1 ] && max=1
   local r=$(( GRAD_START_R + (GRAD_END_R - GRAD_START_R) * pos / max ))
   local g=$(( GRAD_START_G + (GRAD_END_G - GRAD_START_G) * pos / max ))
   local b=$(( GRAD_START_B + (GRAD_END_B - GRAD_START_B) * pos / max ))
@@ -100,8 +101,10 @@ build_top() {
   else
     deco_color="${DECO_COLOR:-$(grad_fg $deco_pos $OW)}"
   fi
+  local deco_str
   # shellcheck disable=SC2059
-  printf "${deco_color}$(printf "$DECO_FMT" "$DECO_ICON")${rst}"
+  deco_str=$(printf "$DECO_FMT" "$DECO_ICON")
+  printf '%s%s%s' "$deco_color" "$deco_str" "$rst"
 
   printf '%s─' "$(grad_fg $((OW-2)) $OW)"
   printf '%s┐%s\n' "$(grad_fg $((OW-1)) $OW)" "$rst"

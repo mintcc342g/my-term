@@ -45,7 +45,7 @@ install_ai_tools() {
 
 _install_claude_code() {
   log_step "brew install/update claude-code…"
-  brew install --cask claude-code 2>/dev/null || brew upgrade --cask claude-code 2>/dev/null || true
+  brew install --cask claude-code 2>/dev/null || brew upgrade --cask claude-code 2>/dev/null || log_fail "claude-code install/upgrade failed"
   log_done "claude-code ready."
 
   # Claude alias
@@ -64,7 +64,7 @@ _install_claude_code() {
     alias_name="c"
   fi
 
-  ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
   if ! grep -q "^alias ${alias_name}=" "$ZSHRC" 2>/dev/null; then
     echo "alias ${alias_name}=\"claude\"" >> "$ZSHRC"
     export ZSHRC_MODIFIED=true

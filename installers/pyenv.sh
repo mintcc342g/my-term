@@ -11,8 +11,8 @@ install_pyenv() {
   fi
   brew install pyenv pyenv-virtualenv
 
-  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-  ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+  local ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
+  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 
   if ! grep -q 'pyenv/bin' "$ZPROFILE" 2>/dev/null; then
     PYENV_BLOCK='if [[ ":$PATH:" != *":$HOME/.pyenv/bin:"* ]]; then

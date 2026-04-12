@@ -61,7 +61,7 @@ fi
 # ── Cache hit rate ──────────────────────────────────────────────
 total_for_cache=$((input_tokens + cache_create))
 if [ $((total_for_cache + cache_read)) -gt 0 ]; then
-  cache_pct=$(awk "BEGIN {printf \"%.0f\", ($cache_read / ($total_for_cache + $cache_read)) * 100}")
+  cache_pct=$(awk -v cr="$cache_read" -v tc="$total_for_cache" 'BEGIN {printf "%.0f", (cr / (tc + cr)) * 100}')
 else
   cache_pct=0
 fi
@@ -101,7 +101,7 @@ RL_LOCK="$cache_dir/ratelimit.lock"
 if $refresh_rl; then
   if mkdir "$RL_LOCK" 2>/dev/null; then
     trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
-    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" || true
+    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || log_err="ratelimit refresh failed"
     rm -rf "$RL_LOCK" 2>/dev/null
     trap - EXIT
   else
@@ -141,7 +141,13 @@ fi
 # ── Codex usage (from cache) ────────────────────────────────────
 CODEX_USAGE_CACHE="$cache_dir/codex-usage.json"
 codex_left_pct=""
-codex_model="codex-mini"
+# Read codex model from config.toml
+codex_model="Unknown"
+if [ -f "$HOME/.codex/config.toml" ]; then
+  _cm=$(grep '^model' "$HOME/.codex/config.toml" 2>/dev/null | head -1 | sed 's/.*= *"//; s/".*//')
+  [ -n "$_cm" ] && codex_model="$_cm"
+  unset _cm
+fi
 codex_reset_fmt=""
 
 format_relative() {
@@ -249,6 +255,10 @@ IW=$(( OW - 2 ))
 # ── Load theme + render engine ──────────────────────────────────
 source "$SCRIPT_DIR/render.sh"
 source "$SCRIPT_DIR/render-compact.sh"
+# Validate theme name (prevent path traversal)
+if [[ ! "$theme" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+  theme="mygo"
+fi
 theme_file="$SCRIPT_DIR/themes/${theme}.sh"
 if [ ! -f "$theme_file" ]; then
   theme="mygo"

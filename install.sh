@@ -26,10 +26,13 @@ source "$SCRIPT_DIR/installers/asdf-langs.sh"
 source "$SCRIPT_DIR/installers/pyenv.sh"
 source "$SCRIPT_DIR/installers/ai-tools.sh"
 
+# ── Terminal cleanup on exit/interrupt ──────────────────────────
+trap 'printf "\033[?25h" 2>/dev/null; stty sane 2>/dev/null' EXIT INT TERM
+
 # ── OS check ────────────────────────────────────────────────────
 if [ "$(uname -s)" = "Linux" ]; then
     echo "${RED_BOLD}NOT SUPPORT OS${RESET}"
-    exit 0
+    exit 1
 fi
 
 # ── Main menu ───────────────────────────────────────────────────

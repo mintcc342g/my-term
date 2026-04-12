@@ -6,7 +6,7 @@ install_oh_my_zsh() {
   log_start "install oh-my-zsh…"
   RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
-  ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 
   log_start "brew install zsh plugins…"
   if ! command -v brew &>/dev/null; then
@@ -25,5 +25,4 @@ install_oh_my_zsh() {
     export ZSHRC_MODIFIED=true
   fi
   log_done "oh-my-zsh + plugins installed."
-  export ZSHRC
 }

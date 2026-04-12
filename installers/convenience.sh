@@ -12,8 +12,9 @@ install_convenience() {
     brew update
   fi
 
+  local BREW_PREFIX
   BREW_PREFIX=$(brew --prefix)
-  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
+  local ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
   if ! grep -q 'brew shellenv' "$ZPROFILE" 2>/dev/null; then
     printf '\n# Homebrew 설정\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "${ZPROFILE}"
   fi
@@ -38,7 +39,7 @@ install_convenience() {
   brew install oven-sh/bun/bun
 
   # television shell integration
-  ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
   if ! grep -q 'tv init' "$ZSHRC" 2>/dev/null; then
     printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
     export ZSHRC_MODIFIED=true
