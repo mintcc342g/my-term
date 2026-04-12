@@ -68,16 +68,15 @@ done
 
 printf '\033[2J\033[H'
 log_done "${GREEN_BOLD}Installation complete!${RESET} 🎉"
-echo "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell."
-echo
+echo -e "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
 
 cat << EOF
-::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET})
-    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET})
-    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET})
-    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
-    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
+::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  ${YELLOW}:::${BLUE} :::${PINK} :::${PURPLE} :::${GREEN} :::${RESET}
+    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: ${YELLOW}:+:${BLUE} :+:${PINK} :+:${PURPLE} :+:${GREEN} :+:${RESET}
+    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ ${YELLOW}+:+${BLUE} +:+${PINK} +:+${PURPLE} +:+${GREEN} +:+${RESET}
+    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ ${YELLOW}+#+${BLUE} +#+${PINK} +#+${PURPLE} +#+${GREEN} +#+${RESET}
+    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ ${YELLOW}+#+${BLUE} +#+${PINK} +#+${PURPLE} +#+${GREEN} +#+${RESET}
     #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#
-###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET})
+###########     ###         ########       ###       ###    ###     ########   ########  ${YELLOW}###${BLUE} ###${PINK} ###${PURPLE} ###${GREEN} ###${RESET}
 EOF
-echo
+echo -e "\n"
