@@ -11,20 +11,11 @@ install_asdf_langs() {
   fi
   brew install asdf
 
-  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-  if ! grep -q 'asdf/shims' "$ZPROFILE" 2>/dev/null; then
-    ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
-  export PATH="$HOME/.asdf/shims:$PATH"
-fi'
-    printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
-  fi
-
   log_done "asdf installed."
 
   # Language selection
-  local langs=("Golang" "Java" "Skip")
+  ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
   local choice=""
-  local install_golang="n"
 
   while true; do
     ui_menu "asdf — select language to configure" choice \
@@ -37,7 +28,6 @@ fi'
         log_step "configure Golang…"
         asdf plugin add golang https://github.com/kennyp/asdf-golang.git 2>/dev/null || true
         printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
-        install_golang="y"
         log_done "Golang plugin added."
         echo
         echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Golang${RESET}, please ${RED_BOLD}uncomment${RESET} the Golang environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
@@ -60,5 +50,13 @@ fi'
     esac
   done
 
-  export install_golang
+  # asdf PATH — after plugins are configured
+  if ! grep -q 'asdf/shims' "$ZPROFILE" 2>/dev/null; then
+    ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
+  export PATH="$HOME/.asdf/shims:$PATH"
+fi'
+    printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
+  fi
+
+  log_done "asdf PATH configured."
 }
