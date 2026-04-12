@@ -139,7 +139,7 @@ while true; do
       "codex: $(on_off "$sec_codex")" \
       "Sync HUD (update from project)" \
       "Save & Exit" \
-      "Exit without saving"
+      "Exit"
 
     case "$choice" in
       0) select_theme ;;
@@ -166,7 +166,7 @@ while true; do
       "claude: $(on_off "$sec_claude")" \
       "codex: $(on_off "$sec_codex")" \
       "Save & Exit" \
-      "Exit without saving"
+      "Exit"
 
     case "$choice" in
       0) select_theme ;;

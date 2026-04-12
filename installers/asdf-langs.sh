@@ -28,13 +28,15 @@ fi'
     ui_menu "asdf — select language to configure" choice \
       "Golang" \
       "Java" \
-      "Done"
+      "Exit"
 
     case "$choice" in
       0)
         log_step "configure Golang…"
         asdf plugin add golang https://github.com/kennyp/asdf-golang.git 2>/dev/null || true
-        printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
+        if ! grep -q 'asdf Golang' "$ZPROFILE" 2>/dev/null; then
+          printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
+        fi
         log_done "Golang plugin added."
         echo
         echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Golang${RESET}, please ${RED_BOLD}uncomment${RESET} the Golang environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
@@ -44,7 +46,9 @@ fi'
       1)
         log_step "configure Java…"
         asdf plugin add java https://github.com/halcyon/asdf-java.git 2>/dev/null || true
-        printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
+        if ! grep -q 'asdf Java' "$ZPROFILE" 2>/dev/null; then
+          printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
+        fi
         log_done "Java plugin added."
         echo
         echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Java${RESET}, please ${RED_BOLD}uncomment${RESET} the Java environment configuration in your ${RED_BOLD}.zprofile.${RESET}"

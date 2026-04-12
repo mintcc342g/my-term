@@ -44,50 +44,27 @@ run_everything() {
 
 while true; do
   choice=""
-  menu_items=(
-    "Convenience tools (CLI, macOS apps, DevOps)"
-    "oh-my-zsh + zsh plugins"
-    "Shell theme (newro)"
-    "asdf + languages"
-    "pyenv"
-    "AI tools (Claude, OpenCode, Codex)"
-  )
+  menu_items=()
+  menu_actions=()
 
-  # Show HUD config option if already installed
-  hud_installed=false
+  menu_items+=("Convenience tools (CLI, macOS apps, DevOps)"); menu_actions+=("convenience")
+  menu_items+=("oh-my-zsh + zsh plugins");                     menu_actions+=("oh-my-zsh")
+  menu_items+=("Shell theme (newro)");                         menu_actions+=("shell-theme")
+  menu_items+=("asdf + languages");                            menu_actions+=("asdf")
+  menu_items+=("pyenv");                                       menu_actions+=("pyenv")
+  menu_items+=("AI tools (Claude, OpenCode, Codex)");          menu_actions+=("ai-tools")
+
   if [ -f "$HOME/.claude/my-hud/configure.sh" ]; then
-    hud_installed=true
-    menu_items+=("HUD settings")
+    menu_items+=("HUD settings"); menu_actions+=("hud-config")
   fi
 
-  menu_items+=("Everything" "Done")
+  menu_items+=("Everything"); menu_actions+=("everything")
+  menu_items+=("Exit");       menu_actions+=("exit")
 
   ui_menu "my-term installer" choice "${menu_items[@]}"
 
-  # Map selection to action
-  action=""
-  case "$choice" in
-    0) action="convenience" ;;
-    1) action="oh-my-zsh" ;;
-    2) action="shell-theme" ;;
-    3) action="asdf" ;;
-    4) action="pyenv" ;;
-    5) action="ai-tools" ;;
-    *)
-      if $hud_installed; then
-        case "$choice" in
-          6) action="hud-config" ;;
-          7) action="everything" ;;
-          *) action="done" ;;
-        esac
-      else
-        case "$choice" in
-          6) action="everything" ;;
-          *) action="done" ;;
-        esac
-      fi
-      ;;
-  esac
+  [ "$choice" = "255" ] && break
+  action="${menu_actions[$choice]:-exit}"
 
   case "$action" in
     convenience)  install_convenience ;;
@@ -100,7 +77,7 @@ while true; do
       bash "$SCRIPT_DIR/my-claude/hud/configure.sh" --project-root "$SCRIPT_DIR"
       ;;
     everything)   run_everything ; break ;;
-    done)         break ;;
+    exit)         break ;;
   esac
 done
 

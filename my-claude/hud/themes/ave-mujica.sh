@@ -26,6 +26,8 @@ C_CRIT="$(fg 170 35 50)"
 C_BAR="$(fg 138 55 68)"
 
 # Compact powerline segment colors (bg R G B, fg R G B)
+COMPACT_FG="$(fg 236 239 244)"  # bright white
+COMPACT_SEP="$(fg 200 195 195)"  # muted warm white separator
 CSEG1_BG=(85 12 30);     CSEG1_FG=(200 178 180)   # dir — crimson bg
 CSEG2_BG=(105 50 62);    CSEG2_FG=(200 178 180)   # branch — dark wine bg
 CSEG3_BG=(60 45 50);     CSEG3_FG=(155 100 115)   # model — dark bg

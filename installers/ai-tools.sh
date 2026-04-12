@@ -17,7 +17,7 @@ install_ai_tools() {
       "Claude Code" \
       "OpenCode" \
       "Codex" \
-      "Done"
+      "Exit"
 
     case "$choice" in
       0) _install_claude_code ;;
@@ -57,6 +57,12 @@ _install_claude_code() {
   local alias_name
   read -r alias_name < /dev/tty
   [ -z "$alias_name" ] && alias_name="c"
+
+  # Sanitize: only allow valid shell identifier chars
+  if [[ ! "$alias_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+    log_fail "Invalid alias name. Using default: c"
+    alias_name="c"
+  fi
 
   ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
   if ! grep -q "^alias ${alias_name}=" "$ZSHRC" 2>/dev/null; then

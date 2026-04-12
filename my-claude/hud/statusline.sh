@@ -45,13 +45,14 @@ pct=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
 
 # ── Shorten path (3 depth max, truncate if too long) ───────────
 MAX_DIR_LEN=20  # visible chars for dir inside │ ... │
-short_dir=$(printf '%s' "$cwd" | sed "s|^$HOME|~|" | awk -F/ '{
+_escaped_home=$(printf '%s' "$HOME" | sed 's/[&/\]/\\&/g')
+short_dir=$(printf '%s' "$cwd" | sed "s|^${_escaped_home}|~|" | awk -F/ '{
   if (NF <= 3) print $0
   else printf "%s/%s/%s", $(NF-2), $(NF-1), $NF
 }')
 # If still too long, collapse middle to ..
 if [ ${#short_dir} -gt $MAX_DIR_LEN ]; then
-  short_dir=$(printf '%s' "$cwd" | sed "s|^$HOME|~|" | awk -F/ '{
+  short_dir=$(printf '%s' "$cwd" | sed "s|^${_escaped_home}|~|" | awk -F/ '{
     if (NF <= 2) print $0
     else printf "%s/../%s", $1, $NF
   }')
@@ -100,7 +101,7 @@ RL_LOCK="$cache_dir/ratelimit.lock"
 if $refresh_rl; then
   if mkdir "$RL_LOCK" 2>/dev/null; then
     trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
-    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh"
+    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" || true
     rm -rf "$RL_LOCK" 2>/dev/null
     trap - EXIT
   else
@@ -176,10 +177,21 @@ fi
 [ -z "$codex_left_pct" ] && codex_left_pct=0
 [ -z "$codex_reset_fmt" ] && codex_reset_fmt="--"
 
-# ── Load config ─────────────────────────────────────────────────
+# ── Load config (single jq call) ───────────────────────────────
 CONFIG="$SCRIPT_DIR/config.json"
-theme=$(jq -r '.theme // "mygo"' < "$CONFIG" 2>/dev/null)
-CONFIG_OW=$(jq -r '.outer_width // 60' < "$CONFIG" 2>/dev/null)
+IFS=$'\t' read -r theme CONFIG_OW BW sec_workspace sec_claude sec_codex < <(
+  jq -r '[
+    (.theme // "mygo"),
+    (.outer_width // 60),
+    (.bar_width // 14),
+    (.sections.workspace.enabled // true),
+    (.sections.claude.enabled // true),
+    (.sections.codex.enabled // false)
+  ] | @tsv' < "$CONFIG" 2>/dev/null
+)
+[ -z "$theme" ] && theme="mygo"
+[[ "$CONFIG_OW" =~ ^[0-9]+$ ]] || CONFIG_OW=60
+[[ "$BW" =~ ^[0-9]+$ ]] || BW=14
 
 # ── Detect terminal width (walk parent processes to find TTY) ───
 detect_term_width() {
@@ -203,26 +215,36 @@ detect_term_width() {
   tput cols 2>/dev/null || echo 80
 }
 
-TERM_WIDTH=$(detect_term_width)
-[[ "$TERM_WIDTH" =~ ^[0-9]+$ ]] || TERM_WIDTH=80
-# Use smaller of config width and terminal width
-if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ] 2>/dev/null; then
-  OW=$TERM_WIDTH
+# Check COLUMNS env first (Claude Code may set this), then detect via TTY walk
+if [ -n "${COLUMNS:-}" ] && [ "${COLUMNS:-0}" -gt 0 ] 2>/dev/null; then
+  TERM_WIDTH=$COLUMNS
 else
-  OW=$CONFIG_OW
+  TERM_WIDTH=$(detect_term_width)
 fi
-# Minimum width to render HUD — below this, output nothing
-MIN_OW=50
-if [ "$OW" -lt "$MIN_OW" ] 2>/dev/null; then
+[[ "$TERM_WIDTH" =~ ^[0-9]+$ ]] || TERM_WIDTH=80
+
+# Minimum width — below this, output nothing
+MIN_WIDTH=50
+if [ "$TERM_WIDTH" -lt "$MIN_WIDTH" ] 2>/dev/null; then
   exit 0
 fi
 
-BW=$(jq -r '.bar_width // 14' < "$CONFIG" 2>/dev/null)
-IW=$(( OW - 2 ))
+# Determine mode based on terminal width
+COMPACT_THRESHOLD=130
+hud_mode="full"
+if [ "$TERM_WIDTH" -lt "$COMPACT_THRESHOLD" ]; then
+  hud_mode="compact"
+  OW=$TERM_WIDTH
+else
+  # Full mode: use config outer_width, capped by terminal
+  if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ] 2>/dev/null; then
+    OW=$TERM_WIDTH
+  else
+    OW=$CONFIG_OW
+  fi
+fi
 
-sec_workspace=$(jq -r '.sections.workspace.enabled // true' < "$CONFIG" 2>/dev/null)
-sec_claude=$(jq -r '.sections.claude.enabled // true' < "$CONFIG" 2>/dev/null)
-sec_codex=$(jq -r '.sections.codex.enabled // false' < "$CONFIG" 2>/dev/null)
+IW=$(( OW - 2 ))
 
 # ── Load theme + render engine ──────────────────────────────────
 source "$SCRIPT_DIR/render.sh"
@@ -233,13 +255,6 @@ if [ ! -f "$theme_file" ]; then
   theme_file="$SCRIPT_DIR/themes/mygo.sh"
 fi
 source "$theme_file"
-
-# ── Determine mode (full vs compact) ───────────────────────────
-COMPACT_THRESHOLD=100
-hud_mode="full"
-if [ "$OW" -lt "$COMPACT_THRESHOLD" ]; then
-  hud_mode="compact"
-fi
 
 # ── Render HUD ──────────────────────────────────────────────────
 nbsp=$(printf '\302\240')
