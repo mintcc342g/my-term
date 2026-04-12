@@ -226,6 +226,7 @@ sec_codex=$(jq -r '.sections.codex.enabled // false' < "$CONFIG" 2>/dev/null)
 
 # ── Load theme + render engine ──────────────────────────────────
 source "$SCRIPT_DIR/render.sh"
+source "$SCRIPT_DIR/render-compact.sh"
 theme_file="$SCRIPT_DIR/themes/${theme}.sh"
 if [ ! -f "$theme_file" ]; then
   theme="mygo"
@@ -233,10 +234,22 @@ if [ ! -f "$theme_file" ]; then
 fi
 source "$theme_file"
 
+# ── Determine mode (full vs compact) ───────────────────────────
+COMPACT_THRESHOLD=100
+hud_mode="full"
+if [ "$OW" -lt "$COMPACT_THRESHOLD" ]; then
+  hud_mode="compact"
+fi
+
 # ── Render HUD ──────────────────────────────────────────────────
 nbsp=$(printf '\302\240')
 
 render_hud() {
+  if [ "$hud_mode" = "compact" ]; then
+    render_compact "$short_dir" "$git_branch" "$model_name" "$rl_5h_pct"
+    return
+  fi
+
   build_top
 
   if [ "$sec_workspace" = "true" ]; then

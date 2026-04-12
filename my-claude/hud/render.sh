@@ -191,3 +191,4 @@ render_codex() {
   row "$cx_content" "$cx_vw"
   metric_row_inv "LEFT" "$left"
 }
+
