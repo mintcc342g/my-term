@@ -96,7 +96,15 @@ while true; do
     asdf)         install_asdf_langs ;;
     pyenv)        install_pyenv ;;
     ai-tools)     install_ai_tools ;;
-    hud-config)   bash "$HOME/.claude/my-hud/configure.sh" ;;
+    hud-config)
+      # Sync latest HUD files before configure
+      cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
+      cp -f "$SCRIPT_DIR/my-claude/hud/"*.json "$HOME/.claude/my-hud/" 2>/dev/null
+      cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
+      cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
+      chmod +x "$HOME/.claude/my-hud/"*.sh
+      bash "$HOME/.claude/my-hud/configure.sh"
+      ;;
     everything)   run_everything ; break ;;
     done)         break ;;
   esac
