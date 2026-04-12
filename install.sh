@@ -65,7 +65,7 @@ while true; do
   ui_menu "my-term installer" choice "${menu_items[@]}"
 
   # Map selection to action
-  local action=""
+  action=""
   case "$choice" in
     0) action="convenience" ;;
     1) action="oh-my-zsh" ;;
