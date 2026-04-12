@@ -110,8 +110,7 @@ build_top() {
 
 # ── Bottom border ───────────────────────────────────────────────
 build_bottom() {
-  local user
-  user=$(whoami)
+  local user="${USER:-$(whoami)}"
   local label=" ${user} "
   local ll=${#label}
   local fill=$(( OW - ll - 3 ))

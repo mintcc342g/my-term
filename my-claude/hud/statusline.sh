@@ -37,11 +37,14 @@ IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_
 [ -z "$cwd" ] && cwd="$PWD"
 [ -z "$model_name" ] && model_name="Unknown"
 [ -z "$pct" ] && pct=0
-pct=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
+pct=$(LC_NUMERIC=C printf "%.0f" "$pct" 2>/dev/null || echo 0)
 [ -z "$pct" ] && pct=0
 [ -z "$input_tokens" ] && input_tokens=0
 [ -z "$cache_create" ] && cache_create=0
 [ -z "$cache_read" ] && cache_read=0
+[[ "$input_tokens" =~ ^[0-9]+$ ]] || input_tokens=0
+[[ "$cache_create" =~ ^[0-9]+$ ]] || cache_create=0
+[[ "$cache_read" =~ ^[0-9]+$ ]] || cache_read=0
 
 # ── Shorten path ────────────────────────────────────────────────
 # Rules: max 5 depth, max 50 chars, always show current dir
@@ -141,12 +144,12 @@ if [ -f "$RL_CACHE" ] && jq -e '.five_hour' < "$RL_CACHE" >/dev/null 2>&1; then
 fi
 
 if [ -n "$rl_5h_pct" ]; then
-  rl_5h_pct=$(printf "%.0f" "$rl_5h_pct" 2>/dev/null)
+  rl_5h_pct=$(LC_NUMERIC=C printf "%.0f" "$rl_5h_pct" 2>/dev/null)
 else
   rl_5h_pct=0
 fi
 if [ -n "$rl_wk_pct" ]; then
-  rl_wk_pct=$(printf "%.0f" "$rl_wk_pct" 2>/dev/null)
+  rl_wk_pct=$(LC_NUMERIC=C printf "%.0f" "$rl_wk_pct" 2>/dev/null)
 else
   rl_wk_pct=0
 fi
@@ -200,7 +203,7 @@ if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_
       (.primary.resets_at // "")
     ] | @tsv' < "$CODEX_USAGE_CACHE" 2>/dev/null
   )
-  codex_left_pct=$(printf "%.0f" "$codex_left_pct" 2>/dev/null)
+  codex_left_pct=$(LC_NUMERIC=C printf "%.0f" "$codex_left_pct" 2>/dev/null)
   [[ "$codex_left_pct" =~ ^[0-9]+$ ]] || codex_left_pct=""
   codex_reset_fmt=$(format_relative "$codex_reset_epoch")
 fi
