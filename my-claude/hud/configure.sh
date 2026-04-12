@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 #
 # SF-HUD configuration UI — arrow key navigation
-# Usage: bash statusline.sh --config
+# Called by installer after statusline install, or directly by user
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SCRIPT_DIR/config.json"
 
-YELLOW_BOLD='\033[33;1m'
-BLUE_BOLD='\033[34;1m'
-GREEN_BOLD='\033[32;1m'
-RED_BOLD='\033[31;1m'
-DIM='\033[2m'
-RESET='\033[0m'
-REVERSE='\033[7m'
+# Source shared UI (try installed location, then project relative)
+if [ -f "$SCRIPT_DIR/lib/ui.sh" ]; then
+  source "$SCRIPT_DIR/lib/ui.sh"
+elif [ -f "$SCRIPT_DIR/../../lib/ui.sh" ]; then
+  source "$SCRIPT_DIR/../../lib/ui.sh"
+else
+  echo "Error: lib/ui.sh not found" >&2
+  exit 1
+fi
 
 # ── Load / Save config ──────────────────────────────────────────
 load_config() {
@@ -35,161 +37,60 @@ save_config() {
      < "$CONFIG" > "$tmp" && mv "$tmp" "$CONFIG"
 }
 
-# ── Helpers ──────────────────────────────────────────────────────
 toggle() {
   if [ "$1" = "true" ]; then echo "false"; else echo "true"; fi
 }
 
-status_label() {
-  if [ "$1" = "true" ]; then
-    printf "${GREEN_BOLD}ON${RESET}"
-  else
-    printf "${RED_BOLD}OFF${RESET}"
-  fi
-}
-
-# ── Read single keypress (arrow keys return special) ────────────
-read_key() {
-  local key
-  # Use stty for raw mode to ensure arrow keys work across bash/zsh
-  local old_stty
-  old_stty=$(stty -g < /dev/tty 2>/dev/null)
-  stty raw -echo < /dev/tty 2>/dev/null
-
-  key=$(dd bs=1 count=1 2>/dev/null < /dev/tty)
-
-  if [[ "$key" == $'\x1b' ]]; then
-    local seq
-    seq=$(dd bs=1 count=2 2>/dev/null < /dev/tty)
-    stty "$old_stty" < /dev/tty 2>/dev/null
-    case "$seq" in
-      '[A') echo "up" ;;
-      '[B') echo "down" ;;
-      *)    echo "esc" ;;
-    esac
-  elif [[ "$key" == "" || "$key" == $'\n' || "$key" == $'\r' ]]; then
-    stty "$old_stty" < /dev/tty 2>/dev/null
-    echo "enter"
-  else
-    stty "$old_stty" < /dev/tty 2>/dev/null
-    echo "$key"
-  fi
-}
-
-# ── Draw menu ───────────────────────────────────────────────────
-THEMES=("mygo" "eimes" "ave-mujica")
-
-draw_main() {
-  local sel=$1
-  local items=(
-    "Theme: ${theme}"
-    "workspace: $([ "$sec_workspace" = "true" ] && echo "ON" || echo "OFF")"
-    "claude: $([ "$sec_claude" = "true" ] && echo "ON" || echo "OFF")"
-    "codex: $([ "$sec_codex" = "true" ] && echo "ON" || echo "OFF")"
-    "Save & Exit"
-    "Exit without saving"
-  )
-
-  printf '\033[2J\033[H'  # clear screen
-  echo -e "${BLUE_BOLD} CLAUDE HUD Settings${RESET}"
-  echo -e " ─────────────────────"
-  echo -e " ${DIM}↑↓ move  Enter select${RESET}\n"
-
-  for i in "${!items[@]}"; do
-    if [ "$i" -eq "$sel" ]; then
-      echo -e "  ${REVERSE} ▸ ${items[$i]} ${RESET}"
-    else
-      echo -e "    ${items[$i]}"
-    fi
-  done
-}
-
-draw_theme_menu() {
-  local sel=$1
-
-  printf '\033[2J\033[H'
-  echo -e "${BLUE_BOLD} Select Theme${RESET}"
-  echo -e " ─────────────────────"
-  echo -e " ${DIM}↑↓ move  Enter select${RESET}\n"
-
-  for i in "${!THEMES[@]}"; do
-    local marker=""
-    [ "${THEMES[$i]}" = "$theme" ] && marker=" ${DIM}(current)${RESET}"
-    if [ "$i" -eq "$sel" ]; then
-      echo -e "  ${REVERSE} ▸ ${THEMES[$i]}${RESET}${marker}"
-    else
-      echo -e "    ${THEMES[$i]}${marker}"
-    fi
-  done
-  echo
-  if [ 3 -eq "$sel" ]; then
-    echo -e "  ${REVERSE} ▸ Back ${RESET}"
-  else
-    echo -e "    Back"
-  fi
+on_off() {
+  if [ "$1" = "true" ]; then echo "ON"; else echo "OFF"; fi
 }
 
 # ── Theme submenu ───────────────────────────────────────────────
-run_theme_menu() {
-  local sel=0
-  local max=3  # 0-2: themes, 3: back
+select_theme() {
+  local current_marker_0="" current_marker_1="" current_marker_2=""
+  [ "$theme" = "mygo" ] && current_marker_0=" (current)"
+  [ "$theme" = "eimes" ] && current_marker_1=" (current)"
+  [ "$theme" = "ave-mujica" ] && current_marker_2=" (current)"
 
-  while true; do
-    draw_theme_menu "$sel"
-    local key
-    key=$(read_key)
-    case "$key" in
-      up)    sel=$(( (sel - 1 + max + 1) % (max + 1) )) ;;
-      down)  sel=$(( (sel + 1) % (max + 1) )) ;;
-      enter)
-        if [ "$sel" -eq 3 ]; then
-          return
-        else
-          theme="${THEMES[$sel]}"
-          return
-        fi
-        ;;
-      esc|q) return ;;
-    esac
-  done
+  local choice
+  ui_menu "Select Theme" choice \
+    "mygo${current_marker_0}" \
+    "eimes${current_marker_1}" \
+    "ave-mujica${current_marker_2}" \
+    "Back"
+
+  case "$choice" in
+    0) theme="mygo" ;;
+    1) theme="eimes" ;;
+    2) theme="ave-mujica" ;;
+  esac
 }
 
-# ── Main menu loop ──────────────────────────────────────────────
+# ── Main loop ───────────────────────────────────────────────────
 load_config
 
-sel=0
-max=5  # 0-5: 6 items
-
-# Hide cursor
-printf '\033[?25l'
-trap 'printf "\033[?25h"' EXIT
-
 while true; do
-  draw_main "$sel"
-  key=$(read_key)
-  case "$key" in
-    up)    sel=$(( (sel - 1 + max + 1) % (max + 1) )) ;;
-    down)  sel=$(( (sel + 1) % (max + 1) )) ;;
-    enter)
-      case "$sel" in
-        0) run_theme_menu ;;
-        1) sec_workspace=$(toggle "$sec_workspace") ;;
-        2) sec_claude=$(toggle "$sec_claude") ;;
-        3) sec_codex=$(toggle "$sec_codex") ;;
-        4)
-          save_config
-          printf '\033[2J\033[H'
-          echo -e "${GREEN_BOLD}✔${RESET} Settings saved."
-          exit 0
-          ;;
-        5)
-          printf '\033[2J\033[H'
-          echo "Bye!"
-          exit 0
-          ;;
-      esac
+  local choice
+  ui_menu "CLAUDE HUD Settings" choice \
+    "Theme: ${theme}" \
+    "workspace: $(on_off "$sec_workspace")" \
+    "claude: $(on_off "$sec_claude")" \
+    "codex: $(on_off "$sec_codex")" \
+    "Save & Exit" \
+    "Exit without saving"
+
+  case "$choice" in
+    0) select_theme ;;
+    1) sec_workspace=$(toggle "$sec_workspace") ;;
+    2) sec_claude=$(toggle "$sec_claude") ;;
+    3) sec_codex=$(toggle "$sec_codex") ;;
+    4)
+      save_config
+      printf '\033[2J\033[H'
+      echo -e "${UI_GREEN_BOLD}✔${UI_RESET} Settings saved."
+      exit 0
       ;;
-    q)
+    5|255)
       printf '\033[2J\033[H'
       echo "Bye!"
       exit 0

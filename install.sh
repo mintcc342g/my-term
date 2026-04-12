@@ -28,7 +28,8 @@ log_done() {
   echo "${GREEN_BOLD}✔${RESET} $*"
 }
 
-# ── Source installers ───────────────────────────────────────────
+# ── Source shared UI + installers ───────────────────────────────
+source "$SCRIPT_DIR/lib/ui.sh"
 source "$SCRIPT_DIR/installers/env-setup.sh"
 source "$SCRIPT_DIR/installers/asdf-langs.sh"
 source "$SCRIPT_DIR/installers/statusline.sh"
@@ -44,21 +45,7 @@ if [ "$(uname -s)" = "Linux" ]; then
     exit 0
 fi
 
-# ── Banner ──────────────────────────────────────────────────────
-print_banner() {
-  cat << EOF
-::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET})
-    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET})
-    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET})
-    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
-    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
-    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#
-###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET})
-EOF
-  echo "\n"
-}
-
-# ── Interactive menu ────────────────────────────────────────────
+# ── Install flows ──────────────────────────────────────────────
 run_everything() {
   install_env_setup
   install_asdf_langs
@@ -78,44 +65,36 @@ run_hooks_only() {
   install_claude_settings
 }
 
-print_banner
-echo "${BLUE_BOLD}my-term installer${RESET}"
-echo "─────────────────\n"
-
-PS3=$'\n'"${YELLOW_BOLD}Select an option: ${RESET}"
-options=(
-  "Everything (env + statusline + hooks + collab)"
-  "Statusline only"
-  "Hooks only"
+# ── Arrow-key menu ─────────────────────────────────────────────
+choice=""
+ui_menu "my-term installer" choice \
+  "Everything (env + statusline + hooks + collab)" \
+  "Statusline only" \
+  "Hooks only" \
   "Exit"
-)
 
-select opt in "${options[@]}"; do
-  case "$REPLY" in
-    1)
-      echo
-      run_everything
-      break
-      ;;
-    2)
-      echo
-      run_statusline_only
-      break
-      ;;
-    3)
-      echo
-      run_hooks_only
-      break
-      ;;
-    4)
-      echo "Bye!"
-      exit 0
-      ;;
-    *)
-      echo "Invalid option. Try again."
-      ;;
-  esac
-done
+case "$choice" in
+  0) run_everything ;;
+  1) run_statusline_only ;;
+  2) run_hooks_only ;;
+  3|255)
+    printf '\033[2J\033[H'
+    echo "Bye!"
+    exit 0
+    ;;
+esac
 
+printf '\033[2J\033[H'
 log_done "${GREEN_BOLD}All installations are complete!${RESET} 🎉"
 echo "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
+
+cat << EOF
+::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET})
+    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET})
+    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET})
+    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
+    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
+    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#
+###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET})
+EOF
+echo "\n"
