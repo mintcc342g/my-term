@@ -8,7 +8,7 @@ set -euo pipefail
 umask 077
 
 SETTINGS="$HOME/.claude/settings.json"
-EXPECTED_CMD="bash $HOME/.claude/my-hud/powerline-statusline.sh"
+EXPECTED_CMD="bash $HOME/.claude/my-hud/statusline.sh"
 tmp_dir="$HOME/.claude/my-hud/tmp"
 
 mkdir -p "$tmp_dir" 2>/dev/null || true
