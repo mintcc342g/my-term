@@ -43,11 +43,19 @@ pct=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
 [ -z "$cache_create" ] && cache_create=0
 [ -z "$cache_read" ] && cache_read=0
 
-# ── Shorten path ────────────────────────────────────────────────
+# ── Shorten path (3 depth max, truncate if too long) ───────────
+MAX_DIR_LEN=20  # visible chars for dir inside │ ... │
 short_dir=$(printf '%s' "$cwd" | sed "s|^$HOME|~|" | awk -F/ '{
   if (NF <= 3) print $0
   else printf "%s/%s/%s", $(NF-2), $(NF-1), $NF
 }')
+# If still too long, collapse middle to ..
+if [ ${#short_dir} -gt $MAX_DIR_LEN ]; then
+  short_dir=$(printf '%s' "$cwd" | sed "s|^$HOME|~|" | awk -F/ '{
+    if (NF <= 2) print $0
+    else printf "%s/../%s", $1, $NF
+  }')
+fi
 
 # ── Cache hit rate ──────────────────────────────────────────────
 total_for_cache=$((input_tokens + cache_create))
@@ -203,10 +211,13 @@ if [ "$TERM_WIDTH" -lt "$CONFIG_OW" ] 2>/dev/null; then
 else
   OW=$CONFIG_OW
 fi
-BW=$(jq -r '.bar_width // 14' < "$CONFIG" 2>/dev/null)
-if [ "$OW" -lt 50 ] 2>/dev/null; then
-  BW=8
+# Minimum width to render HUD — below this, output nothing
+MIN_OW=50
+if [ "$OW" -lt "$MIN_OW" ] 2>/dev/null; then
+  exit 0
 fi
+
+BW=$(jq -r '.bar_width // 14' < "$CONFIG" 2>/dev/null)
 IW=$(( OW - 2 ))
 
 sec_workspace=$(jq -r '.sections.workspace.enabled // true' < "$CONFIG" 2>/dev/null)
