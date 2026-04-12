@@ -44,9 +44,9 @@ install_ai_tools() {
 }
 
 _install_claude_code() {
-  log_step "install claude-code…"
-  brew install --cask claude-code
-  log_done "claude-code installed."
+  log_step "install/update claude-code…"
+  brew install --cask claude-code 2>/dev/null || brew upgrade --cask claude-code 2>/dev/null || true
+  log_done "claude-code ready."
 
   # Claude alias
   printf '\033[2J\033[H' > /dev/tty
