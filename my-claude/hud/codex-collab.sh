@@ -85,39 +85,11 @@ done < <(jq -r '.[] | [
 ] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
 
 # --- Claude에 협업 지시문 주입 ---
-cat <<EOF
-[멀티 에이전트 협업 모드 활성화]
+DIRECTIVE_FILE="$(dirname "$0")/co-directive.md"
+if [[ ! -f "$DIRECTIVE_FILE" ]]; then
+  printf '%s\n' "[co-mux] 지시문 파일이 없습니다: $DIRECTIVE_FILE"
+  exit 1
+fi
 
-아래 절차를 반드시 따르세요:
-
-1. 현재 대화에서 유저의 질문과 관련된 컨텍스트를 정리하세요.
-   - plan이 있으면 plan 전문 포함
-   - 분석 중인 데이터, 설계 결정, 관련 파일 목록 등 포함
-   - 관련 없는 대화는 제외
-
-2. 아래 에이전트들을 MCP 도구로 호출하세요.
-   - 에이전트가 여러 개일 경우: 한 메시지에서 여러 도구 호출을 동시에 보내세요 (병렬 실행).
-   - run_in_background는 사용하지 마세요. 일반 foreground 호출을 여러 개 병렬로 보내면 됩니다.
-   - 각 에이전트의 prompt 파라미터에 [정리한 컨텍스트 + 유저 프롬프트]를 전달합니다.
-   - 추가 파라미터가 명시된 경우 해당 파라미터도 함께 전달하세요.
-   - 응답에 threadId가 포함되면, 후속 질문이 필요할 때 mcp__codex__codex_reply 도구에 해당 threadId와 prompt를 전달하세요.
-${agent_list}
-
-3. 중요: 모든 에이전트의 응답이 도착할 때까지 기다리세요.
-   응답이 오기 전에 최종 답변을 작성하지 마세요.
-
-4. 모든 에이전트의 응답이 도착한 후, 당신의 자체 분석과 함께 아래 형식으로 비판적 분석 + 병합 응답을 작성하세요:
-   - 각 에이전트의 핵심 의견을 요약
-   - 에이전트 간 의견이 다른 부분을 명시하고, 당신의 판단을 근거와 함께 제시
-   - 에이전트 간 의견이 같은 부분은 간결하게 정리
-   - 최종 종합 답변 제시
-
-5. 에이전트가 에러/타임아웃으로 실패한 경우:
-   - 반드시 "[에이전트명 실패]"를 명시
-   - 나머지 에이전트 결과 + 당신의 분석으로 응답
-
-6. 모든 에이전트 호출이 완료된 후, Codex usage 캐시를 갱신하세요:
-   \`cache_dir="\$HOME/.claude/my-hud/cache" bash "\$HOME/.claude/my-hud/refresh-codex-usage.sh"\`
-
-7. 반드시 한국어(Korean)로 응답하세요.
-EOF
+directive=$(<"$DIRECTIVE_FILE")
+printf '%s\n' "${directive//\{\{AGENT_LIST\}\}/$agent_list}"
