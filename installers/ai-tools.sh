@@ -122,24 +122,28 @@ _install_claude_settings() {
     log_fail "Failed to update $SETTINGS (jq error)"
   fi
 
-  # gofmt hook — ask independently (don't rely on asdf module state)
+  # gofmt hook — ask independently, skip if already added
   if command -v gofmt &>/dev/null || command -v go &>/dev/null; then
-    local gofmt_choice=""
-    ui_menu "Go detected — add gofmt hook to Claude?" gofmt_choice \
-      "Yes" \
-      "No"
-    if [ "$gofmt_choice" = "0" ]; then
-      GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
-      gofmt_tmp="$(mktemp)"
-      if jq --arg gofmtCmd "$GOFMT_CMD" \
-        '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
-        "$SETTINGS" > "$gofmt_tmp"; then
-        mv "$gofmt_tmp" "$SETTINGS"
-        log_done "Added gofmt hook to Claude settings."
-      else
-        rm -f "$gofmt_tmp"
-        log_fail "Failed to add gofmt hook (jq error)"
+    if ! grep -q 'gofmt' "$SETTINGS" 2>/dev/null; then
+      local gofmt_choice=""
+      ui_menu "Go detected — add gofmt hook to Claude?" gofmt_choice \
+        "Yes" \
+        "No"
+      if [ "$gofmt_choice" = "0" ]; then
+        GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
+        gofmt_tmp="$(mktemp)"
+        if jq --arg gofmtCmd "$GOFMT_CMD" \
+          '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
+          "$SETTINGS" > "$gofmt_tmp"; then
+          mv "$gofmt_tmp" "$SETTINGS"
+          log_done "Added gofmt hook to Claude settings."
+        else
+          rm -f "$gofmt_tmp"
+          log_fail "Failed to add gofmt hook (jq error)"
+        fi
       fi
+    else
+      log_step "gofmt hook already configured, skipping."
     fi
   fi
 
@@ -152,10 +156,27 @@ _install_hud() {
   mkdir -p "$HOME/.claude/my-hud/themes" "$HOME/.claude/my-hud/lib"
   chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
   cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
-  cp -f "$SCRIPT_DIR/my-claude/hud/"*.json "$HOME/.claude/my-hud/"
   chmod +x "$HOME/.claude/my-hud/"*.sh
   cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
   cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
+
+  # config.json — only copy if not exists (preserve user settings)
+  if [ ! -f "$HOME/.claude/my-hud/config.json" ]; then
+    cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
+  fi
+
+  # Update statusLine command to use new statusline.sh
+  SETTINGS="$HOME/.claude/settings.json"
+  if [ -f "$SETTINGS" ]; then
+    local sl_tmp
+    sl_tmp=$(mktemp)
+    if jq '.statusLine = {"type": "command", "command": "bash $HOME/.claude/my-hud/statusline.sh"}' \
+      "$SETTINGS" > "$sl_tmp"; then
+      mv "$sl_tmp" "$SETTINGS"
+    else
+      rm -f "$sl_tmp"
+    fi
+  fi
 
   # Register slash command
   mkdir -p "$HOME/.claude/commands"
