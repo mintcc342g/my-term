@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -29,267 +28,94 @@ log_done() {
   echo "${GREEN_BOLD}✔${RESET} $*"
 }
 
+# ── Source installers ───────────────────────────────────────────
+source "$SCRIPT_DIR/installers/env-setup.sh"
+source "$SCRIPT_DIR/installers/asdf-langs.sh"
+source "$SCRIPT_DIR/installers/statusline.sh"
+source "$SCRIPT_DIR/installers/hooks.sh"
+source "$SCRIPT_DIR/installers/collab.sh"
+source "$SCRIPT_DIR/installers/claude-settings.sh"
 
-### --- 셋업 시작 ---
+# ── OS check ────────────────────────────────────────────────────
 cd "$HOME"
 
 if [ "$(uname -s)" = "Linux" ]; then
-    OS="Linux"
     echo "${RED_BOLD}NOT SUPPORT OS${RESET}…\n"
     exit 0
-else
-    OS="Darwin"
 fi
 
-
-
-### --- oh-my-zsh 설치 ---
-log_start "install oh-my-zsh…\n"
-RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-
-
-
-### --- homebrew 설치 또는 업뎃 ---
-log_start "install brew…\n"
-if ! command -v brew &>/dev/null; then
-  log_step "Homebrew not found. Installing…\n"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-else
-  log_step "Homebrew found. Updating…\n"
-  brew update
-fi
-
-BREW_PREFIX=$(brew --prefix)
-printf '\n# Homebrew 설정\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "${ZPROFILE}"
-eval "$($BREW_PREFIX/bin/brew shellenv)"
-
-
-
-### --- brew로 유틸 설치 ---
-log_start "install useful features with Homebrew…\n"
-brew install zsh-autosuggestions zsh-syntax-highlighting
-brew install ripgrep fd bat television tree tmux
-
-if ! command -v jq &>/dev/null; then
-  brew install jq
-fi
-brew install telnet
-brew install maccy rectangle
-brew install --cask macs-fan-control
-brew install --cask alt-tab
-brew install awscli
-brew install asdf
-brew install mockery
-brew install pyenv pyenv-virtualenv
-brew install helm argocd istioctl k9s
-brew install --cask claude-code
-brew install opencode codex
-brew install oven-sh/bun/bun
-# oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
-# 최신 버전 확인: npm view oh-my-opencode version
-# 설치: bunx oh-my-opencode@<version> install
-
-
-### --- PATH 셋팅 ---
-# zprofile
-log_step "add shell login environment settings…\n"
-
-ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
-  export PATH="$HOME/.asdf/shims:$PATH"
-fi'
-if ! grep -q 'asdf/shims' "$ZPROFILE"; then
-  printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
-fi
-
-PYENV_BLOCK='if [[ ":$PATH:" != *":$HOME/.pyenv/bin:"* ]]; then
-  export PATH="$HOME/.pyenv/bin:$PATH"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-fi'
-if ! grep -q 'pyenv/bin' "$ZPROFILE"; then
-  printf "\n# pyenv PATH 설정\n%s\n" "$PYENV_BLOCK" >> "$ZPROFILE"
-fi
-
-# zshrc
-log_step "add shell startup settings…\n"
-printf '\n# zsh-syntax-highlighting 설정\nsource $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n' >> "${ZSHRC}"
-printf '\n# zsh-autosuggestions 설정\nsource $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n' >> "${ZSHRC}"
-printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
-if ! grep -q 'pyenv 설정' "$ZSHRC" 2>/dev/null; then
-  cat <<'EOF' >> "$ZSHRC"
-
-# pyenv 설정
-if command -v pyenv 1>/dev/null 2>&1; then
-  eval "$(pyenv init -)"
-  if command -v pyenv-virtualenv-init 1>/dev/null 2>&1; then
-    eval "$(pyenv virtualenv-init -)"
-  fi
-fi
-
+# ── Banner ──────────────────────────────────────────────────────
+print_banner() {
+  cat << EOF
+::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET})
+    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET})
+    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET})
+    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
+    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET})
+    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#
+###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET})
 EOF
-fi
-
-# claude alias
-if ! grep -q "^alias c=" "$HOME/.zshrc" 2>/dev/null; then
-  echo 'alias c="claude"' >> "$HOME/.zshrc"
-fi
-
-# vscode code 설정
-cat <<'FUNC_EOF' >> "$ZSHRC"
-
-# vscode 설정
-code () {
-  VSCODE_CWD="$PWD" open -n -b "com.microsoft.VSCode" --args "$@"
+  echo "\n"
 }
 
-FUNC_EOF
-
-
-
-### --- 쉘 테마 설정 ---
-log_start "install newro theme…\n"
-DOC_DIR="$HOME/Documents/my"
-if [ ! -d "$DOC_DIR" ]; then
-  mkdir -p "$DOC_DIR"
-fi
-
-log_step "clone newro theme to $DOC_DIR\n"
-git clone https://gitlab.com/newrovp/develconfig.git "$DOC_DIR/newrovp"
-cp "$DOC_DIR/newrovp/newro_vcs.zsh-theme" "${HOME}/.oh-my-zsh/themes/newro_vcs.zsh-theme"
-sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
-
-
-
-### --- asdf 설정 ---
-log_start "Starting programming language setup…\n"
-
-ask_asdf_config() {
-  local lang="$1"
-  local __varname="$2"
-  local answer
-
-  read -r -p "Would you like to configure ${lang} with asdf? (y/N) " answer
-  printf -v "$__varname" '%s' "$answer"
+# ── Interactive menu ────────────────────────────────────────────
+run_everything() {
+  install_env_setup
+  install_asdf_langs
+  install_statusline
+  install_hooks
+  install_collab
+  install_claude_settings
 }
 
-print_env_uncomment_warning() {
-  local lang="$1"
-
-  echo
-  log_done "${lang} configuration for asdf has been added to .zprofile."
-  echo
-  echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing ${lang}${RESET}, please ${RED_BOLD}uncomment${RESET} the ${lang} environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
-  echo
+run_statusline_only() {
+  install_statusline
+  install_claude_settings
 }
 
-# Golang 설정
-ask_asdf_config "Golang" install_golang
-case "$install_golang" in
-  [yY])
-    asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
-    print_env_uncomment_warning "Golang"
-    ;;
-  *)
-    log_fail "Skipping Golang configuration for asdf.\n"
-    ;;
-esac
+run_hooks_only() {
+  install_hooks
+  install_claude_settings
+}
 
-# Java 설정
-ask_asdf_config "Java" install_java
-case "$install_java" in
-  [yY])
-    asdf plugin add java https://github.com/halcyon/asdf-java.git
-    printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
-    print_env_uncomment_warning "Java"
-    ;;
-  *)
-    log_fail "Skipping Java configuration for asdf.\n"
-    ;;
-esac
+print_banner
+echo "${BLUE_BOLD}my-term installer${RESET}"
+echo "─────────────────\n"
 
+PS3=$'\n'"${YELLOW_BOLD}Select an option: ${RESET}"
+options=(
+  "Everything (env + statusline + hooks + collab)"
+  "Statusline only"
+  "Hooks only"
+  "Exit"
+)
 
+select opt in "${options[@]}"; do
+  case "$REPLY" in
+    1)
+      echo
+      run_everything
+      break
+      ;;
+    2)
+      echo
+      run_statusline_only
+      break
+      ;;
+    3)
+      echo
+      run_hooks_only
+      break
+      ;;
+    4)
+      echo "Bye!"
+      exit 0
+      ;;
+    *)
+      echo "Invalid option. Try again."
+      ;;
+  esac
+done
 
-### --- claude 설정 ---
-# hud 설정
-log_start "install claude hud theme…\n"
-mkdir -p "$HOME/.claude/my-hud"
-chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
-cp -f "$SCRIPT_DIR/my-claude/hud/"* "$HOME/.claude/my-hud/"
-chmod +x "$HOME/.claude/my-hud/"*.sh
-
-# hooks 설정
-mkdir -p "$HOME/.claude/my-hooks"
-chmod 700 "$HOME/.claude/my-hooks"
-cp -f "$SCRIPT_DIR/my-claude/hooks/"* "$HOME/.claude/my-hooks/"
-chmod +x "$HOME/.claude/my-hooks/"*.sh
-
-# collab 설정
-mkdir -p "$HOME/.claude/my-collab"
-chmod 700 "$HOME/.claude/my-collab"
-cp -f "$SCRIPT_DIR/my-claude/collab/"* "$HOME/.claude/my-collab/"
-chmod +x "$HOME/.claude/my-collab/"*.sh
-chmod 600 "$HOME/.claude/my-collab/co-agents.json"
-chmod 600 "$HOME/.claude/my-collab/co-directive.md"
-
-
-# memory 설정
-mkdir -p "$HOME/.claude/memory"
-chmod 700 "$HOME/.claude/memory"
-cp -f "$SCRIPT_DIR/my-claude/memory/"* "$HOME/.claude/memory/"
-chmod 600 "$HOME/.claude/memory/"*
-
-# CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
-cp -f "$SCRIPT_DIR/my-claude/instructions/codex-collab.md" "$HOME/.claude/CLAUDE.md"
-chmod 600 "$HOME/.claude/CLAUDE.md"
-
-# claude settings.json 설정
-log_start "configure claude settings…\n"
-SETTINGS="$HOME/.claude/settings.json"
-mkdir -p "$HOME/.claude"
-if [ ! -f "$SETTINGS" ]; then
-  printf "%s\n" "{}" > "$SETTINGS"
-fi
-chmod 600 "$SETTINGS"
-
-tmp="$(mktemp)"
-if jq -s '.[0] * .[1]' "$SETTINGS" "$SCRIPT_DIR/my-claude/settings/settings.json" > "$tmp"; then
-  mv "$tmp" "$SETTINGS"
-else
-  rm -f "$tmp"
-  log_fail "Failed to update $SETTINGS (jq error)\n"
-fi
-
-# gofmt hook 추가 (Golang 설치 시에만)
-if [[ "$install_golang" =~ [yY] ]]; then
-  GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
-  gofmt_tmp="$(mktemp)"
-  if jq --arg gofmtCmd "$GOFMT_CMD" \
-    '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
-    "$SETTINGS" > "$gofmt_tmp"; then
-    mv "$gofmt_tmp" "$SETTINGS"
-    log_done "Added gofmt hook to Claude settings."
-  else
-    rm -f "$gofmt_tmp"
-    log_fail "Failed to add gofmt hook (jq error)"
-  fi
-fi
-
-
-
-### done
 log_done "${GREEN_BOLD}All installations are complete!${RESET} 🎉"
 echo "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
-
-cat << EOF
-::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET}) 
-    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET}) 
-    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET}) 
-    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET}) 
-    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET}) 
-    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#                     
-###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET}) 
-EOF
-echo "\n"
