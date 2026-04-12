@@ -13,7 +13,7 @@ if [ "${1:-}" = "--config" ]; then
 fi
 
 # ── Read stdin JSON ─────────────────────────────────────────────
-input=$(cat)
+input=$(</dev/stdin)
 
 umask 077
 cache_dir="$HOME/.claude/my-hud/cache"
@@ -51,8 +51,11 @@ pct=$(LC_NUMERIC=C printf "%.0f" "$pct" 2>/dev/null || echo 0)
 # Truncate from root with … if needed
 MAX_DIR_LEN=50
 MAX_DIR_DEPTH=5
-_escaped_home=$(printf '%s' "$HOME" | sed 's/[&/\]/\\&/g')
-short_dir=$(printf '%s' "$cwd" | sed "s|^${_escaped_home}|~|")
+if [[ "$cwd" == "$HOME"* ]]; then
+  short_dir="~${cwd#"$HOME"}"
+else
+  short_dir="$cwd"
+fi
 
 # Limit depth to 5
 _depth=$(printf '%s' "$short_dir" | awk -F/ '{print NF}')
@@ -249,7 +252,7 @@ detect_term_width() {
 }
 
 # Check COLUMNS env first (Claude Code may set this), then detect via TTY walk
-if [ -n "${COLUMNS:-}" ] && [ "${COLUMNS:-0}" -gt 0 ] 2>/dev/null; then
+if [[ "${COLUMNS:-}" =~ ^[0-9]+$ ]] && [ "${COLUMNS}" -gt 0 ]; then
   TERM_WIDTH=$COLUMNS
 else
   TERM_WIDTH=$(detect_term_width)

@@ -20,18 +20,10 @@ _grad_text() {
     bgr=$(( GRAD_START_R + (GRAD_END_R - GRAD_START_R) * pos / tw ))
     bgg=$(( GRAD_START_G + (GRAD_END_G - GRAD_START_G) * pos / tw ))
     bgb=$(( GRAD_START_B + (GRAD_END_B - GRAD_START_B) * pos / tw ))
-    printf '%s%s' "$(bg $bgr $bgg $bgb)${COMPACT_FG}" "$ch"
+    printf '\033[48;2;%d;%d;%dm%s%s' "$bgr" "$bgg" "$bgb" "${COMPACT_FG}" "$ch"
   done
 }
 
-# Get gradient color at position (used for caps)
-_grad_at() {
-  local pos=$1 max=$2
-  [ "$max" -lt 1 ] && max=1
-  [ "$pos" -ge "$max" ] && pos=$((max - 1))
-  [ "$pos" -lt 0 ] && pos=0
-  echo "$(( GRAD_START_R + (GRAD_END_R - GRAD_START_R) * pos / max )) $(( GRAD_START_G + (GRAD_END_G - GRAD_START_G) * pos / max )) $(( GRAD_START_B + (GRAD_END_B - GRAD_START_B) * pos / max ))"
-}
 
 render_compact() {
   local cwd="$1" git_branch="$2" model="$3" rl_5h="$4"
@@ -94,8 +86,7 @@ render_compact() {
   fi
 
   # Left cap: bg=segment, fg=terminal (E0BC diagonal: dark top-left corner)
-  read -r first_bgr first_bgg first_bgb <<< "$(_grad_at 0 $OW)"
-  printf '%s%s' "$(bg $first_bgr $first_bgg $first_bgb)$(fg 46 52 64)" "$PL_CAP"
+  printf '\033[48;2;%d;%d;%dm\033[38;2;46;52;64m%s' "$GRAD_START_R" "$GRAD_START_G" "$GRAD_START_B" "$PL_CAP"
 
   # Render segments with ∣ separator between them
   local cursor=0
@@ -112,12 +103,17 @@ render_compact() {
       local sbgr=$(( GRAD_START_R + (GRAD_END_R - GRAD_START_R) * spos / total_w ))
       local sbgg=$(( GRAD_START_G + (GRAD_END_G - GRAD_START_G) * spos / total_w ))
       local sbgb=$(( GRAD_START_B + (GRAD_END_B - GRAD_START_B) * spos / total_w ))
-      printf '%s%s' "$(bg $sbgr $sbgg $sbgb)${COMPACT_SEP}" "$sep"
+      printf '\033[48;2;%d;%d;%dm%s%s' "$sbgr" "$sbgg" "$sbgb" "${COMPACT_SEP}" "$sep"
       cursor=$((cursor + 1))
     fi
   done
 
   # Right cap: fg=segment at last char position, bg=terminal
-  read -r last_bgr last_bgg last_bgb <<< "$(_grad_at $((cursor - 1)) $total_w)"
-  printf '%s%s%s\n' "$(fg $last_bgr $last_bgg $last_bgb)$(bg 46 52 64)" "$PL_CAP" "$rst"
+  local rpos=$((cursor - 1))
+  [ "$rpos" -lt 0 ] && rpos=0
+  [ "$rpos" -ge "$total_w" ] && rpos=$((total_w - 1))
+  local last_bgr=$(( GRAD_START_R + (GRAD_END_R - GRAD_START_R) * rpos / total_w ))
+  local last_bgg=$(( GRAD_START_G + (GRAD_END_G - GRAD_START_G) * rpos / total_w ))
+  local last_bgb=$(( GRAD_START_B + (GRAD_END_B - GRAD_START_B) * rpos / total_w ))
+  printf '\033[38;2;%d;%d;%dm\033[48;2;46;52;64m%s%s\n' "$last_bgr" "$last_bgg" "$last_bgb" "$PL_CAP" "$rst"
 }
