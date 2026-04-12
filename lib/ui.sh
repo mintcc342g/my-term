@@ -26,6 +26,7 @@ ui_read_key() {
     case "$seq" in
       '[A') echo "up" ;;
       '[B') echo "down" ;;
+      '[C'|'[D') echo "ignore" ;;
       *)    echo "esc" ;;
     esac
   elif [[ "$key" == "" || "$key" == $'\n' || "$key" == $'\r' ]]; then
@@ -75,6 +76,7 @@ ui_menu() {
         printf -v "$__result_var" '%s' "$sel"
         return 0
         ;;
+      ignore) ;;
       q|esc)
         printf '\033[?25h' > /dev/tty
         printf -v "$__result_var" '%s' "255"
