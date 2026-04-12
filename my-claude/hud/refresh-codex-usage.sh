@@ -7,6 +7,7 @@
 # Writes:  $cache_dir/codex-usage.json on success
 #
 
+set -euo pipefail
 [ -z "${cache_dir:-}" ] && exit 1
 
 umask 077

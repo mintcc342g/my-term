@@ -5,6 +5,7 @@
 # Full gradient across entire line. Round caps at start/end.
 
 PL_CAP=$'\xee\x82\xbc'   # U+E0BC — both caps, fg/bg swapped per side
+: "${rst:=$'\033[0m'}"   # ensure rst is defined even if sourced standalone
 
 # Print text with per-character gradient bg, fixed bright fg
 # Inline gradient calc to avoid per-char subshell fork
@@ -33,7 +34,7 @@ render_compact() {
   dir_name=$(basename "$cwd")
   [ "$dir_name" = "~" ] && dir_name="~"
   local compact_dir="…/${dir_name}"
-  [ "$cwd" = "$HOME" ] || [ "$cwd" = "~" ] && compact_dir="~"
+  if [[ "$cwd" == "$HOME" || "$cwd" == "~" ]]; then compact_dir="~"; fi
 
   # Branch: max 7 chars
   if [ -n "$git_branch" ] && [ ${#git_branch} -gt 7 ]; then
