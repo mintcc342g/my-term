@@ -111,7 +111,11 @@ done
 
 printf '\033[2J\033[H'
 log_done "${GREEN_BOLD}Installation complete!${RESET} 🎉"
-printf "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
+if [ "${ZSHRC_MODIFIED:-}" = "true" ]; then
+  printf "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
+else
+  echo
+fi
 
 cat << EOF
 ::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  ${YELLOW}:::${BLUE} :::${PINK} :::${PURPLE} :::${GREEN} :::${RESET}

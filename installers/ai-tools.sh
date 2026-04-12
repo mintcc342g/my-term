@@ -67,6 +67,7 @@ _install_claude_code() {
   ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
   if ! grep -q "^alias ${alias_name}=" "$ZSHRC" 2>/dev/null; then
     echo "alias ${alias_name}=\"claude\"" >> "$ZSHRC"
+    export ZSHRC_MODIFIED=true
   fi
   log_done "alias '${alias_name}=claude' added."
 

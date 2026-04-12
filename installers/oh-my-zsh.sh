@@ -18,9 +18,11 @@ install_oh_my_zsh() {
   log_step "configure zsh plugins…"
   if ! grep -q 'zsh-syntax-highlighting.zsh' "$ZSHRC" 2>/dev/null; then
     printf '\n# zsh-syntax-highlighting 설정\nsource $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n' >> "${ZSHRC}"
+    export ZSHRC_MODIFIED=true
   fi
   if ! grep -q 'zsh-autosuggestions.zsh' "$ZSHRC" 2>/dev/null; then
     printf '\n# zsh-autosuggestions 설정\nsource $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n' >> "${ZSHRC}"
+    export ZSHRC_MODIFIED=true
   fi
   log_done "oh-my-zsh + plugins installed."
   export ZSHRC

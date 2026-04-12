@@ -34,6 +34,7 @@ if command -v pyenv 1>/dev/null 2>&1; then
 fi
 
 EOF
+    export ZSHRC_MODIFIED=true
   fi
 
   log_done "pyenv installed."

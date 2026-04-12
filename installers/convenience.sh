@@ -41,6 +41,7 @@ install_convenience() {
   ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
   if ! grep -q 'tv init' "$ZSHRC" 2>/dev/null; then
     printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
+    export ZSHRC_MODIFIED=true
   fi
 
   log_done "convenience tools installed."
