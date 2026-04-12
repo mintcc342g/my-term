@@ -1,0 +1,10 @@
+{
+  "theme": "mygo",
+  "outer_width": 60,
+  "bar_width": 14,
+  "sections": {
+    "workspace": { "enabled": true },
+    "claude": { "enabled": true },
+    "codex": { "enabled": true }
+  }
+}

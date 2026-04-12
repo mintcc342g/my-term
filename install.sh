@@ -1,295 +1,132 @@
-
 #!/bin/bash
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-YELLOW='\033[93m'
-YELLOW_BOLD='\033[33;1m'
-BLUE='\033[94m'
-BLUE_BOLD='\033[34;1m'
-RED_BOLD='\033[31;1m'
-PINK='\033[38;5;205m'
-PURPLE='\033[35m'
-GREEN='\033[92m'
-GREEN_BOLD='\033[32;1m'
-RESET='\033[0m'
+YELLOW=$'\033[93m'
+YELLOW_BOLD=$'\033[33;1m'
+BLUE=$'\033[94m'
+BLUE_BOLD=$'\033[34;1m'
+RED_BOLD=$'\033[31;1m'
+PINK=$'\033[38;5;205m'
+PURPLE=$'\033[35m'
+GREEN=$'\033[92m'
+GREEN_BOLD=$'\033[32;1m'
+RESET=$'\033[0m'
 
-log_start() {
-  echo "${BLUE_BOLD}➜${RESET} $*"
-}
+log_start() { echo "${BLUE_BOLD}➜${RESET} $*"; }
+log_step()  { echo "${YELLOW_BOLD}⚙${RESET} $*"; }
+log_fail()  { echo "${RED_BOLD}✖${RESET} $*"; }
+log_done()  { echo "${GREEN_BOLD}✔${RESET} $*"; }
 
-log_step() {
-  echo "${YELLOW_BOLD}⚙${RESET} $*"
-}
+# ── Source shared UI + installers ───────────────────────────────
+source "$SCRIPT_DIR/lib/ui.sh"
+source "$SCRIPT_DIR/installers/convenience.sh"
+source "$SCRIPT_DIR/installers/oh-my-zsh.sh"
+source "$SCRIPT_DIR/installers/shell-theme.sh"
+source "$SCRIPT_DIR/installers/asdf-langs.sh"
+source "$SCRIPT_DIR/installers/pyenv.sh"
+source "$SCRIPT_DIR/installers/ai-tools.sh"
 
-log_fail() {
-  echo "${RED_BOLD}✖${RESET} $*"
-}
+# ── Terminal cleanup on exit/interrupt ──────────────────────────
+trap 'printf "\033[?25h" 2>/dev/null; stty sane 2>/dev/null' EXIT INT TERM
 
-log_done() {
-  echo "${GREEN_BOLD}✔${RESET} $*"
-}
-
-
-### --- 셋업 시작 ---
-cd "$HOME"
-
+# ── OS check ────────────────────────────────────────────────────
 if [ "$(uname -s)" = "Linux" ]; then
-    OS="Linux"
-    echo "${RED_BOLD}NOT SUPPORT OS${RESET}…\n"
-    exit 0
-else
-    OS="Darwin"
+    echo "${RED_BOLD}NOT SUPPORT OS${RESET}"
+    exit 1
 fi
 
+# ── Main menu ───────────────────────────────────────────────────
+run_everything() {
+  install_convenience
+  install_oh_my_zsh
+  install_shell_theme
+  install_asdf_langs
+  install_pyenv
+  install_ai_tools
+}
 
+while true; do
+  choice=""
+  menu_items=()
+  menu_actions=()
 
-### --- oh-my-zsh 설치 ---
-log_start "install oh-my-zsh…\n"
-RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  menu_items+=("Convenience tools (CLI, macOS apps, DevOps)"); menu_actions+=("convenience")
+  menu_items+=("Oh-my-zsh + zsh plugins");                     menu_actions+=("oh-my-zsh")
+  menu_items+=("Shell theme (newro)");                         menu_actions+=("shell-theme")
+  menu_items+=("asdf + languages");                            menu_actions+=("asdf")
+  menu_items+=("pyenv");                                       menu_actions+=("pyenv")
+  menu_items+=("AI tools (Claude, OpenCode, Codex)");          menu_actions+=("ai-tools")
 
-ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-
-
-
-### --- homebrew 설치 또는 업뎃 ---
-log_start "install brew…\n"
-if ! command -v brew &>/dev/null; then
-  log_step "Homebrew not found. Installing…\n"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-else
-  log_step "Homebrew found. Updating…\n"
-  brew update
-fi
-
-BREW_PREFIX=$(brew --prefix)
-printf '\n# Homebrew 설정\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "${ZPROFILE}"
-eval "$($BREW_PREFIX/bin/brew shellenv)"
-
-
-
-### --- brew로 유틸 설치 ---
-log_start "install useful features with Homebrew…\n"
-brew install zsh-autosuggestions zsh-syntax-highlighting
-brew install ripgrep fd bat television tree tmux
-
-if ! command -v jq &>/dev/null; then
-  brew install jq
-fi
-brew install telnet
-brew install maccy rectangle
-brew install --cask macs-fan-control
-brew install --cask alt-tab
-brew install awscli
-brew install asdf
-brew install mockery
-brew install pyenv pyenv-virtualenv
-brew install helm argocd istioctl k9s
-brew install --cask claude-code
-brew install opencode codex
-brew install oven-sh/bun/bun
-# oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
-# 최신 버전 확인: npm view oh-my-opencode version
-# 설치: bunx oh-my-opencode@<version> install
-
-
-### --- PATH 셋팅 ---
-# zprofile
-log_step "add shell login environment settings…\n"
-
-ASDF_BLOCK='if [[ ":$PATH:" != *":$HOME/.asdf/shims:"* ]]; then
-  export PATH="$HOME/.asdf/shims:$PATH"
-fi'
-if ! grep -q 'asdf/shims' "$ZPROFILE"; then
-  printf "\n# asdf shims PATH 설정\n%s\n" "$ASDF_BLOCK" >> "$ZPROFILE"
-fi
-
-PYENV_BLOCK='if [[ ":$PATH:" != *":$HOME/.pyenv/bin:"* ]]; then
-  export PATH="$HOME/.pyenv/bin:$PATH"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-fi'
-if ! grep -q 'pyenv/bin' "$ZPROFILE"; then
-  printf "\n# pyenv PATH 설정\n%s\n" "$PYENV_BLOCK" >> "$ZPROFILE"
-fi
-
-# zshrc
-log_step "add shell startup settings…\n"
-printf '\n# zsh-syntax-highlighting 설정\nsource $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n' >> "${ZSHRC}"
-printf '\n# zsh-autosuggestions 설정\nsource $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n' >> "${ZSHRC}"
-printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
-if ! grep -q 'pyenv 설정' "$ZSHRC" 2>/dev/null; then
-  cat <<'EOF' >> "$ZSHRC"
-
-# pyenv 설정
-if command -v pyenv 1>/dev/null 2>&1; then
-  eval "$(pyenv init -)"
-  if command -v pyenv-virtualenv-init 1>/dev/null 2>&1; then
-    eval "$(pyenv virtualenv-init -)"
+  # Detect HUD (new or legacy)
+  if [ -f "$HOME/.claude/my-hud/configure.sh" ] || [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ]; then
+    menu_items+=("HUD settings"); menu_actions+=("hud-config")
   fi
-fi
 
-EOF
-fi
+  menu_items+=("Everything"); menu_actions+=("everything")
+  menu_items+=("Exit");       menu_actions+=("exit")
 
-# claude alias
-if ! grep -q "^alias c=" "$HOME/.zshrc" 2>/dev/null; then
-  echo 'alias c="claude"' >> "$HOME/.zshrc"
-fi
+  ui_menu "my-term installer" choice "${menu_items[@]}"
 
-# vscode code 설정
-cat <<'FUNC_EOF' >> "$ZSHRC"
+  [ "$choice" = "255" ] && break
+  action="${menu_actions[$choice]:-exit}"
 
-# vscode 설정
-code () {
-  VSCODE_CWD="$PWD" open -n -b "com.microsoft.VSCode" --args "$@"
-}
+  case "$action" in
+    convenience)  install_convenience ;;
+    oh-my-zsh)    install_oh_my_zsh ;;
+    shell-theme)  install_shell_theme ;;
+    asdf)         install_asdf_langs ;;
+    pyenv)        install_pyenv ;;
+    ai-tools)     install_ai_tools ;;
+    hud-config)
+      # Migrate from legacy powerline if needed
+      if [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ] && [ ! -f "$HOME/.claude/my-hud/configure.sh" ]; then
+        log_start "migrating HUD to modular structure…"
+        # Remove legacy files
+        rm -f "$HOME/.claude/my-hud/powerline-statusline.sh"
+        rm -f "$HOME/.claude/my-hud/"*.pl 2>/dev/null || true
+        # Copy new files
+        mkdir -p "$HOME/.claude/my-hud/themes" "$HOME/.claude/my-hud/lib"
+        cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
+        chmod +x "$HOME/.claude/my-hud/"*.sh
+        cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
+        cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
+        cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
+        # Update settings.json statusLine
+        SETTINGS="$HOME/.claude/settings.json"
+        if [ -f "$SETTINGS" ]; then
+          sl_tmp=$(mktemp)
+          if jq '.statusLine = {"type": "command", "command": "bash $HOME/.claude/my-hud/statusline.sh"}' \
+            "$SETTINGS" > "$sl_tmp"; then
+            mv "$sl_tmp" "$SETTINGS"
+          else
+            rm -f "$sl_tmp"
+          fi
+        fi
+        log_done "HUD migrated."
+        sleep 1
+      fi
+      bash "$SCRIPT_DIR/my-claude/hud/configure.sh" --project-root "$SCRIPT_DIR"
+      ;;
+    everything)   run_everything ; break ;;
+    exit)         break ;;
+  esac
+done
 
-FUNC_EOF
-
-
-
-### --- 쉘 테마 설정 ---
-log_start "install newro theme…\n"
-DOC_DIR="$HOME/Documents/my"
-if [ ! -d "$DOC_DIR" ]; then
-  mkdir -p "$DOC_DIR"
-fi
-
-log_step "clone newro theme to $DOC_DIR\n"
-git clone https://gitlab.com/newrovp/develconfig.git "$DOC_DIR/newrovp"
-cp "$DOC_DIR/newrovp/newro_vcs.zsh-theme" "${HOME}/.oh-my-zsh/themes/newro_vcs.zsh-theme"
-sed -i -E 's/robbyrussell/newro_vcs/g' "$ZSHRC"
-
-
-
-### --- asdf 설정 ---
-log_start "Starting programming language setup…\n"
-
-ask_asdf_config() {
-  local lang="$1"
-  local __varname="$2"
-  local answer
-
-  read -r -p "Would you like to configure ${lang} with asdf? (y/N) " answer
-  printf -v "$__varname" '%s' "$answer"
-}
-
-print_env_uncomment_warning() {
-  local lang="$1"
-
-  echo
-  log_done "${lang} configuration for asdf has been added to .zprofile."
-  echo
-  echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing ${lang}${RESET}, please ${RED_BOLD}uncomment${RESET} the ${lang} environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
-  echo
-}
-
-# Golang 설정
-ask_asdf_config "Golang" install_golang
-case "$install_golang" in
-  [yY])
-    asdf plugin add golang https://github.com/kennyp/asdf-golang.git
-    printf '\n# asdf Golang 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh\n' >> "${ZPROFILE}"
-    print_env_uncomment_warning "Golang"
-    ;;
-  *)
-    log_fail "Skipping Golang configuration for asdf.\n"
-    ;;
-esac
-
-# Java 설정
-ask_asdf_config "Java" install_java
-case "$install_java" in
-  [yY])
-    asdf plugin add java https://github.com/halcyon/asdf-java.git
-    printf '\n# asdf Java 환경 설정\n#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh\n' >> "${ZPROFILE}"
-    print_env_uncomment_warning "Java"
-    ;;
-  *)
-    log_fail "Skipping Java configuration for asdf.\n"
-    ;;
-esac
-
-
-
-### --- claude 설정 ---
-# hud 설정
-log_start "install claude hud theme…\n"
-mkdir -p "$HOME/.claude/my-hud"
-chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
-cp -f "$SCRIPT_DIR/my-claude/hud/"* "$HOME/.claude/my-hud/"
-chmod +x "$HOME/.claude/my-hud/"*.sh
-
-# hooks 설정
-mkdir -p "$HOME/.claude/my-hooks"
-chmod 700 "$HOME/.claude/my-hooks"
-cp -f "$SCRIPT_DIR/my-claude/hooks/"* "$HOME/.claude/my-hooks/"
-chmod +x "$HOME/.claude/my-hooks/"*.sh
-
-# collab 설정
-mkdir -p "$HOME/.claude/my-collab"
-chmod 700 "$HOME/.claude/my-collab"
-cp -f "$SCRIPT_DIR/my-claude/collab/"* "$HOME/.claude/my-collab/"
-chmod +x "$HOME/.claude/my-collab/"*.sh
-chmod 600 "$HOME/.claude/my-collab/co-agents.json"
-chmod 600 "$HOME/.claude/my-collab/co-directive.md"
-
-
-# memory 설정
-mkdir -p "$HOME/.claude/memory"
-chmod 700 "$HOME/.claude/memory"
-cp -f "$SCRIPT_DIR/my-claude/memory/"* "$HOME/.claude/memory/"
-chmod 600 "$HOME/.claude/memory/"*
-
-# CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
-cp -f "$SCRIPT_DIR/my-claude/instructions/codex-collab.md" "$HOME/.claude/CLAUDE.md"
-chmod 600 "$HOME/.claude/CLAUDE.md"
-
-# claude settings.json 설정
-log_start "configure claude settings…\n"
-SETTINGS="$HOME/.claude/settings.json"
-mkdir -p "$HOME/.claude"
-if [ ! -f "$SETTINGS" ]; then
-  printf "%s\n" "{}" > "$SETTINGS"
-fi
-chmod 600 "$SETTINGS"
-
-tmp="$(mktemp)"
-if jq -s '.[0] * .[1]' "$SETTINGS" "$SCRIPT_DIR/my-claude/settings/settings.json" > "$tmp"; then
-  mv "$tmp" "$SETTINGS"
+printf '\033[2J\033[H'
+log_done "${GREEN_BOLD}Installation complete!${RESET} 🎉"
+if [ "${ZSHRC_MODIFIED:-}" = "true" ]; then
+  printf "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
 else
-  rm -f "$tmp"
-  log_fail "Failed to update $SETTINGS (jq error)\n"
+  echo
 fi
-
-# gofmt hook 추가 (Golang 설치 시에만)
-if [[ "$install_golang" =~ [yY] ]]; then
-  GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
-  gofmt_tmp="$(mktemp)"
-  if jq --arg gofmtCmd "$GOFMT_CMD" \
-    '.hooks.PostToolUse[0].hooks += [{"type": "command", "command": $gofmtCmd}]' \
-    "$SETTINGS" > "$gofmt_tmp"; then
-    mv "$gofmt_tmp" "$SETTINGS"
-    log_done "Added gofmt hook to Claude settings."
-  else
-    rm -f "$gofmt_tmp"
-    log_fail "Failed to add gofmt hook (jq error)"
-  fi
-fi
-
-
-
-### done
-log_done "${GREEN_BOLD}All installations are complete!${RESET} 🎉"
-echo "  Please run ${YELLOW_BOLD}'source \${HOME}/.zshrc'${RESET} or ${YELLOW_BOLD}restart${RESET} your shell.\n\n"
 
 cat << EOF
-::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  $(printf ${YELLOW}):::$(printf ${BLUE}) :::$(printf ${PINK}) :::$(printf ${PURPLE}) :::$(printf ${GREEN}) :::$(printf ${RESET}) 
-    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: $(printf ${YELLOW}):+:$(printf ${BLUE}) :+:$(printf ${PINK}) :+:$(printf ${PURPLE}) :+:$(printf ${GREEN}) :+:$(printf ${RESET}) 
-    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ $(printf ${YELLOW})+:+$(printf ${BLUE}) +:+$(printf ${PINK}) +:+$(printf ${PURPLE}) +:+$(printf ${GREEN}) +:+$(printf ${RESET}) 
-    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET}) 
-    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ $(printf ${YELLOW})+#+$(printf ${BLUE}) +#+$(printf ${PINK}) +#+$(printf ${PURPLE}) +#+$(printf ${GREEN}) +#+$(printf ${RESET}) 
-    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#                     
-###########     ###         ########       ###       ###    ###     ########   ########  $(printf ${YELLOW})###$(printf ${BLUE}) ###$(printf ${PINK}) ###$(printf ${PURPLE}) ###$(printf ${GREEN}) ###$(printf ${RESET}) 
+::::::::::: ::::::::::: ::: ::::::::       ::::    ::::  :::   :::  ::::::::   ::::::::  ${YELLOW}:::${BLUE} :::${PINK} :::${PURPLE} :::${GREEN} :::${RESET}
+    :+:         :+:     :+ :+:    :+:      +:+:+: :+:+:+ :+:   :+: :+:    :+: :+:    :+: ${YELLOW}:+:${BLUE} :+:${PINK} :+:${PURPLE} :+:${GREEN} :+:${RESET}
+    +:+         +:+        +:+             +:+ +:+:+ +:+  +:+ +:+  +:+        +:+    +:+ ${YELLOW}+:+${BLUE} +:+${PINK} +:+${PURPLE} +:+${GREEN} +:+${RESET}
+    +#+         +#+        +#++:++#++      +#+  +:+  +#+   +#++:   :#:        +#+    +:+ ${YELLOW}+#+${BLUE} +#+${PINK} +#+${PURPLE} +#+${GREEN} +#+${RESET}
+    +#+         +#+               +#+      +#+       +#+    +#+    +#+   +#+# +#+    +#+ ${YELLOW}+#+${BLUE} +#+${PINK} +#+${PURPLE} +#+${GREEN} +#+${RESET}
+    #+#         #+#        #+#    #+#      #+#       #+#    #+#    #+#    #+# #+#    #+#
+###########     ###         ########       ###       ###    ###     ########   ########  ${YELLOW}###${BLUE} ###${PINK} ###${PURPLE} ###${GREEN} ###${RESET}
 EOF
-echo "\n"
+echo

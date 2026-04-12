@@ -59,7 +59,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash $HOME/.claude/my-hud/powerline-statusline.sh"
+    "command": "bash $HOME/.claude/my-hud/statusline.sh"
   },
   "hooks": {
     "SessionStart": [
