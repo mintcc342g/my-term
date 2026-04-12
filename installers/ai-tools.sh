@@ -159,6 +159,10 @@ _install_claude_settings() {
 _install_hud() {
   log_step "install HUD statusline…"
 
+  # Remove legacy files if present
+  rm -f "$HOME/.claude/my-hud/powerline-statusline.sh" 2>/dev/null || true
+  rm -f "$HOME/.claude/my-hud/"*.pl 2>/dev/null || true
+
   mkdir -p "$HOME/.claude/my-hud/themes" "$HOME/.claude/my-hud/lib"
   chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
   cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"

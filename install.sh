@@ -75,6 +75,33 @@ while true; do
     pyenv)        install_pyenv ;;
     ai-tools)     install_ai_tools ;;
     hud-config)
+      # Migrate from legacy powerline if needed
+      if [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ] && [ ! -f "$HOME/.claude/my-hud/configure.sh" ]; then
+        log_start "migrating HUD to modular structure…"
+        # Remove legacy files
+        rm -f "$HOME/.claude/my-hud/powerline-statusline.sh"
+        rm -f "$HOME/.claude/my-hud/"*.pl 2>/dev/null || true
+        # Copy new files
+        mkdir -p "$HOME/.claude/my-hud/themes" "$HOME/.claude/my-hud/lib"
+        cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
+        chmod +x "$HOME/.claude/my-hud/"*.sh
+        cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
+        cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
+        cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
+        # Update settings.json statusLine
+        SETTINGS="$HOME/.claude/settings.json"
+        if [ -f "$SETTINGS" ]; then
+          sl_tmp=$(mktemp)
+          if jq '.statusLine = {"type": "command", "command": "bash $HOME/.claude/my-hud/statusline.sh"}' \
+            "$SETTINGS" > "$sl_tmp"; then
+            mv "$sl_tmp" "$SETTINGS"
+          else
+            rm -f "$sl_tmp"
+          fi
+        fi
+        log_done "HUD migrated."
+        sleep 1
+      fi
       bash "$SCRIPT_DIR/my-claude/hud/configure.sh" --project-root "$SCRIPT_DIR"
       ;;
     everything)   run_everything ; break ;;
