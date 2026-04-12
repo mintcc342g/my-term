@@ -222,6 +222,12 @@ chmod +x "$HOME/.claude/my-hud/"*.sh
 chmod 600 "$HOME/.claude/my-hud/co-agents.json"
 
 
+# memory 설정
+mkdir -p "$HOME/.claude/memory"
+chmod 700 "$HOME/.claude/memory"
+cp -f "$SCRIPT_DIR/my-claude/memory/"* "$HOME/.claude/memory/"
+chmod 600 "$HOME/.claude/memory/"*
+
 # CLAUDE.md 설정 (codex-collab.md → CLAUDE.md)
 cp -f "$SCRIPT_DIR/my-claude/instructions/codex-collab.md" "$HOME/.claude/CLAUDE.md"
 chmod 600 "$HOME/.claude/CLAUDE.md"
