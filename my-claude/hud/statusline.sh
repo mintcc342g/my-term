@@ -184,24 +184,25 @@ source "$SCRIPT_DIR/render.sh"
 source "$SCRIPT_DIR/themes/${theme}.sh"
 
 # ── Render HUD ──────────────────────────────────────────────────
-output=""
-output+=$(build_top)$'\n'
-
-if [ "$sec_workspace" = "true" ]; then
-  output+=$(render_workspace "$short_dir" "$git_branch")
-fi
-
-if [ "$sec_claude" = "true" ]; then
-  output+=$(render_claude "$model_name" "$sess_fmt" "${cache_pct}" "$rl_5h_pct" "$rl_wk_pct" "$pct")
-fi
-
-if [ "$sec_codex" = "true" ]; then
-  output+=$(render_codex "$codex_model" "$codex_reset_fmt" "$codex_left_pct")
-fi
-
-output+=$(build_bottom)$'\n'
-
-# Replace spaces with nbsp for statusline display
 nbsp=$(printf '\302\240')
-output=${output// /$nbsp}
-printf '%s' "$output"
+
+render_hud() {
+  build_top
+
+  if [ "$sec_workspace" = "true" ]; then
+    render_workspace "$short_dir" "$git_branch"
+  fi
+
+  if [ "$sec_claude" = "true" ]; then
+    render_claude "$model_name" "$sess_fmt" "${cache_pct}" "$rl_5h_pct" "$rl_wk_pct" "$pct"
+  fi
+
+  if [ "$sec_codex" = "true" ]; then
+    render_codex "$codex_model" "$codex_reset_fmt" "$codex_left_pct"
+  fi
+
+  build_bottom
+}
+
+# Pipe through sed to replace spaces with nbsp
+render_hud | sed "s/ /${nbsp}/g"
