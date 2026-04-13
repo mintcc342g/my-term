@@ -56,7 +56,8 @@ ui_menu() {
     printf '\033[2J\033[H' > /dev/tty
     echo "${UI_BLUE_BOLD} ${title}${UI_RESET}" > /dev/tty
     echo " ─────────────────────" > /dev/tty
-    echo " ${UI_DIM}↑↓ move  Enter select${UI_RESET}\n" > /dev/tty
+    echo " ${UI_DIM}↑↓ move  Enter select${UI_RESET}" > /dev/tty
+    echo "" > /dev/tty
 
     local UI_CYAN=$'\033[36;1m'
     for i in "${!items[@]}"; do
