@@ -14,6 +14,8 @@ BG="$(bg 46 52 64)"  # Nord0
 ICON_DIR=$'\xef\x81\xbc'       # U+F07C folder open
 ICON_GIT=$'\xee\x82\xa0'       # U+E0A0 git branch
 ICON_SESS=$'\xef\x80\x97'      # U+F017 clock
+ICON_RESET='↻'                 # U+21BB reset indicator
+LBL_MDL='MDL'                   # model label
 
 # ── Gradient ────────────────────────────────────────────────────
 grad_fg() {
@@ -127,22 +129,28 @@ build_bottom() {
 }
 
 # ── Metric row builders ─────────────────────────────────────────
+# vw layout: " LABEL bar  pct_str"
+#             sp(1) + label + sp(1) + bar + sp(2) + pct
+_metric_vw() { echo $(( 1 + ${#1} + 1 + BW + 2 + ${#2} )); }
+
+_metric_finish() {
+  local content="$1" vw=$2 reset="$3"
+  if [ -n "$reset" ]; then
+    local reset_str="${ICON_RESET} ${reset}"
+    # " │ reset_str" → sp(1) + sep(1) + sp(1) + reset_str
+    content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
+    vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
+  fi
+  row "$content" "$vw"
+}
+
 metric_row() {
   local label="$1" pct=$2 reset="${3:-}"
   local pct_str sc
   pct_str=$(printf "%3d%%" "$pct")
   sc=$(sev_color "$pct")
-  local reset_str=""
-  if [ -n "$reset" ]; then
-    reset_str="RESET ${reset}"
-  fi
   local content=" ${LB}${bold}${label}${rst}${BG} $(bar "$pct" "$BW")${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  local vw=$(( 1 + ${#label} + 1 + BW + 2 + ${#pct_str} ))
-  if [ -n "$reset_str" ]; then
-    content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
-    vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
-  fi
-  row "$content" "$vw"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset"
 }
 
 metric_row_inv() {
@@ -169,27 +177,20 @@ metric_row_inv() {
     bar_out+="${BOFF}"
     for ((i=0; i<empty; i++)); do bar_out+='▱'; done
   fi
-  local reset_str=""
-  if [ -n "$reset" ]; then
-    reset_str="RESET ${reset}"
-  fi
   local content=" ${LB}${bold}${label}${rst}${BG} ${bar_out}${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  local vw=$(( 1 + ${#label} + 1 + BW + 2 + ${#pct_str} ))
-  if [ -n "$reset_str" ]; then
-    content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
-    vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
-  fi
-  row "$content" "$vw"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset"
 }
 
 # ── Section renderers ───────────────────────────────────────────
+# vw layout: "icon(1)+sp(1) cwd sp(2) sep(1) sp(1) icon(1)+sp(1) branch"
+_ws_vw() { echo $(( 2 + ${#1} + 2 + 1 + 1 + 2 + ${#2} )); }
+
 render_workspace() {
   local cwd="$1" git_branch="$2"
   local MAX_OW=$(( OW * 13 / 10 ))
   [ "$MAX_OW" -gt "$TERM_WIDTH" ] && MAX_OW=$TERM_WIDTH
 
-  # workspace row: icon(2) + cwd + spacing(2) + sep(1) + spacing(1) + icon(2) + branch
-  local ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+  local ws_vw=$(_ws_vw "$cwd" "$git_branch")
 
   # Try expanding OW if content is wider
   if [ "$ws_vw" -gt "$((OW - 2))" ] && [ "$OW" -lt "$MAX_OW" ]; then
@@ -205,13 +206,13 @@ render_workspace() {
   # If still too wide, truncate branch first (to 7+…)
   if [ "$ws_vw" -gt "$IW" ] && [ ${#git_branch} -gt 8 ]; then
     git_branch="${git_branch:0:7}…"
-    ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+    ws_vw=$(_ws_vw "$cwd" "$git_branch")
   fi
 
   # If still too wide, truncate dir to current dir only
   if [ "$ws_vw" -gt "$IW" ]; then
     cwd=$(basename "$cwd")
-    ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+    ws_vw=$(_ws_vw "$cwd" "$git_branch")
   fi
 
   # If STILL too wide (current dir itself is long), truncate dir with …
@@ -219,7 +220,7 @@ render_workspace() {
     local avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - 1 ))
     [ "$avail" -lt 3 ] && avail=3
     cwd="${cwd:0:$avail}…"
-    ws_vw=$(( 2 + ${#cwd} + 2 + 1 + 1 + 2 + ${#git_branch} ))
+    ws_vw=$(_ws_vw "$cwd" "$git_branch")
   fi
 
   local ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}"
@@ -230,8 +231,9 @@ render_workspace() {
 render_claude() {
   local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_5h_reset="$5" rl_wk="$6" rl_wk_reset="$7" ctx="$8"
   local cache_str="${cache}%"
-  local cl_content="${LB}${bold}MDL ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_SESS} ${rst}${BG}${HI2}${sess}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
-  local cl_vw=$(( 4 + ${#model} + 2 + 1 + 1 + 2 + ${#sess} + 2 + 1 + 1 + 6 + ${#cache_str} ))
+  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_SESS} ${rst}${BG}${HI2}${sess}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
+  # "MDL sp model sp(2) sep sp icon sp sess sp(2) sep sp CACHE sp cache_str"
+  local cl_vw=$(( ${#LBL_MDL} + 1 + ${#model} + 2 + 1 + 1 + 2 + ${#sess} + 2 + 1 + 1 + 6 + ${#cache_str} ))
   sep_line "claude"
   row "$cl_content" "$cl_vw"
   metric_row "5H  " "$rl_5h" "$rl_5h_reset"
@@ -241,8 +243,9 @@ render_claude() {
 
 render_codex() {
   local model="$1" reset="$2" left="$3"
-  local cx_content="${LB}${bold}MDL ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}RESET ${rst}${BG}${HI2}${reset}${rst}${BG}"
-  local cx_vw=$(( 4 + ${#model} + 2 + 1 + 1 + 6 + ${#reset} ))
+  local cx_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_RESET} ${rst}${BG}${HI2}${reset}${rst}${BG}"
+  # "MDL sp model sp(2) sep sp icon sp reset"
+  local cx_vw=$(( ${#LBL_MDL} + 1 + ${#model} + 2 + 1 + 1 + 2 + ${#reset} ))
   sep_line "codex"
   row "$cx_content" "$cx_vw"
   metric_row_inv "LEFT" "$left"
