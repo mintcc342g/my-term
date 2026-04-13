@@ -107,6 +107,8 @@ RL_CACHE="$cache_dir/ratelimit.json"
 RL_ERR_MARKER="$cache_dir/ratelimit.err"
 rl_5h_pct=""
 rl_wk_pct=""
+rl_5h_reset=""
+rl_wk_reset=""
 
 RL_NORMAL_TTL=30
 RL_ERROR_TTL=300
@@ -142,8 +144,14 @@ if $refresh_rl; then
 fi
 
 if [ -f "$RL_CACHE" ] && jq -e '.five_hour' < "$RL_CACHE" >/dev/null 2>&1; then
-  rl_5h_pct=$(jq -r '.five_hour.utilization // ""' < "$RL_CACHE" 2>/dev/null)
-  rl_wk_pct=$(jq -r '.seven_day.utilization // ""' < "$RL_CACHE" 2>/dev/null)
+  IFS=$'\t' read -r rl_5h_pct rl_5h_reset rl_wk_pct rl_wk_reset < <(
+    jq -r '[
+      (.five_hour.utilization // ""),
+      (.five_hour.resets_at // ""),
+      (.seven_day.utilization // ""),
+      (.seven_day.resets_at // "")
+    ] | @tsv' < "$RL_CACHE" 2>/dev/null
+  )
 fi
 
 if [ -n "$rl_5h_pct" ]; then
@@ -198,6 +206,29 @@ format_relative() {
     printf "%dm" "$mins"
   fi
 }
+
+# Format ISO timestamp → relative time
+format_reset() {
+  local iso="$1"
+  [ -z "$iso" ] && return
+  local clean reset_epoch
+  clean=$(printf '%s' "$iso" | sed -E 's/T/ /; s/\.[0-9]+//')
+  if printf '%s' "$clean" | grep -q 'Z$'; then
+    clean="${clean%Z} +0000"
+  else
+    clean=$(printf '%s' "$clean" | sed -E 's/([+-][0-9]{2}):([0-9]{2})$/ \1\2/')
+  fi
+  printf '%s' "$clean" | grep -Eq ' [+-][0-9]{4}$' || clean="${clean} +0000"
+  reset_epoch=$(date -j -f "%Y-%m-%d %H:%M:%S %z" "$clean" +%s 2>/dev/null)
+  [ -z "$reset_epoch" ] && return
+  format_relative "$reset_epoch"
+}
+
+# Rate limit reset times
+rl_5h_reset_fmt=$(format_reset "$rl_5h_reset")
+rl_wk_reset_fmt=$(format_reset "$rl_wk_reset")
+[ -z "$rl_5h_reset_fmt" ] && rl_5h_reset_fmt="--"
+[ -z "$rl_wk_reset_fmt" ] && rl_wk_reset_fmt="--"
 
 if [ -f "$CODEX_USAGE_CACHE" ] && jq -e '.primary.left_percent' < "$CODEX_USAGE_CACHE" >/dev/null 2>&1; then
   IFS=$'\t' read -r codex_left_pct codex_reset_epoch < <(
@@ -312,7 +343,7 @@ render_hud() {
   fi
 
   if [ "$sec_claude" = "true" ]; then
-    render_claude "$model_name" "$sess_fmt" "${cache_pct}" "$rl_5h_pct" "$rl_wk_pct" "$pct"
+    render_claude "$model_name" "$sess_fmt" "${cache_pct}" "$rl_5h_pct" "$rl_5h_reset_fmt" "$rl_wk_pct" "$rl_wk_reset_fmt" "$pct"
   fi
 
   if [ "$sec_codex" = "true" ]; then

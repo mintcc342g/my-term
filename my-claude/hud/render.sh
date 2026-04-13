@@ -128,17 +128,25 @@ build_bottom() {
 
 # ── Metric row builders ─────────────────────────────────────────
 metric_row() {
-  local label="$1" pct=$2
+  local label="$1" pct=$2 reset="${3:-}"
   local pct_str sc
   pct_str=$(printf "%3d%%" "$pct")
   sc=$(sev_color "$pct")
+  local reset_str=""
+  if [ -n "$reset" ]; then
+    reset_str="RESET ${reset}"
+  fi
   local content=" ${LB}${bold}${label}${rst}${BG} $(bar "$pct" "$BW")${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
   local vw=$(( 1 + ${#label} + 1 + BW + 2 + ${#pct_str} ))
+  if [ -n "$reset_str" ]; then
+    content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
+    vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
+  fi
   row "$content" "$vw"
 }
 
 metric_row_inv() {
-  local label="$1" pct=$2
+  local label="$1" pct=$2 reset="${3:-}"
   local pct_str sc bar_color
   [[ "$pct" =~ ^[0-9]+$ ]] || pct=0
   pct_str=$(printf "%3d%%" "$pct")
@@ -155,10 +163,22 @@ metric_row_inv() {
   local empty=$(( BW - filled ))
   local bar_out="${bar_color}"
   for ((i=0; i<filled; i++)); do bar_out+='▰'; done
-  bar_out+="${BOFF}"
-  for ((i=0; i<empty; i++)); do bar_out+='▱'; done
+  if [ "$filled" -eq 0 ]; then
+    for ((i=0; i<empty; i++)); do bar_out+='▱'; done
+  else
+    bar_out+="${BOFF}"
+    for ((i=0; i<empty; i++)); do bar_out+='▱'; done
+  fi
+  local reset_str=""
+  if [ -n "$reset" ]; then
+    reset_str="RESET ${reset}"
+  fi
   local content=" ${LB}${bold}${label}${rst}${BG} ${bar_out}${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
   local vw=$(( 1 + ${#label} + 1 + BW + 2 + ${#pct_str} ))
+  if [ -n "$reset_str" ]; then
+    content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
+    vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
+  fi
   row "$content" "$vw"
 }
 
@@ -208,14 +228,14 @@ render_workspace() {
 }
 
 render_claude() {
-  local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_wk="$5" ctx="$6"
+  local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_5h_reset="$5" rl_wk="$6" rl_wk_reset="$7" ctx="$8"
   local cache_str="${cache}%"
   local cl_content="${LB}${bold}MDL ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_SESS} ${rst}${BG}${HI2}${sess}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
   local cl_vw=$(( 4 + ${#model} + 2 + 1 + 1 + 2 + ${#sess} + 2 + 1 + 1 + 6 + ${#cache_str} ))
   sep_line "claude"
   row "$cl_content" "$cl_vw"
-  metric_row "5H  " "$rl_5h"
-  metric_row "WK  " "$rl_wk"
+  metric_row "5H  " "$rl_5h" "$rl_5h_reset"
+  metric_row "WK  " "$rl_wk" "$rl_wk_reset"
   metric_row "CTX " "$ctx"
 }
 
