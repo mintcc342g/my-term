@@ -47,42 +47,35 @@ pct=$(LC_NUMERIC=C printf "%.0f" "$pct" 2>/dev/null || echo 0)
 [[ "$cache_read" =~ ^[0-9]+$ ]] || cache_read=0
 
 # ── Shorten path ────────────────────────────────────────────────
-# Rules: max 5 depth, max 50 chars, always show current dir
-# Truncate from root with … if needed
+# Rules: show last 3 components (like zsh %3~), then …/ truncate if over MAX_DIR_LEN
 MAX_DIR_LEN=50
-MAX_DIR_DEPTH=5
+MAX_DIR_DEPTH=3
 if [[ "$cwd" == "$HOME"* ]]; then
   short_dir="~${cwd#"$HOME"}"
 else
   short_dir="$cwd"
 fi
 
-# Limit depth to 5
+# Keep last MAX_DIR_DEPTH components (sliding window)
 _depth=$(printf '%s' "$short_dir" | awk -F/ '{print NF}')
 if [ "$_depth" -gt "$MAX_DIR_DEPTH" ]; then
   short_dir=$(printf '%s' "$short_dir" | awk -F/ -v max="$MAX_DIR_DEPTH" '{
-    start = NF - max + 2
-    printf "…"
-    for (i=start; i<=NF; i++) printf "/%s", $i
+    start = NF - max + 1
+    for (i=start; i<=NF; i++) { if (i>start) printf "/"; printf "%s", $i }
   }')
 fi
 
-# Limit length to MAX_DIR_LEN, truncate from root
+# If over MAX_DIR_LEN, replace top dirs with …/
 if [ ${#short_dir} -gt $MAX_DIR_LEN ]; then
-  _current_dir=$(basename "$short_dir")
-  # Try progressively shorter paths
   short_dir=$(printf '%s' "$short_dir" | awk -F/ -v maxlen="$MAX_DIR_LEN" '{
-    # Try removing from left until it fits
     for (start=2; start<=NF; start++) {
       s = "…"
       for (i=start; i<=NF; i++) s = s "/" $i
       if (length(s) <= maxlen) { print s; exit }
     }
-    # Last resort: just current dir
     print $NF
   }')
 fi
-unset _depth _current_dir
 
 # ── Cache hit rate ──────────────────────────────────────────────
 total_for_cache=$((input_tokens + cache_create))

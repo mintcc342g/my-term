@@ -187,21 +187,7 @@ _ws_vw() { echo $(( 2 + ${#1} + 2 + 1 + 1 + 2 + ${#2} )); }
 
 render_workspace() {
   local cwd="$1" git_branch="$2"
-  local MAX_OW=$(( OW * 13 / 10 ))
-  [ "$MAX_OW" -gt "$TERM_WIDTH" ] && MAX_OW=$TERM_WIDTH
-
   local ws_vw=$(_ws_vw "$cwd" "$git_branch")
-
-  # Try expanding OW if content is wider
-  if [ "$ws_vw" -gt "$((OW - 2))" ] && [ "$OW" -lt "$MAX_OW" ]; then
-    local needed=$((ws_vw + 2))
-    if [ "$needed" -le "$MAX_OW" ]; then
-      OW=$needed
-    else
-      OW=$MAX_OW
-    fi
-    IW=$((OW - 2))
-  fi
 
   # If still too wide, truncate branch first (to 7+…)
   if [ "$ws_vw" -gt "$IW" ] && [ ${#git_branch} -gt 8 ]; then
