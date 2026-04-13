@@ -8,7 +8,7 @@ bg() { printf '\033[48;2;%d;%d;%dm' "$1" "$2" "$3"; }
 rst=$'\033[0m'
 bold=$'\033[1m'
 
-BG="$(bg 46 52 64)"  # Nord0
+BG=$'\033[49m'  # terminal default background
 
 # ── Nerd Font icons ─────────────────────────────────────────────
 ICON_DIR=$'\xef\x81\xbc'       # U+F07C folder open
