@@ -17,8 +17,6 @@ if ! command -v codex &>/dev/null; then
   printf 'unavailable' > "$codex_auth_cache"
 elif codex login status &>/dev/null; then
   printf 'ok' > "$codex_auth_cache"
-  # Auth confirmed — run a minimal exec to fetch fresh rate limit data
-  codex exec --skip-git-repo-check "echo ok" &>/dev/null || true
   # Parse latest session file to update codex-usage.json cache
   cache_dir="$cache_dir" "$HOME/.claude/my-hud/refresh-codex-usage.sh" || true
 else
