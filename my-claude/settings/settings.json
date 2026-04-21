@@ -1,10 +1,4 @@
 {
-  "mcpServers": {
-    "codex": {
-      "command": "codex",
-      "args": ["mcp-server"]
-    }
-  },
   "permissions": {
     "deny": [
       "Read(**/.env)",
@@ -100,16 +94,6 @@
           {
             "type": "command",
             "command": "bash $HOME/.claude/my-hud/prune-claude-hud-cache.sh",
-            "async": true
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__codex__codex",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cache_dir=\"$HOME/.claude/my-hud/cache\" bash \"$HOME/.claude/my-hud/refresh-codex-usage.sh\"",
             "async": true
           }
         ]

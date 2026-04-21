@@ -32,9 +32,9 @@ cd my-term
 1. `./install.sh` → AI tools → Claude Code 선택
 2. 설치 시 자동 처리:
    - hooks, collab 스크립트 배포 (`~/.claude/my-hooks/`, `~/.claude/my-collab/`)
-   - Codex MCP 서버 설정 (`~/.claude.json`에 `mcpServers` 병합)
    - `settings.json` hooks/permissions 병합
-3. Codex가 필요하면 AI tools → Codex로 별도 설치
+   - Codex가 이미 설치되어 있으면 MCP 서버 자동 설정
+3. Codex가 필요하면 AI tools → Codex로 별도 설치 (MCP 서버 자동 설정됨)
 4. 설치 후 새 Claude Code 세션에서 `@co` 테스트로 MCP 연결 확인
 
 ### 주요 기능

@@ -2,6 +2,44 @@
 # installers/ai-tools.sh — AI tools (claude-code, opencode, codex)
 # source'd by install.sh
 
+_setup_codex_mcp() {
+  # Add codex MCP server to ~/.claude.json
+  local CLAUDE_JSON="$HOME/.claude.json"
+  if [ ! -f "$CLAUDE_JSON" ]; then
+    printf '%s\n' '{}' > "$CLAUDE_JSON"
+  fi
+  local mcp_tmp
+  mcp_tmp=$(mktemp)
+  if jq '.mcpServers.codex //= {"command":"codex","args":["mcp-server"]}' \
+    "$CLAUDE_JSON" > "$mcp_tmp"; then
+    mv "$mcp_tmp" "$CLAUDE_JSON"
+  else
+    rm -f "$mcp_tmp"
+    return 1
+  fi
+
+  # Add PostToolUse hook for codex usage refresh (if not already present)
+  local SETTINGS="$HOME/.claude/settings.json"
+  if [ -f "$SETTINGS" ] && ! jq -e '.hooks.PostToolUse[]? | select(.matcher == "mcp__codex__codex")' "$SETTINGS" >/dev/null 2>&1; then
+    local hook_tmp
+    hook_tmp=$(mktemp)
+    if jq '.hooks.PostToolUse += [{
+      "matcher": "mcp__codex__codex",
+      "hooks": [{
+        "type": "command",
+        "command": "cache_dir=\"$HOME/.claude/my-hud/cache\" bash \"$HOME/.claude/my-hud/refresh-codex-usage.sh\"",
+        "async": true
+      }]
+    }]' "$SETTINGS" > "$hook_tmp"; then
+      mv "$hook_tmp" "$SETTINGS"
+    else
+      rm -f "$hook_tmp"
+    fi
+  fi
+
+  log_done "codex MCP server configured."
+}
+
 install_ai_tools() {
   log_start "AI tools setup…"
 
@@ -31,6 +69,7 @@ install_ai_tools() {
         log_step "brew install codex…"
         brew install codex
         log_done "codex installed."
+        _setup_codex_mcp
         sleep 1
         ;;
       3|255)
@@ -130,21 +169,9 @@ _install_claude_settings() {
   tmp="$(mktemp)"
   cp "$SETTINGS" "$tmp"
 
-  # mcpServers: merge into ~/.claude.json (NOT settings.json — Claude Code ignores mcpServers there)
-  if jq -e '.mcpServers' "$proj_settings" >/dev/null 2>&1; then
-    local CLAUDE_JSON="$HOME/.claude.json"
-    if [ ! -f "$CLAUDE_JSON" ]; then
-      printf '%s\n' '{}' > "$CLAUDE_JSON"
-    fi
-    local mcp_tmp
-    mcp_tmp=$(mktemp)
-    if jq -s '.[0].mcpServers as $user | .[1].mcpServers as $proj |
-      .[0] | .mcpServers = ($proj * ($user // {}))
-    ' "$CLAUDE_JSON" "$proj_settings" > "$mcp_tmp"; then
-      mv "$mcp_tmp" "$CLAUDE_JSON"
-    else
-      rm -f "$mcp_tmp"
-    fi
+  # codex MCP: auto-configure if codex is installed (migration for existing users)
+  if command -v codex &>/dev/null; then
+    _setup_codex_mcp
   fi
 
   # permissions.deny: union (add new items, keep existing)
