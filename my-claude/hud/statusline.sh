@@ -307,6 +307,12 @@ fi
 IW=$(( OW - 2 ))
 
 # ── Load theme + render engine ──────────────────────────────────
+# Verify source files: reject symlinks
+for _sf in "$SCRIPT_DIR/render.sh" "$SCRIPT_DIR/render-compact.sh"; do
+  if [[ -L "$_sf" ]]; then
+    exit 1
+  fi
+done
 source "$SCRIPT_DIR/render.sh"
 source "$SCRIPT_DIR/render-compact.sh"
 # Validate theme name (prevent path traversal)
@@ -317,6 +323,9 @@ theme_file="$SCRIPT_DIR/themes/${theme}.sh"
 if [ ! -f "$theme_file" ]; then
   theme="mygo"
   theme_file="$SCRIPT_DIR/themes/mygo.sh"
+fi
+if [[ -L "$theme_file" ]]; then
+  exit 1
 fi
 source "$theme_file"
 

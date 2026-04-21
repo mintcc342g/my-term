@@ -7,7 +7,9 @@
 [ -z "$CLAUDE_ENV_FILE" ] && exit 0
 
 ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-[ -f "$ZPROFILE" ] && source "$ZPROFILE"
+if [ -f "$ZPROFILE" ] && [ ! -L "$ZPROFILE" ]; then
+  source "$ZPROFILE"
+fi
 
 # 호출 전 환경변수 스냅샷
 env_before=$(env | sort)

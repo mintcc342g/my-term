@@ -3,6 +3,9 @@
 # source'd by install.sh
 
 _setup_codex_mcp() {
+  local _old_umask_mcp
+  _old_umask_mcp=$(umask)
+  umask 077
   # Add codex MCP server to ~/.claude.json
   local CLAUDE_JSON="$HOME/.claude.json"
   if [ ! -f "$CLAUDE_JSON" ]; then
@@ -15,6 +18,7 @@ _setup_codex_mcp() {
     mv "$mcp_tmp" "$CLAUDE_JSON"
   else
     rm -f "$mcp_tmp"
+    umask "$_old_umask_mcp"
     return 1
   fi
 
@@ -37,6 +41,7 @@ _setup_codex_mcp() {
     fi
   fi
 
+  umask "$_old_umask_mcp"
   log_done "codex MCP server configured."
 }
 
@@ -130,6 +135,15 @@ _install_claude_settings() {
   local _old_umask
   _old_umask=$(umask)
   umask 077
+
+  # Verify target paths are not symlinks (prevent symlink attacks)
+  for _tgt in "$HOME/.claude" "$HOME/.claude/memory" "$HOME/.claude/my-hooks" "$HOME/.claude/my-collab"; do
+    if [[ -L "$_tgt" ]]; then
+      log_fail "symlink detected at $_tgt — aborting for safety."
+      umask "$_old_umask"
+      return 1
+    fi
+  done
 
   # memory
   mkdir -p "$HOME/.claude/memory"
