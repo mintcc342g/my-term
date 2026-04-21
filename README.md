@@ -28,8 +28,17 @@ cd my-term
 ## AI 어시스턴트 (Claude Code & Codex)
 `my-claude/` 디렉토리의 설정을 `~/.claude`에 동기화하여 사용
 
+### 설치
+1. `./install.sh` → AI tools → Claude Code 선택
+2. 설치 시 자동 처리:
+   - hooks, collab 스크립트 배포 (`~/.claude/my-hooks/`, `~/.claude/my-collab/`)
+   - Codex MCP 서버 설정 (`~/.claude.json`에 `mcpServers` 병합)
+   - `settings.json` hooks/permissions 병합
+3. Codex가 필요하면 AI tools → Codex로 별도 설치
+4. 설치 후 새 Claude Code 세션에서 `@co` 테스트로 MCP 연결 확인
+
 ### 주요 기능
-- 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 외부 에이전트(현재는 Codex) 병렬 호출 후 종합 답변
+- 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 Codex를 MCP 도구로 병렬 호출 후 종합 답변 (토론 루프 지원)
 - SessionStart 훅: asdf 언어 환경변수(GOROOT, JAVA_HOME 등)를 Claude Code 세션에 자동 주입
 - gofmt 자동 포맷팅: Golang 설치 시 .go 파일 저장 시 자동 포맷 (PostToolUse 훅)
 - 상태줄 보호 훅 및 캐시 자동 정리 스크립트 포함

@@ -64,9 +64,4 @@ Round 1 응답을 비교하여 의견 차이를 분석하세요.
 - 나머지 에이전트 결과 + 당신의 분석으로 응답
 - 토론 루프는 응답 가능한 에이전트와만 진행
 
-## 마무리
-
-모든 에이전트 호출이 완료된 후, Codex usage 캐시를 갱신하세요:
-`cache_dir="$HOME/.claude/my-hud/cache" bash "$HOME/.claude/my-hud/refresh-codex-usage.sh"`
-
 반드시 한국어(Korean)로 응답하세요.

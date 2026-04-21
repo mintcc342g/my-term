@@ -103,6 +103,16 @@
             "async": true
           }
         ]
+      },
+      {
+        "matcher": "mcp__codex__codex",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cache_dir=\"$HOME/.claude/my-hud/cache\" bash \"$HOME/.claude/my-hud/refresh-codex-usage.sh\"",
+            "async": true
+          }
+        ]
       }
     ]
   }
