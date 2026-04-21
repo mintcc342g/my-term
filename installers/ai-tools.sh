@@ -130,13 +130,21 @@ _install_claude_settings() {
   tmp="$(mktemp)"
   cp "$SETTINGS" "$tmp"
 
-  # mcpServers: add missing servers only
+  # mcpServers: merge into ~/.claude.json (NOT settings.json — Claude Code ignores mcpServers there)
   if jq -e '.mcpServers' "$proj_settings" >/dev/null 2>&1; then
+    local CLAUDE_JSON="$HOME/.claude.json"
+    if [ ! -f "$CLAUDE_JSON" ]; then
+      printf '%s\n' '{}' > "$CLAUDE_JSON"
+    fi
     local mcp_tmp
     mcp_tmp=$(mktemp)
-    jq -s '.[0].mcpServers as $user | .[1].mcpServers as $proj |
+    if jq -s '.[0].mcpServers as $user | .[1].mcpServers as $proj |
       .[0] | .mcpServers = ($proj * ($user // {}))
-    ' "$tmp" "$proj_settings" > "$mcp_tmp" && mv "$mcp_tmp" "$tmp"
+    ' "$CLAUDE_JSON" "$proj_settings" > "$mcp_tmp"; then
+      mv "$mcp_tmp" "$CLAUDE_JSON"
+    else
+      rm -f "$mcp_tmp"
+    fi
   fi
 
   # permissions.deny: union (add new items, keep existing)
@@ -148,23 +156,53 @@ _install_claude_settings() {
     ' "$tmp" "$proj_settings" > "$perm_tmp" && mv "$perm_tmp" "$tmp"
   fi
 
-  # hooks: keep user hooks, add project hooks that are missing
+  # hooks: migrate legacy paths + add-only merge (never modify existing hooks)
   if jq -e '.hooks' "$proj_settings" >/dev/null 2>&1; then
+    # Step 1: Rewrite legacy my-hud/ paths that moved to my-hooks/ or my-collab/
+    local rw_tmp
+    rw_tmp=$(mktemp)
+    if jq '
+      def rewrite:
+        if type == "string" then
+          gsub("my-hud/init-env-bg\\.sh"; "my-hooks/init-env-bg.sh") |
+          gsub("my-hud/init-env\\.sh"; "my-hooks/init-env.sh") |
+          gsub("my-hud/codex-collab\\.sh"; "my-collab/codex-collab.sh")
+        elif type == "object" then with_entries(.value |= rewrite)
+        elif type == "array" then map(rewrite)
+        else . end;
+      .hooks |= rewrite
+    ' "$tmp" > "$rw_tmp"; then
+      mv "$rw_tmp" "$tmp"
+    else
+      rm -f "$rw_tmp"
+    fi
+
+    # Step 2: Add-only merge — add missing categories/groups, never touch existing
     local hooks_tmp
     hooks_tmp=$(mktemp)
-    jq -s '
-      .[0].hooks as $user_hooks | .[1].hooks as $proj_hooks |
-      .[0] | .hooks = ($proj_hooks * ($user_hooks // {}))
-    ' "$tmp" "$proj_settings" > "$hooks_tmp" && mv "$hooks_tmp" "$tmp"
-
-    # Restore any extra user hooks inside PostToolUse[0].hooks that project doesnt have
-    local restore_tmp
-    restore_tmp=$(mktemp)
-    jq -s '
-      (.[0].hooks.PostToolUse[0].hooks // []) as $merged |
-      (.[1].hooks.PostToolUse[0].hooks // []) as $user_extra |
-      .[0] | .hooks.PostToolUse[0].hooks = ($merged + [$user_extra[] | select(. as $h | $merged | map(.command) | index($h.command) | not)])
-    ' "$tmp" "$SETTINGS" > "$restore_tmp" && mv "$restore_tmp" "$tmp"
+    if jq -s '
+      .[0] as $cur | .[1] as $proj |
+      reduce (($proj.hooks // {}) | keys[]) as $cat (
+        $cur;
+        if (.hooks[$cat] // null) == null then
+          .hooks[$cat] = $proj.hooks[$cat]
+        else
+          reduce ($proj.hooks[$cat][]?) as $pg (
+            .;
+            ($pg.matcher // "") as $m |
+            if ([.hooks[$cat][]? | .matcher // ""] | index($m)) then
+              .
+            else
+              .hooks[$cat] += [$pg]
+            end
+          )
+        end
+      )
+    ' "$tmp" "$proj_settings" > "$hooks_tmp"; then
+      mv "$hooks_tmp" "$tmp"
+    else
+      rm -f "$hooks_tmp"
+    fi
   fi
 
   # statusLine: skip (handled by HUD installer separately)
