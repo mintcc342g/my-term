@@ -22,7 +22,7 @@ mkdir -p "$cache_dir" "$tmp_dir" 2>/dev/null || true
 chmod 700 "$cache_dir" "$tmp_dir" 2>/dev/null || true
 
 # ── Parse stdin JSON ────────────────────────────────────────────
-IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms < <(
+IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms stdin_rl_5h_pct stdin_rl_5h_reset stdin_rl_wk_pct stdin_rl_wk_reset < <(
   printf '%s' "$input" | jq -r '[
     (.cwd // ""),
     (.model.display_name // "Unknown"),
@@ -30,7 +30,11 @@ IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_
     (.context_window.current_usage.input_tokens // 0),
     (.context_window.current_usage.cache_creation_input_tokens // 0),
     (.context_window.current_usage.cache_read_input_tokens // 0),
-    (.cost.total_duration_ms // 0)
+    (.cost.total_duration_ms // 0),
+    (.rate_limits.five_hour.used_percentage // ""),
+    (.rate_limits.five_hour.resets_at // ""),
+    (.rate_limits.seven_day.used_percentage // ""),
+    (.rate_limits.seven_day.resets_at // "")
   ] | @tsv'
 )
 
@@ -95,56 +99,52 @@ if [ -n "$git_branch" ] && [ ${#git_branch} -gt $MAX_BRANCH_LEN ]; then
   git_branch="${git_branch:0:7}…"
 fi
 
-# ── Rate limits (reuse existing refresh logic) ──────────────────
-RL_CACHE="$cache_dir/ratelimit.json"
-RL_ERR_MARKER="$cache_dir/ratelimit.err"
+# ── Rate limits (stdin JSON primary, external API fallback) ─────
 rl_5h_pct=""
 rl_wk_pct=""
 rl_5h_reset=""
 rl_wk_reset=""
+rl_source=""
 
-RL_NORMAL_TTL=30
-RL_ERROR_TTL=300
-
-refresh_rl=false
-_now=$(date +%s)
-
-if [ -f "$RL_ERR_MARKER" ]; then
-  _err_age=$((_now - $(stat -f %m "$RL_ERR_MARKER" 2>/dev/null || echo 0)))
-  if [ "$_err_age" -gt "$RL_ERROR_TTL" ]; then
-    rm -f "$RL_ERR_MARKER" 2>/dev/null || true
-    refresh_rl=true
-  fi
-elif [ ! -f "$RL_CACHE" ]; then
-  refresh_rl=true
-elif [ $((_now - $(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0))) -gt "$RL_NORMAL_TTL" ]; then
-  refresh_rl=true
-fi
-unset _now _err_age
-
-RL_LOCK="$cache_dir/ratelimit.lock"
-if $refresh_rl; then
-  if mkdir "$RL_LOCK" 2>/dev/null; then
-    trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
-    cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
-    rm -rf "$RL_LOCK" 2>/dev/null
-    trap - EXIT
-  else
-    _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
-    if [ "$_lock_age" -gt 15 ]; then rm -rf "$RL_LOCK" 2>/dev/null; fi
-    unset _lock_age
-  fi
+# 1st: try stdin JSON rate_limits (fresh during active conversation)
+if [ -n "$stdin_rl_5h_pct" ] && [ -n "$stdin_rl_wk_pct" ]; then
+  rl_5h_pct="$stdin_rl_5h_pct"
+  rl_wk_pct="$stdin_rl_wk_pct"
+  rl_5h_reset="$stdin_rl_5h_reset"
+  rl_wk_reset="$stdin_rl_wk_reset"
+  rl_source="stdin"
 fi
 
-if [ -f "$RL_CACHE" ] && jq -e '.five_hour' < "$RL_CACHE" >/dev/null 2>&1; then
-  IFS=$'\t' read -r rl_5h_pct rl_5h_reset rl_wk_pct rl_wk_reset < <(
-    jq -r '[
-      (.five_hour.utilization // ""),
-      (.five_hour.resets_at // ""),
-      (.seven_day.utilization // ""),
-      (.seven_day.resets_at // "")
-    ] | @tsv' < "$RL_CACHE" 2>/dev/null
-  )
+# 2nd: external API fallback (only when stdin has no rate_limits)
+RL_CACHE="$cache_dir/ratelimit.json"
+RL_ERR_MARKER="$cache_dir/ratelimit.err"
+
+if [ "$rl_source" != "stdin" ]; then
+  # Try cache first, call API only if cache is missing
+  if [ ! -f "$RL_CACHE" ] && [ ! -f "$RL_ERR_MARKER" ]; then
+    RL_LOCK="$cache_dir/ratelimit.lock"
+    if mkdir "$RL_LOCK" 2>/dev/null; then
+      trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
+      cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
+      rm -rf "$RL_LOCK" 2>/dev/null
+      trap - EXIT
+    else
+      _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
+      if [ "$_lock_age" -gt 15 ]; then rm -rf "$RL_LOCK" 2>/dev/null; fi
+      unset _lock_age
+    fi
+  fi
+
+  if [ -f "$RL_CACHE" ] && jq -e '.five_hour' < "$RL_CACHE" >/dev/null 2>&1; then
+    IFS=$'\t' read -r rl_5h_pct rl_5h_reset rl_wk_pct rl_wk_reset < <(
+      jq -r '[
+        (.five_hour.utilization // ""),
+        (.five_hour.resets_at // ""),
+        (.seven_day.utilization // ""),
+        (.seven_day.resets_at // "")
+      ] | @tsv' < "$RL_CACHE" 2>/dev/null
+    )
+  fi
 fi
 
 if [ -n "$rl_5h_pct" ]; then
@@ -218,8 +218,15 @@ format_reset() {
 }
 
 # Rate limit reset times
-rl_5h_reset_fmt=$(format_reset "$rl_5h_reset")
-rl_wk_reset_fmt=$(format_reset "$rl_wk_reset")
+# stdin provides Unix epoch seconds → format_relative directly
+# API cache provides ISO timestamps → format_reset (ISO → epoch → relative)
+if [ "$rl_source" = "stdin" ]; then
+  rl_5h_reset_fmt=$(format_relative "$rl_5h_reset")
+  rl_wk_reset_fmt=$(format_relative "$rl_wk_reset")
+else
+  rl_5h_reset_fmt=$(format_reset "$rl_5h_reset")
+  rl_wk_reset_fmt=$(format_reset "$rl_wk_reset")
+fi
 [ -z "$rl_5h_reset_fmt" ] && rl_5h_reset_fmt="--"
 [ -z "$rl_wk_reset_fmt" ] && rl_wk_reset_fmt="--"
 
