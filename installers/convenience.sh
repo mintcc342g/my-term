@@ -3,28 +3,13 @@
 # source'd by install.sh
 
 install_convenience() {
-  log_start "install Homebrew…"
-  if ! command -v brew &>/dev/null; then
-    log_step "Homebrew not found. Installing…"
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  else
-    log_step "Homebrew found. Updating…"
-    brew update
-  fi
-
-  local BREW_PREFIX
-  BREW_PREFIX=$(brew --prefix)
-  local ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-  if ! grep -q 'brew shellenv' "$ZPROFILE" 2>/dev/null; then
-    printf '\n# Homebrew 설정\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "${ZPROFILE}"
-  fi
-  eval "$($BREW_PREFIX/bin/brew shellenv)"
+  # Homebrew + jq are installed by install_required (installers/required.sh).
+  # This step assumes brew is already on PATH; updates brew before installing.
+  log_start "brew update…"
+  brew update
 
   log_start "brew install CLI tools…"
   brew install ripgrep fd bat television tree tmux telnet
-  if ! command -v jq &>/dev/null; then
-    brew install jq
-  fi
 
   log_start "brew install macOS apps…"
   brew install maccy rectangle

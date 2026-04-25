@@ -59,8 +59,7 @@ install_ai_tools() {
     ui_menu "AI tools — select to install" choice \
       "Claude Code" \
       "OpenCode" \
-      "Codex" \
-      "Exit"
+      "Codex"
 
     case "$choice" in
       0) _install_claude_code ;;
@@ -77,7 +76,7 @@ install_ai_tools() {
         _setup_codex_mcp
         sleep 1
         ;;
-      3|255)
+      255)
         # oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
         # 최신 버전 확인: npm view oh-my-opencode version
         # 설치: bunx oh-my-opencode@<version> install
@@ -110,7 +109,7 @@ _install_claude_code() {
   esac
 
   # Claude alias
-  printf '\033[2J\033[H' > /dev/tty
+  ui_clear_screen
   echo -e "${UI_BLUE_BOLD} Claude alias setup${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
   echo -e " ${UI_DIM}Enter alias for claude command (default: c)${UI_RESET}\n" > /dev/tty
@@ -133,7 +132,11 @@ _install_claude_code() {
   log_done "alias '${alias_name}=claude' added."
 
   # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab)
-  _install_claude_settings
+  _sync_claude_files
+
+  # Per-language PostToolUse hooks (e.g. gofmt). Fresh-install only —
+  # Update no longer touches user-defined hooks.
+  _setup_language_hooks
 
   # HUD install offer
   local hud_choice=""
@@ -147,7 +150,7 @@ _install_claude_code() {
   esac
 }
 
-_install_claude_settings() {
+_sync_claude_files() {
   log_step "configure claude settings…"
   local _old_umask
   _old_umask=$(umask)
@@ -266,8 +269,18 @@ _install_claude_settings() {
 
   mv "$tmp" "$SETTINGS"
 
-  # gofmt hook — ask independently, skip if already added
-  if command -v gofmt &>/dev/null || command -v go &>/dev/null; then
+  umask "$_old_umask"
+  log_done "claude settings configured."
+}
+
+# Add PostToolUse hooks for languages detected in PATH. Idempotent — never
+# touches existing hooks. Called from fresh-install path only (not Update).
+_setup_language_hooks() {
+  local SETTINGS="$HOME/.claude/settings.json"
+  [ -f "$SETTINGS" ] || return 0
+
+  # Go (gofmt) — only add if Go is installed and the hook isn't there yet
+  if command -v go &>/dev/null || command -v gofmt &>/dev/null; then
     if ! grep -q 'gofmt' "$SETTINGS" 2>/dev/null; then
       local gofmt_choice=""
       ui_menu "Go detected — add gofmt hook to Claude?" gofmt_choice \
@@ -287,21 +300,31 @@ _install_claude_settings() {
           log_fail "Failed to add gofmt hook (jq error)"
         fi
       fi
-    else
-      log_step "gofmt hook already configured, skipping."
     fi
   fi
 
-  umask "$_old_umask"
-  log_done "claude settings configured."
+  # Future languages (Java, Python, etc.) — add branches here.
 }
 
-_install_hud() {
-  log_step "install HUD statusline…"
+# One-time cleanup of pre-modular HUD layout. Idempotent — does nothing if
+# already on the modular layout. Removes only files that the modular layout
+# doesn't ship (powerline-statusline.sh, *.pl); other files are overwritten
+# by _sync_hud_files. Run before _sync_hud_files in install/update flows.
+_migrate_legacy_hud() {
+  local dest="$HOME/.claude/my-hud"
+  if [ -f "$dest/powerline-statusline.sh" ] && [ ! -f "$dest/configure.sh" ]; then
+    log_step "migrating HUD from legacy powerline layout…"
+    rm -f "$dest/powerline-statusline.sh"
+    rm -f "$dest/"*.pl 2>/dev/null || true
+    log_done "Legacy HUD files removed."
+  fi
+}
 
-  # Remove legacy files if present
-  rm -f "$HOME/.claude/my-hud/powerline-statusline.sh" 2>/dev/null || true
-  rm -f "$HOME/.claude/my-hud/"*.pl 2>/dev/null || true
+# Sync HUD scripts/themes/lib without launching the configure UI.
+# Pure cp (overwrites same-named files); legacy cleanup lives in
+# _migrate_legacy_hud. Shared by _install_hud and update_my_claude.
+_sync_hud_files() {
+  log_step "syncing HUD files…"
 
   mkdir -p "$HOME/.claude/my-hud/themes" "$HOME/.claude/my-hud/lib"
   chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
@@ -315,9 +338,8 @@ _install_hud() {
     cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
   fi
 
-
-  # Update statusLine command to use new statusline.sh
-  SETTINGS="$HOME/.claude/settings.json"
+  # Ensure statusLine points at the (possibly updated) statusline.sh
+  local SETTINGS="$HOME/.claude/settings.json"
   if [ -f "$SETTINGS" ]; then
     local sl_tmp
     sl_tmp=$(mktemp)
@@ -329,9 +351,34 @@ _install_hud() {
     fi
   fi
 
-  log_done "HUD statusline installed."
+  log_done "HUD files synced."
+}
 
-  # Run initial configuration
+_install_hud() {
+  log_step "install HUD statusline…"
+  _migrate_legacy_hud
+  _sync_hud_files
   log_step "configure HUD…"
-  bash "$HOME/.claude/my-hud/configure.sh" --project-root "$SCRIPT_DIR"
+  bash "$HOME/.claude/my-hud/configure.sh"
+}
+
+# Pull latest Claude/HUD config from this repo into ~/.claude. No brew/alias
+# prompts, no interactive HUD configure — just file sync. Idempotent.
+update_my_claude() {
+  log_start "Updating ~/.claude config from this repo…"
+
+  if [ -d "$HOME/.claude" ] || command -v claude &>/dev/null; then
+    _sync_claude_files
+  else
+    log_step "Claude Code not installed — skipping Claude config sync."
+  fi
+
+  if [ -f "$HOME/.claude/my-hud/configure.sh" ] \
+     || [ -f "$HOME/.claude/my-hud/statusline.sh" ] \
+     || [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ]; then
+    _migrate_legacy_hud
+    _sync_hud_files
+  else
+    log_step "HUD not installed — skipping HUD sync."
+  fi
 }

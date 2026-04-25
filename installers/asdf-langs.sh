@@ -27,8 +27,7 @@ fi'
   while true; do
     ui_menu "asdf — select language to configure" choice \
       "Golang" \
-      "Java" \
-      "Exit"
+      "Java"
 
     case "$choice" in
       0)
@@ -55,7 +54,7 @@ fi'
         echo
         sleep 2
         ;;
-      2|255)
+      255)
         break
         ;;
     esac
