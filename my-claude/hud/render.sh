@@ -158,7 +158,7 @@ metric_row_inv() {
   local pct_str sc bar_color
   [[ "$pct" =~ ^[0-9]+$ ]] || pct=0
   pct_str=$(printf "%3d%%" "$pct")
-  if [ "$pct" -le 10 ]; then
+  if [ "$pct" -le 20 ]; then
     sc="$C_CRIT"; bar_color="$C_CRIT"
   elif [ "$pct" -le 50 ]; then
     sc="$C_WARN"; bar_color="$C_WARN"

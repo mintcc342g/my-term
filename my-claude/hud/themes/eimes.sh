@@ -23,7 +23,7 @@ LB="$(fg 136 192 208)"
 FD="$(fg 76 86 106)"
 BOFF="$(fg 59 66 82)"
 C_WARN="$(fg 180 142 173)"
-C_CRIT="$(fg 220 140 170)"
+C_CRIT="$(fg 200 90 140)"
 C_BAR="$(fg 136 192 208)"
 
 # Compact powerline segment colors (bg R G B, fg R G B)
