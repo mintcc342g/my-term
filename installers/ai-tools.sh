@@ -88,9 +88,26 @@ install_ai_tools() {
 }
 
 _install_claude_code() {
-  log_step "brew install/update claude-code…"
-  brew install --cask claude-code 2>/dev/null || brew upgrade --cask claude-code 2>/dev/null || log_fail "claude-code install/upgrade failed"
-  log_done "claude-code ready."
+  local method=""
+  ui_menu "Claude Code install method" method \
+    "Stable (brew cask — manual upgrade)" \
+    "Latest (brew cask @latest — always newest)"
+
+  case "$method" in
+    0)
+      log_step "brew install claude-code (stable)…"
+      brew install --cask claude-code || { log_fail "claude-code install failed"; return 1; }
+      log_done "claude-code ready (stable)."
+      ;;
+    1)
+      log_step "brew install claude-code@latest…"
+      brew install --cask claude-code@latest || { log_fail "claude-code@latest install failed"; return 1; }
+      log_done "claude-code ready (@latest)."
+      ;;
+    255)
+      return 0
+      ;;
+  esac
 
   # Claude alias
   printf '\033[2J\033[H' > /dev/tty
