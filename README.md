@@ -37,6 +37,17 @@ cd my-term
 3. Codex가 필요하면 AI tools → Codex로 별도 설치 (MCP 서버 자동 설정됨)
 4. 설치 후 새 Claude Code 세션에서 `@co` 테스트로 MCP 연결 확인
 
+### 업데이트
+프로젝트 코드가 변경된 경우 `~/.claude/`에 반영하는 절차:
+
+1. `git pull origin main`으로 최신 코드 받기
+2. `./install.sh` 실행 후 변경 영역에 따라:
+   - **hooks/collab/settings/CLAUDE.md 변경** → AI tools → Claude Code 재선택 (brew는 이미 설치돼있으면 자동 스킵, 설정 파일만 갱신)
+   - **HUD 변경** → AI tools → HUD settings → Sync HUD (사용자 `config.json`은 보존)
+3. **새 Claude Code 세션부터 반영** — 현재 열려있는 세션은 재시작 필요
+
+> 주의: 업데이트는 `~/.claude/` 안의 hooks/collab/CLAUDE.md를 `cp -f`로 덮어씁니다. 직접 수정한 내용이 있다면 사라집니다. (`config.json`, `settings.json`은 사용자 변경분 보존)
+
 ### 주요 기능
 - 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 Codex를 MCP 도구로 병렬 호출 후 종합 답변 (토론 루프 지원)
 - SessionStart 훅: asdf 언어 환경변수(GOROOT, JAVA_HOME 등)를 Claude Code 세션에 자동 주입
@@ -52,7 +63,6 @@ cd my-term
 2. HUD settings 선택 (HUD가 설치되어 있으면 메뉴에 표시됨)
 3. 테마 변경: Theme 선택 → 원하는 테마 선택 → Save & Exit
 4. 섹션 on/off: Workspace, Claude, Codex 각각 토글 가능
-5. 코드 업데이트 반영: Sync HUD 선택 (유저 설정은 유지됨)
 
 ### 민감 파일 접근 차단
 - 기본적으로 .env, .ssh, .pem, .key 등 주요 민감 파일의 읽기/수정이 차단되어 있음

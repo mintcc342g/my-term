@@ -9,21 +9,9 @@ mkdir -p "$cache_dir" 2>/dev/null || true
 chmod 700 "$cache_dir" 2>/dev/null || true
 
 # ── Codex auth check & rate limit refresh ────────────────────────────────────
-# 1. `codex login status` verifies auth without token consumption
-# 2. `codex exec` generates a fresh session file with up-to-date rate limit data
-codex_auth_cache="$cache_dir/codex-auth"
-
-if ! command -v codex &>/dev/null; then
-  printf 'unavailable' > "$codex_auth_cache"
-elif codex login status &>/dev/null; then
-  printf 'ok' > "$codex_auth_cache"
-  # Parse latest session file to update codex-usage.json cache
-  cache_dir="$cache_dir" "$HOME/.claude/my-hud/refresh-codex-usage.sh" || true
-else
-  printf 'unavailable' > "$codex_auth_cache"
-fi
-
-chmod 600 "$codex_auth_cache" 2>/dev/null || true
+# refresh-codex-usage.sh handles HUD-section gate, codex binary check, RPC
+# call, fallback parsing, and writes both auth + usage caches.
+cache_dir="$cache_dir" "$HOME/.claude/my-hud/refresh-codex-usage.sh" || true
 
 # ── Rate limit prefetch ──────────────────────────────────────────────────────
 # Clear stale markers and fetch fresh data (lock-protected)
