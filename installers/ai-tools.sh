@@ -162,11 +162,10 @@ _install_claude_settings() {
     fi
   done
 
-  # memory
+  # memory: ensure dir + perms only. Memory files are user-private; never
+  # copy from the repo (would overwrite each user's accumulated memory).
   mkdir -p "$HOME/.claude/memory"
   chmod 700 "$HOME/.claude/memory"
-  cp -f "$SCRIPT_DIR/my-claude/memory/"* "$HOME/.claude/memory/"
-  chmod 600 "$HOME/.claude/memory/"*
 
   # CLAUDE.md
   cp -f "$SCRIPT_DIR/my-claude/instructions/codex-collab.md" "$HOME/.claude/CLAUDE.md"

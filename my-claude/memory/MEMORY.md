@@ -1,1 +1,0 @@
-- [추측 금지 — 반드시 확인 후 답변](feedback_verify_before_answer.md) — 에이전트 결과든 자체 판단이든, 도구로 사실 확인 후에만 답변
