@@ -27,7 +27,7 @@ fi'
 
 # pyenv 설정
 if command -v pyenv 1>/dev/null 2>&1; then
-  eval "$(pyenv init -)"
+  eval "$(pyenv init --no-rehash -)"
   if command -v pyenv-virtualenv-init 1>/dev/null 2>&1; then
     eval "$(pyenv virtualenv-init -)"
   fi
