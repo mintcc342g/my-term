@@ -25,10 +25,8 @@ install_convenience() {
 
   # television shell integration
   local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-  if ! grep -q 'tv init' "$ZSHRC" 2>/dev/null; then
-    printf '\n# television 설정\neval "$(tv init zsh)"\n' >> "${ZSHRC}"
-    export ZSHRC_MODIFIED=true
-  fi
+  rc_upsert_block "$ZSHRC" "television" 'eval "$(tv init zsh)"'
+  export ZSHRC_MODIFIED=true
 
   log_done "convenience tools installed."
 }

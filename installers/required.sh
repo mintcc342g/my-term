@@ -39,9 +39,7 @@ install_required() {
   local BREW_PREFIX
   BREW_PREFIX=$(brew --prefix)
   local ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-  if ! grep -q 'brew shellenv' "$ZPROFILE" 2>/dev/null; then
-    printf '\n# Homebrew 설정\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "${ZPROFILE}"
-  fi
+  rc_upsert_block "$ZPROFILE" "brew-shellenv" "eval \"\$($BREW_PREFIX/bin/brew shellenv)\""
   eval "$($BREW_PREFIX/bin/brew shellenv)"
 
   # ── jq ───────────────────────────────────────────────────────

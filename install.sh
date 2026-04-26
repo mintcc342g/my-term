@@ -14,6 +14,7 @@ log_done()  { echo "${GREEN_BOLD}✔${RESET} $*"; }
 
 # ── Source shared UI + installers ───────────────────────────────
 source "$SCRIPT_DIR/lib/ui.sh"
+source "$SCRIPT_DIR/lib/rc-block.sh"
 source "$SCRIPT_DIR/installers/required.sh"
 source "$SCRIPT_DIR/installers/convenience.sh"
 source "$SCRIPT_DIR/installers/oh-my-zsh.sh"
