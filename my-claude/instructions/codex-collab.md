@@ -1,3 +1,4 @@
+<!-- MYTERM:BEGIN -->
 ## Multi-Agent Collaboration (@co)
 
 When the user's prompt contains `@co`, a synchronous `UserPromptSubmit` hook injects a multi-agent collaboration directive into the conversation context.
@@ -27,3 +28,4 @@ Edit `~/.claude/my-collab/co-agents.json`:
   { "name": "AnotherAgent", "command": "another-cli exec" }
 ]
 ```
+<!-- MYTERM:END -->

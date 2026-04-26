@@ -170,9 +170,9 @@ _sync_claude_files() {
   mkdir -p "$HOME/.claude/memory"
   chmod 700 "$HOME/.claude/memory"
 
-  # CLAUDE.md
-  cp -f "$SCRIPT_DIR/my-claude/instructions/codex-collab.md" "$HOME/.claude/CLAUDE.md"
-  chmod 600 "$HOME/.claude/CLAUDE.md"
+  # CLAUDE.md — sync only the MYTERM-marked block, preserving any
+  # personal content the user keeps outside the markers.
+  _sync_claude_md_block
 
   # hooks
   mkdir -p "$HOME/.claude/my-hooks"
@@ -271,6 +271,46 @@ _sync_claude_files() {
 
   umask "$_old_umask"
   log_done "claude settings configured."
+}
+
+# Sync codex-collab.md into ~/.claude/CLAUDE.md while preserving the user's
+# own content outside the MYTERM marker block.
+#   - file missing            → write source as-is
+#   - markers present in dst  → replace block in place
+#   - no markers in dst       → backup, then overwrite (legacy migration)
+_sync_claude_md_block() {
+  local src="$SCRIPT_DIR/my-claude/instructions/codex-collab.md"
+  local dst="$HOME/.claude/CLAUDE.md"
+  local begin='<!-- MYTERM:BEGIN -->'
+  local end='<!-- MYTERM:END -->'
+
+  if [ ! -f "$dst" ]; then
+    cp -f "$src" "$dst"
+    chmod 600 "$dst"
+    return 0
+  fi
+
+  if ! grep -qF "$begin" "$dst" || ! grep -qF "$end" "$dst"; then
+    local backup="$dst.bak.$(date +%Y%m%d%H%M%S)"
+    cp -f "$dst" "$backup"
+    chmod 600 "$backup"
+    cp -f "$src" "$dst"
+    chmod 600 "$dst"
+    log_step "legacy CLAUDE.md backed up to $backup"
+    return 0
+  fi
+
+  local tmp="$dst.tmp.$$"
+  awk -v src="$src" -v begin="$begin" -v end="$end" '
+    function emit_src(   line) {
+      while ((getline line < src) > 0) print line
+      close(src)
+    }
+    index($0, begin) { in_block = 1; emit_src(); next }
+    index($0, end)   { in_block = 0; next }
+    !in_block        { print }
+  ' "$dst" > "$tmp" && mv "$tmp" "$dst"
+  chmod 600 "$dst"
 }
 
 # Add PostToolUse hooks for languages detected in PATH. Idempotent — never
