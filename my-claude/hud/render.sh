@@ -182,8 +182,15 @@ metric_row_inv() {
 }
 
 # ── Section renderers ───────────────────────────────────────────
-# vw layout: "icon(1)+sp(1) cwd sp(2) sep(1) sp(1) icon(1)+sp(1) branch"
-_ws_vw() { echo $(( 2 + ${#1} + 2 + 1 + 1 + 2 + ${#2} )); }
+# vw layout with branch:    "icon(1)+sp(1) cwd sp(2) sep(1) sp(1) icon(1)+sp(1) branch"
+# vw layout without branch: "icon(1)+sp(1) cwd"
+_ws_vw() {
+  if [ -n "$2" ]; then
+    echo $(( 2 + ${#1} + 2 + 1 + 1 + 2 + ${#2} ))
+  else
+    echo $(( 2 + ${#1} ))
+  fi
+}
 
 render_workspace() {
   local cwd="$1" git_branch="$2"
@@ -203,13 +210,23 @@ render_workspace() {
 
   # If STILL too wide (current dir itself is long), truncate dir with …
   if [ "$ws_vw" -gt "$IW" ]; then
-    local avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - 1 ))
+    local avail
+    if [ -n "$git_branch" ]; then
+      avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - 1 ))
+    else
+      avail=$(( IW - 2 - 1 ))
+    fi
     [ "$avail" -lt 3 ] && avail=3
     cwd="${cwd:0:$avail}…"
     ws_vw=$(_ws_vw "$cwd" "$git_branch")
   fi
 
-  local ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}"
+  local ws_content
+  if [ -n "$git_branch" ]; then
+    ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}"
+  else
+    ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}"
+  fi
   sep_line "workspace"
   row "$ws_content" "$ws_vw"
 }
