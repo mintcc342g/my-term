@@ -12,9 +12,10 @@ install_convenience() {
   brew install ripgrep fd bat television tree tmux telnet
 
   log_start "brew install macOS apps…"
-  brew install maccy rectangle
-  brew install --cask macs-fan-control
-  brew install --cask alt-tab
+  brew list --cask maccy &>/dev/null || brew install --cask maccy
+  brew list --cask rectangle &>/dev/null || brew install --cask rectangle
+  brew list --cask macs-fan-control &>/dev/null || brew install --cask macs-fan-control
+  brew list --cask alt-tab &>/dev/null || brew install --cask alt-tab
 
   log_start "brew install DevOps tools…"
   brew install awscli

@@ -3,8 +3,12 @@
 # source'd by install.sh
 
 install_oh_my_zsh() {
-  log_start "install oh-my-zsh…"
-  RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  if [ -d "$HOME/.oh-my-zsh" ]; then
+    log_step "oh-my-zsh already installed; skipping."
+  else
+    log_start "install oh-my-zsh…"
+    RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  fi
 
   local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 

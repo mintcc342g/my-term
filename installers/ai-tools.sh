@@ -95,12 +95,12 @@ _install_claude_code() {
   case "$method" in
     0)
       log_step "brew install claude-code (stable)…"
-      brew install --cask claude-code || { log_fail "claude-code install failed"; return 1; }
+      brew list --cask claude-code &>/dev/null || brew install --cask claude-code || { log_fail "claude-code install failed"; return 1; }
       log_done "claude-code ready (stable)."
       ;;
     1)
       log_step "brew install claude-code@latest…"
-      brew install --cask claude-code@latest || { log_fail "claude-code@latest install failed"; return 1; }
+      brew list --cask claude-code@latest &>/dev/null || brew install --cask claude-code@latest || { log_fail "claude-code@latest install failed"; return 1; }
       log_done "claude-code ready (@latest)."
       ;;
     255)
