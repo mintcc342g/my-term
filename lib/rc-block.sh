@@ -2,9 +2,9 @@
 # lib/rc-block.sh — managed-block helper for shell rc files (zshrc/zprofile).
 #
 # Each managed block is wrapped with a pair of marker lines:
-#   # myterm:<tag>:begin
+#   #-- my-term:<tag>: start
 #   <content...>
-#   # myterm:<tag>:end
+#   #-- my-term:<tag>: end
 #
 # rc_upsert_block FILE TAG CONTENT
 #   - If both markers exist in FILE: replace the lines between them with CONTENT.
@@ -13,8 +13,8 @@
 
 rc_upsert_block() {
   local file="$1" tag="$2" content="$3"
-  local begin="# myterm:${tag}:begin"
-  local end="# myterm:${tag}:end"
+  local begin="#-- my-term:${tag}: start"
+  local end="#-- my-term:${tag}: end"
 
   touch "$file"
 
