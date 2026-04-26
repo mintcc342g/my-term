@@ -92,8 +92,26 @@ fi
 # ── Git branch (max 30 chars, truncate to 7+… if too long) ─────
 MAX_BRANCH_LEN=30
 git_branch=""
+git_upstream_state=""
+git_ahead=0
+git_behind=0
 if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   git_branch=$(git -C "$cwd" branch --show-current 2>/dev/null | tr -d '\n')
+  if [ -n "$git_branch" ]; then
+    if git -C "$cwd" rev-parse --abbrev-ref "${git_branch}@{upstream}" >/dev/null 2>&1; then
+      git_ahead=$(git -C "$cwd" rev-list --count "${git_branch}@{upstream}..HEAD" 2>/dev/null || echo 0)
+      git_behind=$(git -C "$cwd" rev-list --count "HEAD..${git_branch}@{upstream}" 2>/dev/null || echo 0)
+      [[ "$git_ahead" =~ ^[0-9]+$ ]] || git_ahead=0
+      [[ "$git_behind" =~ ^[0-9]+$ ]] || git_behind=0
+      if [ "$git_ahead" -eq 0 ] && [ "$git_behind" -eq 0 ]; then
+        git_upstream_state="synced"
+      else
+        git_upstream_state="diverged"
+      fi
+    else
+      git_upstream_state="none"
+    fi
+  fi
 fi
 if [ -n "$git_branch" ] && [ ${#git_branch} -gt $MAX_BRANCH_LEN ]; then
   git_branch="${git_branch:0:7}…"
@@ -348,7 +366,7 @@ render_hud() {
   build_top
 
   if [ "$sec_workspace" = "true" ]; then
-    render_workspace "$short_dir" "$git_branch"
+    render_workspace "$short_dir" "$git_branch" "$git_upstream_state" "$git_ahead" "$git_behind"
   fi
 
   if [ "$sec_claude" = "true" ]; then

@@ -3,7 +3,7 @@
 터미널 개인 설정 (애플 실리콘 기준)
 
 ## 사전 작업
-- 서체 설치 (Nerd Font 필수 — HUD 아이콘 표시용)
+- 서체 설치 (Nerd Fonts **v3.0.0 이상** 필수 — HUD가 Material Design Icons codepoint(`U+F062C` 등)을 사용하므로 v3 매핑이 필요합니다)
 - iTerm2 설치 및 프로필 설정
 
 ## 설치

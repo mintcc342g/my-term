@@ -10,12 +10,21 @@ bold=$'\033[1m'
 
 BG=$'\033[49m'  # terminal default background
 
+# ── Bar glyphs (BMP, system fallback) ───────────────────────────
+BAR_FILLED=$'\xe2\x96\xb0'     # U+25B0 black parallelogram
+BAR_EMPTY=$'\xe2\x96\xb1'      # U+25B1 white parallelogram
+
 # ── Nerd Font icons ─────────────────────────────────────────────
-ICON_DIR=$'\xef\x81\xbc'       # U+F07C folder open
-ICON_GIT=$'\xee\x82\xa0'       # U+E0A0 git branch
-ICON_SESS=$'\xef\x80\x97'      # U+F017 clock
-ICON_RESET='↻'                 # U+21BB reset indicator
-LBL_MDL='MDL'                   # model label
+ICON_DIR=$'\xf3\xb0\x9d\xb0'          # U+F0770 md-folder_open
+ICON_GIT=$'\xf3\xb0\x98\xac'          # U+F062C md-source_branch
+ICON_GIT_SYNCED=$'\xf3\xb0\x85\xa0'   # U+F0160 md-cloud_check
+ICON_GIT_DIVERGED=$'\xf3\xb0\x98\xbf' # U+F063F md-cloud_sync
+ICON_GIT_AHEAD=$'\xe2\x87\xa1'        # U+21E1 upwards harpoon
+ICON_GIT_BEHIND=$'\xe2\x87\xa3'       # U+21E3 downwards harpoon
+ICON_GIT_NOUPSTREAM=$'\xf3\xb0\x8c\xba' # U+F033A md-link_variant_off
+ICON_SESS=$'\xef\x80\x97'             # U+F017 clock
+ICON_RESET=$'\xe2\x86\xbb'            # U+21BB reset indicator (BMP, system fallback)
+LBL_MDL='MDL'                         # model label
 
 # ── Gradient ────────────────────────────────────────────────────
 grad_fg() {
@@ -40,9 +49,9 @@ bar() {
   else color="$C_BAR"
   fi
   printf '%s' "$color"
-  for ((i=0; i<filled; i++)); do printf '▰'; done
+  for ((i=0; i<filled; i++)); do printf '%s' "$BAR_FILLED"; done
   printf '%s' "$BOFF"
-  for ((i=0; i<empty; i++)); do printf '▱'; done
+  for ((i=0; i<empty; i++)); do printf '%s' "$BAR_EMPTY"; done
   printf '%s' "$rst$BG"
 }
 
@@ -170,60 +179,95 @@ metric_row_inv() {
   [ "$filled" -gt "$BW" ] && filled=$BW
   local empty=$(( BW - filled ))
   local bar_out="${bar_color}"
-  for ((i=0; i<filled; i++)); do bar_out+='▰'; done
+  for ((i=0; i<filled; i++)); do bar_out+="$BAR_FILLED"; done
   if [ "$filled" -eq 0 ]; then
-    for ((i=0; i<empty; i++)); do bar_out+='▱'; done
+    for ((i=0; i<empty; i++)); do bar_out+="$BAR_EMPTY"; done
   else
     bar_out+="${BOFF}"
-    for ((i=0; i<empty; i++)); do bar_out+='▱'; done
+    for ((i=0; i<empty; i++)); do bar_out+="$BAR_EMPTY"; done
   fi
   local content=" ${LB}${bold}${label}${rst}${BG} ${bar_out}${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
   _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset"
 }
 
 # ── Section renderers ───────────────────────────────────────────
-# vw layout with branch:    "icon(1)+sp(1) cwd sp(2) sep(1) sp(1) icon(1)+sp(1) branch"
+# upstream block visual width (leading space + marker + optional ahead/behind)
+_ws_upstream_vw() {
+  local state=$1 ahead=${2:-0} behind=${3:-0}
+  case "$state" in
+    synced|none) echo 2 ;;
+    diverged)
+      local w=2
+      [ "$ahead" -gt 0 ] && w=$(( w + 2 + ${#ahead} ))
+      [ "$behind" -gt 0 ] && w=$(( w + 2 + ${#behind} ))
+      echo "$w"
+      ;;
+    *) echo 0 ;;
+  esac
+}
+
+# vw layout with branch:    "icon(1)+sp(1) cwd sp(2) sep(1) sp(1) icon(1)+sp(1) branch [upstream]"
 # vw layout without branch: "icon(1)+sp(1) cwd"
 _ws_vw() {
+  local up_vw=${3:-0}
   if [ -n "$2" ]; then
-    echo $(( 2 + ${#1} + 2 + 1 + 1 + 2 + ${#2} ))
+    echo $(( 2 + ${#1} + 2 + 1 + 1 + 2 + ${#2} + up_vw ))
   else
     echo $(( 2 + ${#1} ))
   fi
 }
 
 render_workspace() {
-  local cwd="$1" git_branch="$2"
-  local ws_vw=$(_ws_vw "$cwd" "$git_branch")
+  local cwd="$1" git_branch="$2" git_upstream_state="${3:-}"
+  local git_ahead="${4:-0}" git_behind="${5:-0}"
+  local up_vw
+  up_vw=$(_ws_upstream_vw "$git_upstream_state" "$git_ahead" "$git_behind")
+  local ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
 
-  # If still too wide, truncate branch first (to 7+…)
+  # If too wide, truncate branch first (to 7+…)
   if [ "$ws_vw" -gt "$IW" ] && [ ${#git_branch} -gt 8 ]; then
     git_branch="${git_branch:0:7}…"
-    ws_vw=$(_ws_vw "$cwd" "$git_branch")
+    ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
   fi
 
-  # If still too wide, truncate dir to current dir only
+  # If still too wide, truncate dir to current dir only (upstream marker is preserved)
   if [ "$ws_vw" -gt "$IW" ]; then
     cwd=$(basename "$cwd")
-    ws_vw=$(_ws_vw "$cwd" "$git_branch")
+    ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
   fi
 
   # If STILL too wide (current dir itself is long), truncate dir with …
   if [ "$ws_vw" -gt "$IW" ]; then
     local avail
     if [ -n "$git_branch" ]; then
-      avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - 1 ))
+      avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - up_vw - 1 ))
     else
       avail=$(( IW - 2 - 1 ))
     fi
     [ "$avail" -lt 3 ] && avail=3
     cwd="${cwd:0:$avail}…"
-    ws_vw=$(_ws_vw "$cwd" "$git_branch")
+    ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
   fi
+
+  # Build upstream block string
+  local upstream_block=""
+  case "$git_upstream_state" in
+    synced)
+      upstream_block=" ${LB}${bold}${ICON_GIT_SYNCED}${rst}${BG}"
+      ;;
+    none)
+      upstream_block=" ${LB}${bold}${ICON_GIT_NOUPSTREAM}${rst}${BG}"
+      ;;
+    diverged)
+      upstream_block=" ${LB}${bold}${ICON_GIT_DIVERGED}${rst}${BG}"
+      [ "$git_ahead" -gt 0 ] && upstream_block+=" ${HI2}${ICON_GIT_AHEAD}${git_ahead}${rst}${BG}"
+      [ "$git_behind" -gt 0 ] && upstream_block+=" ${HI2}${ICON_GIT_BEHIND}${git_behind}${rst}${BG}"
+      ;;
+  esac
 
   local ws_content
   if [ -n "$git_branch" ]; then
-    ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}"
+    ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}${upstream_block}"
   else
     ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}"
   fi
