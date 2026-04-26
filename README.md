@@ -3,7 +3,10 @@
 터미널 개인 설정 (애플 실리콘 기준)
 
 ## 사전 작업
-- 서체 설치 (Nerd Fonts **v3.0.0 이상** 필수 — HUD가 Material Design Icons codepoint(`U+F062C` 등)을 사용하므로 v3 매핑이 필요합니다)
+- macOS Command Line Tools(`curl`, `git`) 설치
+  - 누락 시 인스톨러가 `xcode-select --install` 안내 후 종료합니다
+- 서체 설치 (Nerd Fonts **v3.0.0 이상** 필수
+  - HUD가 Material Design Icons codepoint(`U+F062C` 등)을 사용하므로 v3 매핑이 필요합니다)
 - iTerm2 설치 및 프로필 설정
 
 ## 설치
@@ -14,27 +17,24 @@ cd my-term
 ./install.sh
 ```
 
-> ⚠️ 사전 요구: macOS Command Line Tools(`curl`, `git`)이 설치돼있어야 합니다. 누락 시 인스톨러가 `xcode-select --install` 안내 후 종료합니다.
-
 ## 업데이트
-프로젝트 코드가 변경된 경우 `~/.claude/`로 동기화합니다. 현재는 AI 어시스턴트 설정과 HUD가 sync 대상입니다.
+이 프로젝트 코드가 변경된 경우 업데이트를 진행해주세요.  
+업데이트는 brew 설치/alias 설정 같은 인스톨 단계를 모두 건너뛰고 `~/.claude/`로 파일 sync만 수행합니다. 현재는 AI 어시스턴트 설정과 HUD가 sync 대상입니다.
 
+> ⚠️ **주의**: `~/.claude/` 안의 `my-hooks/`, `my-collab/`, `CLAUDE.md`는 `cp -f`로 덮어쓰므로 직접 수정한 내용은 사라집니다. (HUD `config.json`과 Claude `settings.json`은 사용자 변경분이 병합·보존됨)
+
+### 하는 법
 1. `git pull origin main`으로 최신 코드 받기
 2. `./install.sh` → **Update** 선택
 3. **새 Claude Code 세션부터 반영** — 현재 열린 세션은 재시작 필요
 
-Update는 brew 설치/alias 설정 같은 인스톨 단계를 모두 건너뛰고 `~/.claude/`로 파일 sync만 수행합니다. Claude / HUD 각각은 설치돼있을 때만 자동 감지되어 처리되므로, HUD 미설치 환경에선 Claude config만 갱신됩니다.
-
-> ⚠️ 주의: `~/.claude/` 안의 `my-hooks/`, `my-collab/`, `CLAUDE.md`는 `cp -f`로 덮어쓰므로 직접 수정한 내용은 사라집니다. (HUD `config.json`과 Claude `settings.json`은 사용자 변경분이 병합·보존됨)
-
-
 ## 설치 프로그램 목록
 
-### 필수 (Required tools)
+### 필수
 필수 툴 설치를 거절할 경우, 설치를 즉시 종료합니다.
 - Homebrew, jq
 
-### 선택 (Yes/No)
+### 선택
 각 단계별로 의존성 툴이 설치되어 있지 않을 경우, 설치하지 않고 자동으로 스킵합니다.
 - Convenience tools — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun 등
 - oh-my-zsh + zsh plugins (syntax-highlighting, autosuggestions)
