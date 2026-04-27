@@ -125,7 +125,9 @@ rl_wk_reset=""
 rl_source=""
 
 # 1st: try stdin JSON rate_limits (fresh during active conversation)
-if [ -n "$stdin_rl_5h_pct" ] && [ -n "$stdin_rl_wk_pct" ]; then
+# Gate on resets_at: placeholder payloads carry pct=0 with empty resets_at,
+# while real payloads always include a future reset timestamp even at 0% usage.
+if [ -n "$stdin_rl_5h_reset" ] && [ -n "$stdin_rl_wk_reset" ]; then
   rl_5h_pct="$stdin_rl_5h_pct"
   rl_wk_pct="$stdin_rl_wk_pct"
   rl_5h_reset="$stdin_rl_5h_reset"
