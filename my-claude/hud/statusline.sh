@@ -315,7 +315,7 @@ if [ "$TERM_WIDTH" -lt "$MIN_WIDTH" ] 2>/dev/null; then
 fi
 
 # Determine mode based on terminal width
-COMPACT_THRESHOLD=130
+COMPACT_THRESHOLD=100
 hud_mode="full"
 if [ "$TERM_WIDTH" -lt "$COMPACT_THRESHOLD" ]; then
   hud_mode="compact"
