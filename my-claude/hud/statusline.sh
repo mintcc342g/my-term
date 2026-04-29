@@ -149,8 +149,19 @@ if [ "$rl_source" != "stdin" ]; then
       rm -rf "$RL_LOCK" 2>/dev/null
       trap - EXIT
     else
+      # Lock held — likely init-env-bg.sh's curl in flight. Briefly poll for
+      # cache so the first session render doesn't fall through to 0%/--.
       _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
-      if [ "$_lock_age" -gt 15 ]; then rm -rf "$RL_LOCK" 2>/dev/null; fi
+      if [ "$_lock_age" -gt 15 ]; then
+        rm -rf "$RL_LOCK" 2>/dev/null
+      else
+        _i=0
+        while [ "$_i" -lt 10 ] && [ ! -f "$RL_CACHE" ] && [ ! -f "$RL_ERR_MARKER" ]; do
+          sleep 0.1
+          _i=$((_i + 1))
+        done
+        unset _i
+      fi
       unset _lock_age
     fi
   fi
