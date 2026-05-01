@@ -138,31 +138,40 @@ fi
 # 2nd: external API fallback (only when stdin has no rate_limits)
 RL_CACHE="$cache_dir/ratelimit.json"
 RL_ERR_MARKER="$cache_dir/ratelimit.err"
+RL_LOCK="$cache_dir/ratelimit.lock"
 
 if [ "$rl_source" != "stdin" ]; then
-  # Try cache first, call API only if cache is missing
+  # If a refresh is in flight (lock held by init-env-bg.sh or another render),
+  # briefly wait for the atomic mv to land. Covers both first-session (no
+  # cache yet) and stale cache (5h resets_at already past) — the polling exit
+  # condition "mtime increased" naturally handles both: starting mtime is 0
+  # when no file exists, or the previous mtime when a stale cache is present.
+  if [ -d "$RL_LOCK" ]; then
+    _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
+    if [ "$_lock_age" -gt 15 ]; then
+      rm -rf "$RL_LOCK" 2>/dev/null
+    else
+      _orig_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
+      _i=0
+      while [ "$_i" -lt 10 ]; do
+        _cur_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
+        [ "$_cur_mtime" -gt "$_orig_mtime" ] && break
+        [ -f "$RL_ERR_MARKER" ] && break
+        sleep 0.1
+        _i=$((_i + 1))
+      done
+      unset _i _orig_mtime _cur_mtime
+    fi
+    unset _lock_age
+  fi
+
+  # Still no cache and no err marker → fetch ourselves (no in-flight refresh).
   if [ ! -f "$RL_CACHE" ] && [ ! -f "$RL_ERR_MARKER" ]; then
-    RL_LOCK="$cache_dir/ratelimit.lock"
     if mkdir "$RL_LOCK" 2>/dev/null; then
       trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
       cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
       rm -rf "$RL_LOCK" 2>/dev/null
       trap - EXIT
-    else
-      # Lock held — likely init-env-bg.sh's curl in flight. Briefly poll for
-      # cache so the first session render doesn't fall through to 0%/--.
-      _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
-      if [ "$_lock_age" -gt 15 ]; then
-        rm -rf "$RL_LOCK" 2>/dev/null
-      else
-        _i=0
-        while [ "$_i" -lt 10 ] && [ ! -f "$RL_CACHE" ] && [ ! -f "$RL_ERR_MARKER" ]; do
-          sleep 0.1
-          _i=$((_i + 1))
-        done
-        unset _i
-      fi
-      unset _lock_age
     fi
   fi
 
