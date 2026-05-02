@@ -139,7 +139,12 @@ fi
 RL_CACHE="$cache_dir/ratelimit.json"
 RL_ERR_MARKER="$cache_dir/ratelimit.err"
 RL_LOCK="$cache_dir/ratelimit.lock"
-RL_ERROR_TTL=300   # seconds to keep err marker before retrying API
+
+# Defensive: same-user attacker (or accidental link) could redirect reads /
+# the atomic mv via a symlink at these paths. mkdir naturally rejects a
+# symlink at RL_LOCK so it doesn't need explicit handling here.
+[ -L "$RL_CACHE" ] && rm -f "$RL_CACHE"
+[ -L "$RL_ERR_MARKER" ] && rm -f "$RL_ERR_MARKER"
 
 # ISO 8601 → Unix epoch (empty string on parse failure).
 iso_to_epoch() {
@@ -175,14 +180,21 @@ cache_is_fresh() {
 }
 
 if [ "$rl_source" != "stdin" ]; then
-  # Recover from a stale err marker so a long-past API error doesn't block
-  # refresh forever. (Used to be cleared by init-env-bg.sh on every session.)
+  # Determine err-backoff state. Marker content is the current backoff window
+  # in seconds (set by refresh-ratelimit.sh, doubled per consecutive failure,
+  # capped). mtime is the moment of last failure. We do NOT remove the marker
+  # here — leaving it in place lets refresh-ratelimit.sh see the previous
+  # window and escalate properly on the next failure. A successful fetch
+  # removes the marker, resetting the backoff to base.
+  _err_in_backoff=0
+  _err_marker_mtime=0
   if [ -f "$RL_ERR_MARKER" ]; then
-    _err_age=$(($(date +%s) - $(stat -f %m "$RL_ERR_MARKER" 2>/dev/null || echo 0)))
-    if [ "$_err_age" -gt "$RL_ERROR_TTL" ]; then
-      rm -f "$RL_ERR_MARKER" 2>/dev/null || true
-    fi
-    unset _err_age
+    _err_marker_mtime=$(stat -f %m "$RL_ERR_MARKER" 2>/dev/null || echo 0)
+    _err_age=$(($(date +%s) - _err_marker_mtime))
+    _err_window=$(tr -dc '0-9' < "$RL_ERR_MARKER" 2>/dev/null)
+    [ -z "$_err_window" ] && _err_window=60
+    [ "$_err_age" -le "$_err_window" ] && _err_in_backoff=1
+    unset _err_age _err_window
   fi
 
   # Only act on the cache when it isn't fresh: missing, or 5h/wk reset already
@@ -199,18 +211,22 @@ if [ "$rl_source" != "stdin" ]; then
         while [ "$_i" -lt 60 ]; do
           _cur_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
           [ "$_cur_mtime" -gt "$_orig_mtime" ] && break
-          [ -f "$RL_ERR_MARKER" ] && break
+          # Compare err marker mtime vs the snapshot taken at entry — a
+          # pre-existing stale marker shouldn't short-circuit polling, only a
+          # marker freshly written by the in-flight refresh should.
+          _cur_err_mtime=$(stat -f %m "$RL_ERR_MARKER" 2>/dev/null || echo 0)
+          [ "$_cur_err_mtime" -gt "$_err_marker_mtime" ] && break
           [ ! -d "$RL_LOCK" ] && break
           sleep 0.1
           _i=$((_i + 1))
         done
-        unset _i _orig_mtime _cur_mtime
+        unset _i _orig_mtime _cur_mtime _cur_err_mtime
       fi
       unset _lock_age
     fi
 
-    # Still not fresh and no recent error → fetch ourselves.
-    if ! cache_is_fresh && [ ! -f "$RL_ERR_MARKER" ]; then
+    # Still not fresh and not in backoff → fetch ourselves.
+    if ! cache_is_fresh && [ "$_err_in_backoff" != 1 ]; then
       if mkdir "$RL_LOCK" 2>/dev/null; then
         trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
         cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
@@ -219,6 +235,7 @@ if [ "$rl_source" != "stdin" ]; then
       fi
     fi
   fi
+  unset _err_in_backoff _err_marker_mtime
 
   if [ -f "$RL_CACHE" ] && jq -e '.five_hour' < "$RL_CACHE" >/dev/null 2>&1; then
     IFS=$'\t' read -r rl_5h_pct rl_5h_reset rl_wk_pct rl_wk_reset < <(

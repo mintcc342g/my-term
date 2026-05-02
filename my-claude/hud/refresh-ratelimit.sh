@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
 # Fetch Anthropic OAuth usage API and update rate limit cache.
-# Called by: init-env-bg.sh (session start), powerline-statusline.sh (per-prompt)
+# Called by: statusline.sh (cache miss or stale)
 #
 # Expects: $cache_dir to be set by caller
-# Writes:  $cache_dir/ratelimit.json on success
-#          $cache_dir/ratelimit.err  on API error
+# Writes:  $cache_dir/ratelimit.json on success (atomic mv)
+#          $cache_dir/ratelimit.err  on API error (content = backoff seconds)
 #
 
 [ -z "${cache_dir:-}" ] && exit 1
@@ -14,6 +14,15 @@ umask 077
 
 RL_CACHE="$cache_dir/ratelimit.json"
 RL_ERR_MARKER="$cache_dir/ratelimit.err"
+
+# Defensive: never write through a symlink at our cache paths. A same-user
+# attacker (or accidental link) could otherwise redirect the atomic mv.
+[ -L "$RL_CACHE" ] && rm -f "$RL_CACHE"
+[ -L "$RL_ERR_MARKER" ] && rm -f "$RL_ERR_MARKER"
+
+# Exponential backoff bounds for repeated API errors.
+RL_ERR_MIN=60      # base backoff window (seconds)
+RL_ERR_MAX=1800    # cap (30 min)
 
 ACCESS_TOKEN=""
 # macOS Keychain first
@@ -54,6 +63,21 @@ if [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.five_hour' >/dev/null 2
     rm -f "$tmp_rl" 2>/dev/null || true
   fi
 elif [ -n "$RL_RESP" ] && printf '%s' "$RL_RESP" | jq -e '.error' >/dev/null 2>&1; then
-  touch "$RL_ERR_MARKER"
+  # Read previous backoff window (if any), double, cap. Marker content is the
+  # current window in seconds; mtime is the moment of failure. statusline
+  # treats (now - mtime) <= window as "still in backoff" and skips fetch.
+  prev=0
+  if [ -f "$RL_ERR_MARKER" ]; then
+    prev=$(tr -dc '0-9' < "$RL_ERR_MARKER" 2>/dev/null)
+    [ -z "$prev" ] && prev=0
+  fi
+  if [ "$prev" -le 0 ]; then
+    next=$RL_ERR_MIN
+  else
+    next=$((prev * 2))
+    [ "$next" -gt "$RL_ERR_MAX" ] && next=$RL_ERR_MAX
+  fi
+  printf '%s\n' "$next" > "$RL_ERR_MARKER"
+  chmod 600 "$RL_ERR_MARKER" 2>/dev/null || true
 fi
 unset RL_RESP
