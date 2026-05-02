@@ -139,39 +139,84 @@ fi
 RL_CACHE="$cache_dir/ratelimit.json"
 RL_ERR_MARKER="$cache_dir/ratelimit.err"
 RL_LOCK="$cache_dir/ratelimit.lock"
+RL_ERROR_TTL=300   # seconds to keep err marker before retrying API
+
+# ISO 8601 → Unix epoch (empty string on parse failure).
+iso_to_epoch() {
+  local iso="$1" clean
+  [ -z "$iso" ] && return
+  clean=$(printf '%s' "$iso" | sed -E 's/T/ /; s/\.[0-9]+//')
+  if printf '%s' "$clean" | grep -q 'Z$'; then
+    clean="${clean%Z} +0000"
+  else
+    clean=$(printf '%s' "$clean" | sed -E 's/([+-][0-9]{2}):([0-9]{2})$/ \1\2/')
+  fi
+  printf '%s' "$clean" | grep -Eq ' [+-][0-9]{4}$' || clean="${clean} +0000"
+  date -j -f "%Y-%m-%d %H:%M:%S %z" "$clean" +%s 2>/dev/null
+}
+
+# Cache is fresh when both 5h and wk resets_at are in the future.
+# Single jq call to keep the hot path (every render) cheap.
+cache_is_fresh() {
+  [ -f "$RL_CACHE" ] || return 1
+  local now iso_5h iso_wk epoch_5h epoch_wk
+  now=$(date +%s)
+  IFS=$'\t' read -r iso_5h iso_wk < <(
+    jq -r '[(.five_hour.resets_at // ""), (.seven_day.resets_at // "")] | @tsv' \
+      < "$RL_CACHE" 2>/dev/null
+  )
+  if [ -z "$iso_5h" ] || [ -z "$iso_wk" ]; then
+    return 1
+  fi
+  epoch_5h=$(iso_to_epoch "$iso_5h")
+  epoch_wk=$(iso_to_epoch "$iso_wk")
+  [ -n "$epoch_5h" ] && [ -n "$epoch_wk" ] \
+    && [ "$epoch_5h" -gt "$now" ] && [ "$epoch_wk" -gt "$now" ]
+}
 
 if [ "$rl_source" != "stdin" ]; then
-  # If a refresh is in flight (lock held by init-env-bg.sh or another render),
-  # briefly wait for the atomic mv to land. Covers both first-session (no
-  # cache yet) and stale cache (5h resets_at already past) — the polling exit
-  # condition "mtime increased" naturally handles both: starting mtime is 0
-  # when no file exists, or the previous mtime when a stale cache is present.
-  if [ -d "$RL_LOCK" ]; then
-    _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
-    if [ "$_lock_age" -gt 15 ]; then
-      rm -rf "$RL_LOCK" 2>/dev/null
-    else
-      _orig_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
-      _i=0
-      while [ "$_i" -lt 10 ]; do
-        _cur_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
-        [ "$_cur_mtime" -gt "$_orig_mtime" ] && break
-        [ -f "$RL_ERR_MARKER" ] && break
-        sleep 0.1
-        _i=$((_i + 1))
-      done
-      unset _i _orig_mtime _cur_mtime
+  # Recover from a stale err marker so a long-past API error doesn't block
+  # refresh forever. (Used to be cleared by init-env-bg.sh on every session.)
+  if [ -f "$RL_ERR_MARKER" ]; then
+    _err_age=$(($(date +%s) - $(stat -f %m "$RL_ERR_MARKER" 2>/dev/null || echo 0)))
+    if [ "$_err_age" -gt "$RL_ERROR_TTL" ]; then
+      rm -f "$RL_ERR_MARKER" 2>/dev/null || true
     fi
-    unset _lock_age
+    unset _err_age
   fi
 
-  # Still no cache and no err marker → fetch ourselves (no in-flight refresh).
-  if [ ! -f "$RL_CACHE" ] && [ ! -f "$RL_ERR_MARKER" ]; then
-    if mkdir "$RL_LOCK" 2>/dev/null; then
-      trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
-      cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
-      rm -rf "$RL_LOCK" 2>/dev/null
-      trap - EXIT
+  # Only act on the cache when it isn't fresh: missing, or 5h/wk reset already
+  # past. Fresh cache → skip lock-poll and self-fetch entirely.
+  if ! cache_is_fresh; then
+    # Another session may be fetching right now — wait for it briefly.
+    if [ -d "$RL_LOCK" ]; then
+      _lock_age=$(($(date +%s) - $(stat -f %m "$RL_LOCK" 2>/dev/null || echo 0)))
+      if [ "$_lock_age" -gt 15 ]; then
+        rm -rf "$RL_LOCK" 2>/dev/null
+      else
+        _orig_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
+        _i=0
+        while [ "$_i" -lt 60 ]; do
+          _cur_mtime=$(stat -f %m "$RL_CACHE" 2>/dev/null || echo 0)
+          [ "$_cur_mtime" -gt "$_orig_mtime" ] && break
+          [ -f "$RL_ERR_MARKER" ] && break
+          [ ! -d "$RL_LOCK" ] && break
+          sleep 0.1
+          _i=$((_i + 1))
+        done
+        unset _i _orig_mtime _cur_mtime
+      fi
+      unset _lock_age
+    fi
+
+    # Still not fresh and no recent error → fetch ourselves.
+    if ! cache_is_fresh && [ ! -f "$RL_ERR_MARKER" ]; then
+      if mkdir "$RL_LOCK" 2>/dev/null; then
+        trap 'rm -rf "$RL_LOCK" 2>/dev/null' EXIT
+        cache_dir="$cache_dir" tmp_dir="$tmp_dir" "$SCRIPT_DIR/refresh-ratelimit.sh" 2>/dev/null || true
+        rm -rf "$RL_LOCK" 2>/dev/null
+        trap - EXIT
+      fi
     fi
   fi
 
@@ -240,19 +285,10 @@ format_relative() {
   fi
 }
 
-# Format ISO timestamp → relative time
+# Format ISO timestamp → relative time (uses iso_to_epoch defined earlier)
 format_reset() {
-  local iso="$1"
-  [ -z "$iso" ] && return
-  local clean reset_epoch
-  clean=$(printf '%s' "$iso" | sed -E 's/T/ /; s/\.[0-9]+//')
-  if printf '%s' "$clean" | grep -q 'Z$'; then
-    clean="${clean%Z} +0000"
-  else
-    clean=$(printf '%s' "$clean" | sed -E 's/([+-][0-9]{2}):([0-9]{2})$/ \1\2/')
-  fi
-  printf '%s' "$clean" | grep -Eq ' [+-][0-9]{4}$' || clean="${clean} +0000"
-  reset_epoch=$(date -j -f "%Y-%m-%d %H:%M:%S %z" "$clean" +%s 2>/dev/null)
+  local reset_epoch
+  reset_epoch=$(iso_to_epoch "$1")
   [ -z "$reset_epoch" ] && return
   format_relative "$reset_epoch"
 }
