@@ -95,9 +95,11 @@ if mkfifo "$in_fifo" 2>/dev/null; then
   codex app-server --listen stdio:// < "$in_fifo" > "$out_file" 2>/dev/null &
   codex_pid=$!
 
-  # Poll up to 5s (50 × 0.1s) for both response lines.
+  # Poll up to 5s (50 × 0.1s) for the id=2 rate-limits response. Line-count
+  # heuristics break when codex emits interleaved notifications
+  # (e.g. remoteControl/status/changed) before the response we care about.
   for _ in $(seq 1 50); do
-    [ "$(wc -l < "$out_file" 2>/dev/null | tr -d ' ')" -ge 2 ] && break
+    grep -qE '^\{"id":2[,}]' "$out_file" 2>/dev/null && break
     sleep 0.1
   done
 
