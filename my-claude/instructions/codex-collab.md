@@ -17,8 +17,8 @@ When the user's prompt contains `@co`, a synchronous `UserPromptSubmit` hook inj
 - You MUST wait for all agent responses before writing your final answer. Never respond prematurely.
 - You MUST include relevant context (plans, analysis data, design decisions) when calling each agent — not just the raw prompt.
 - You MUST critically analyze all agent responses: state agreements concisely, state disagreements explicitly with your reasoning, and provide a final synthesized answer.
-- If an agent fails (error, timeout), you MUST explicitly mention the failure (e.g., "[Codex 실패]") before answering with remaining results.
-- ALWAYS respond to the user in Korean (한국어).
+- If an agent fails (error, timeout), you MUST explicitly mention the failure (e.g., "[Codex 실패]" — kept in Korean to match the directive's required output language) before answering with remaining results.
+- ALWAYS respond to the user in Korean, using polite form (존댓말).
 
 ### Adding Agents
 Edit `~/.claude/my-collab/co-agents.json`:
