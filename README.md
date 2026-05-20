@@ -36,7 +36,7 @@ cd my-term
 
 ### 선택
 각 단계별로 의존성 툴이 설치되어 있지 않을 경우, 설치하지 않고 자동으로 스킵합니다.
-- Convenience tools — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun 등
+- Convenience tools — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun, obsidian 등
 - oh-my-zsh + zsh plugins (syntax-highlighting, autosuggestions)
 - newro theme
 - asdf + 언어 플러그인 (Golang, Java)
@@ -57,6 +57,7 @@ cd my-term
 - SessionStart 훅: asdf 언어 환경변수(GOROOT, JAVA_HOME 등)를 Claude Code 세션에 자동 주입
 - 언어별 자동 포맷팅 훅 (PostToolUse): Claude가 파일을 수정하면 언어 표준 포매터 자동 실행. 현재는 Go(`gofmt`)만 지원, 다른 언어 추가 가능
 - 상태줄 보호 훅 및 캐시 자동 정리 스크립트 포함
+- ai-logs Obsidian vault 운영 instruction (`my-claude/instructions/ai-logs-vault.md`)
 
 ### HUD Statusline
 - 3종 테마(mygo, ave-mujica, eimes) 선택 가능

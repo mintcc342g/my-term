@@ -138,6 +138,11 @@ _install_claude_code() {
   # Update no longer touches user-defined hooks.
   _setup_language_hooks
 
+  # Obsidian skills plugin — manual install only (Claude Code plugin API has no CLI)
+  log_step "Obsidian 사용 시 — Claude Code 첫 실행 후 obsidian-skills plugin 수동 설치:"
+  echo "    /plugin marketplace add kepano/obsidian-skills"
+  echo "    /plugin install obsidian@obsidian-skills"
+
   # HUD install offer
   local hud_choice=""
   ui_menu "Install HUD statusline?" hud_choice \
@@ -273,20 +278,37 @@ _sync_claude_files() {
   log_done "claude settings configured."
 }
 
-# Sync codex-collab.md into ~/.claude/CLAUDE.md while preserving the user's
-# own content outside the MYTERM marker block.
-#   - file missing            → write source as-is
+# Sync all instructions/*.md (concatenated alphabetically) into the MYTERM
+# marker block in ~/.claude/CLAUDE.md, preserving any content outside markers.
+#   - file missing            → write combined source as-is
 #   - markers present in dst  → replace block in place
 #   - no markers in dst       → backup, then overwrite (legacy migration)
 _sync_claude_md_block() {
-  local src="$SCRIPT_DIR/my-claude/instructions/codex-collab.md"
+  local src_dir="$SCRIPT_DIR/my-claude/instructions"
   local dst="$HOME/.claude/CLAUDE.md"
   local begin='<!-- MYTERM:BEGIN -->'
   local end='<!-- MYTERM:END -->'
 
+  # Concat all .md files in instructions/ (sorted, alphabetical)
+  local src
+  src=$(mktemp)
+  local found=0
+  for f in "$src_dir"/*.md; do
+    [ -f "$f" ] || continue
+    cat "$f" >> "$src"
+    printf "\n\n" >> "$src"
+    found=1
+  done
+
+  if [ "$found" = "0" ]; then
+    rm -f "$src"
+    return 0
+  fi
+
   if [ ! -f "$dst" ]; then
     cp -f "$src" "$dst"
     chmod 600 "$dst"
+    rm -f "$src"
     return 0
   fi
 
@@ -297,6 +319,7 @@ _sync_claude_md_block() {
     cp -f "$src" "$dst"
     chmod 600 "$dst"
     log_step "legacy CLAUDE.md backed up to $backup"
+    rm -f "$src"
     return 0
   fi
 
@@ -311,6 +334,7 @@ _sync_claude_md_block() {
     !in_block        { print }
   ' "$dst" > "$tmp" && mv "$tmp" "$dst"
   chmod 600 "$dst"
+  rm -f "$src"
 }
 
 # Add PostToolUse hooks for languages detected in PATH. Idempotent — never
