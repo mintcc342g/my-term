@@ -16,7 +16,6 @@ install_convenience() {
   brew list --cask rectangle &>/dev/null || brew install --cask rectangle
   brew list --cask macs-fan-control &>/dev/null || brew install --cask macs-fan-control
   brew list --cask alt-tab &>/dev/null || brew install --cask alt-tab
-  brew list --cask obsidian &>/dev/null || brew install --cask obsidian
 
   log_start "brew install DevOps tools…"
   brew install awscli

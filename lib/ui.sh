@@ -71,6 +71,11 @@ ui_menu() {
     # Clear screen and draw
     ui_clear_screen
     echo "${UI_BLUE_BOLD} ${title}${UI_RESET}" > /dev/tty
+    # Optional note set by caller via env var (e.g. red warning). 호출자가
+    # `UI_MENU_NOTE=... ui_menu ...` 형태로 inline 설정 시 자동 unset.
+    if [ -n "${UI_MENU_NOTE:-}" ]; then
+      echo -e "${UI_MENU_NOTE}" > /dev/tty
+    fi
     echo " ─────────────────────" > /dev/tty
     echo " ${UI_DIM}↑↓ move │ Enter select${UI_RESET}" > /dev/tty
     echo "" > /dev/tty
@@ -123,7 +128,7 @@ ui_menu() {
 ui_confirm_run() {
   local label="$1" func="$2"
   local choice=""
-  ui_menu "${label}?" choice "Yes" "No"
+  ui_menu "${label}?" choice "Yes" "No (Skip)"
   echo
   case "$choice" in
     0) "$func" ;;

@@ -1,20 +1,20 @@
-# ai-logs Obsidian Vault 운영
+# Obsidian Vault 운영
 
-Obsidian vault 를 karpathy "LLM Wiki Pattern" 기반 compounding knowledge system 으로 운영. vault 위치는 사용자 환경에 따라 다름 (예: `~/Documents/my/ai-logs/`).
+Obsidian vault 를 karpathy "LLM Wiki Pattern" 기반 compounding knowledge system 으로 운영. vault 위치는 `$OBSIDIAN_VAULT_PATH` env var 로 지정 (my-term installer 가 zshrc 에 export).
 
 ## 정본 = vault 내 schema.md
 
-구조 / type / frontmatter / raw / Query 흡수 / 언어 컨벤션 / 3-op 등 **모든 운영 규칙은 vault 안의 `schema.md`** 가 정본. 작업 전 schema.md 먼저 확인.
+구조 / type / frontmatter / raw / Query 흡수 / 언어 컨벤션 / 3-op 등 **모든 운영 규칙은 vault 안의 `schema.md`** 가 정본. 작업 전 schema.md 먼저 확인. 언어 / 파일명 / 태그 컨벤션 같은 user 별 세부 규칙은 schema.md 에 정의하고 본 instruction 은 메타 규칙만 다룸.
 
-## 언어 컨벤션
+## @vl 명시 트리거
 
-식별자성 vs 본문성 분리:
+사용자 메시지에 `@vl` 포함 시 hook (`~/.claude/my-vault/vl-trigger.sh`) 이 vault 활용 directive 를 동기 주입. 회상 표현 휴리스틱 추정 X — 명시 표시만 따름.
 
-- **본문 (H1 포함 아래) 한국어** — 가독성 우선
-- **파일명 / frontmatter / 태그 / wikilink 식별자: 영어** — filter / graph / link 일관성
-- **frontmatter `title` ≠ H1**: title 은 영어 식별자, H1 은 한국어 본문 제목
-- **`.base` 내부** (`displayName`, view `name`, filter 식): 영어
-- **대화 / `.claude/memory/`: 한국어 (존댓말)**
+`@vl` 은 **vault 컨텍스트 로드** 만 담당:
+- 검색 / save / list 같은 동작은 obsidian-skills (`obsidian-cli`, `obsidian-markdown` 등) 자동 호출
+- lint 는 휴리스틱 자동 점검 (아래 3-op 규칙)
+
+자세한 directive 내용은 hook script 안의 inline 정의 참고.
 
 ## 3-op 자동 점검
 
@@ -45,11 +45,11 @@ Obsidian vault 를 karpathy "LLM Wiki Pattern" 기반 compounding knowledge syst
 
 ### 보고 형식
 
-응답 맨 끝에 한 줄:
+응답 맨 끝에 한 줄. **대상은 항상 Obsidian vault** (`$OBSIDIAN_VAULT_PATH`). Claude memory (`~/.claude/projects/*/memory/`) 와 혼동 X — 메모리 저장은 user 가 "메모리에 저장" / "feedback 등록" 같이 명시 요청 시에만 별도 처리.
 
 ```
-📥 ingest 후보: `<제목>` (`<type>`, `<topic>`) — 한 줄 근거. 진행할까요?
-🧹 lint 후보: <대상> — 한 줄 근거. 진행할까요?
+📥 vault ingest 후보: `<제목>` (`<type>`, `<topic>`) — 한 줄 근거. 진행할까요?
+🧹 vault lint 후보: <대상> — 한 줄 근거. 진행할까요?
 ```
 
 User OK / Cancel 한 마디면 충분.
@@ -59,7 +59,7 @@ User OK / Cancel 한 마디면 충분.
 vault 작업 시작 시 `log/<현재연도>.md` 의 마지막 `lint` 항목 날짜 확인. **한 달 이상 경과 시**:
 
 ```
-🧹 정기 lint 시점 (마지막: YYYY-MM-DD). 진행할까요?
+🧹 vault 정기 lint 시점 (마지막: YYYY-MM-DD). 진행할까요?
 ```
 
 User OK 시 lint 사이클 (schema 대조 / orphan / stale / 모순 / 흡수 누락).

@@ -22,6 +22,7 @@ source "$SCRIPT_DIR/installers/shell-theme.sh"
 source "$SCRIPT_DIR/installers/asdf-langs.sh"
 source "$SCRIPT_DIR/installers/pyenv.sh"
 source "$SCRIPT_DIR/installers/ai-tools.sh"
+source "$SCRIPT_DIR/installers/obsidian.sh"
 
 # ── Terminal cleanup on exit/interrupt ──────────────────────────
 trap 'printf "\033[?25h" 2>/dev/null; stty sane 2>/dev/null' EXIT INT TERM

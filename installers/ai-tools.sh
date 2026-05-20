@@ -55,11 +55,17 @@ install_ai_tools() {
 
   local choice=""
 
+  # 루프는 여러 AI 도구를 순차 설치할 수 있도록 유지. 다음 단계로 가려면
+  # "✓ Done" 선택 (또는 q/esc).
+  # oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
+  #   최신 버전 확인: npm view oh-my-opencode version
+  #   설치: bunx oh-my-opencode@<version> install
   while true; do
-    ui_menu "AI tools — select to install" choice \
+    ui_menu "AI tools — select to install (or Done to continue)" choice \
       "Claude Code" \
       "OpenCode" \
-      "Codex"
+      "Codex" \
+      "✓ Done"
 
     case "$choice" in
       0) _install_claude_code ;;
@@ -76,14 +82,12 @@ install_ai_tools() {
         _setup_codex_mcp
         sleep 1
         ;;
-      255)
-        # oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
-        # 최신 버전 확인: npm view oh-my-opencode version
-        # 설치: bunx oh-my-opencode@<version> install
-        break
-        ;;
+      3|255) break ;;
     esac
   done
+
+  # Obsidian + vault tooling — Claude/AI 연계 용도라 AI tools 단계 끝에서 묻습니다.
+  ui_confirm_run "Obsidian + vault tooling" install_obsidian
 }
 
 _install_claude_code() {
@@ -138,16 +142,11 @@ _install_claude_code() {
   # Update no longer touches user-defined hooks.
   _setup_language_hooks
 
-  # Obsidian skills plugin — manual install only (Claude Code plugin API has no CLI)
-  log_step "Obsidian 사용 시 — Claude Code 첫 실행 후 obsidian-skills plugin 수동 설치:"
-  echo "    /plugin marketplace add kepano/obsidian-skills"
-  echo "    /plugin install obsidian@obsidian-skills"
-
   # HUD install offer
   local hud_choice=""
   ui_menu "Install HUD statusline?" hud_choice \
     "Yes" \
-    "No"
+    "No (Skip)"
 
   case "$hud_choice" in
     0) _install_hud ;;
@@ -349,7 +348,7 @@ _setup_language_hooks() {
       local gofmt_choice=""
       ui_menu "Go detected — add gofmt hook to Claude?" gofmt_choice \
         "Yes" \
-        "No"
+        "No (Skip)"
       if [ "$gofmt_choice" = "0" ]; then
         local GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
         local gofmt_tmp
@@ -435,6 +434,12 @@ update_my_claude() {
     _sync_claude_files
   else
     log_step "Claude Code not installed — skipping Claude config sync."
+  fi
+
+  if [ -d "$HOME/.claude/my-vault" ]; then
+    _sync_obsidian_vault_files
+  else
+    log_step "Obsidian vault tooling not installed — skipping vault sync."
   fi
 
   if [ -f "$HOME/.claude/my-hud/configure.sh" ] \
