@@ -24,7 +24,7 @@ chmod 700 "$cache_dir" "$tmp_dir" 2>/dev/null || true
 # ── Parse stdin JSON ────────────────────────────────────────────
 IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms stdin_rl_5h_pct stdin_rl_5h_reset stdin_rl_wk_pct stdin_rl_wk_reset < <(
   printf '%s' "$input" | jq -r '[
-    (.cwd // ""),
+    (.workspace.current_dir // .cwd // ""),
     (.model.display_name // "Unknown"),
     (.context_window.used_percentage // 0),
     (.context_window.current_usage.input_tokens // 0),
