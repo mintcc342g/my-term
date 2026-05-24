@@ -97,13 +97,51 @@ install_obsidian() {
   _sync_obsidian_vault_files
   _setup_vault_hook
 
+  # 7. Wire vault context into globally-installed coding agents' instruction
+  # files (Claude / Codex / OpenCode). Detection is per-binary; prompt is
+  # single, mapping is fan-out.
+  _wire_vault_into_ai_tools
+
   log_done "Obsidian + vault tooling configured."
 
-  # 7. obsidian-skills plugin guidance — printed AFTER ✔ as a follow-up hint,
+  # 8. obsidian-skills plugin guidance — printed AFTER ✔ as a follow-up hint,
   # matching ui_print_completion 의 "Please run …" 스타일 (indent, 아이콘 X).
   printf "  After first Claude Code launch, manually install the obsidian-skills plugin:\n"
   printf "    /plugin marketplace add kepano/obsidian-skills\n"
   printf "    /plugin install obsidian@obsidian-skills\n"
+}
+
+# Wire ai-logs vault context into the global instruction files of any coding
+# agents detected in PATH. Idempotent — re-running just refreshes the MYTERM
+# block via md_upsert_myterm_block (from lib/instructions-block.sh).
+_wire_vault_into_ai_tools() {
+  local detected=()  # "Label:dst_path" pairs
+  command -v claude   &>/dev/null && detected+=("Claude:$HOME/.claude/CLAUDE.md")
+  command -v codex    &>/dev/null && detected+=("Codex:$HOME/.codex/AGENTS.md")
+  command -v opencode &>/dev/null && detected+=("OpenCode:$HOME/.config/opencode/AGENTS.md")
+
+  if [ ${#detected[@]} -eq 0 ]; then
+    log_step "no coding agents detected — skip vault wiring."
+    return 0
+  fi
+
+  local choice=""
+  ui_menu "Coding agents detected. Wire vault into AI instructions?" choice \
+    "Yes" \
+    "No"
+
+  if [ "$choice" != "0" ]; then
+    log_step "vault wiring skipped."
+    return 0
+  fi
+
+  local entry label dst
+  for entry in "${detected[@]}"; do
+    label="${entry%%:*}"
+    dst="${entry#*:}"
+    md_upsert_myterm_block "$dst"
+    log_done "vault context wired into ${label} (${dst})"
+  done
 }
 
 # Sync my-claude/vault/ scripts to ~/.claude/my-vault/. Reused by

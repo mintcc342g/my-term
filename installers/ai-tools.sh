@@ -138,6 +138,11 @@ _install_claude_code() {
   # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab)
   _sync_claude_files
 
+  # Offer opt-in personal instructions (response style, etc.). CLAUDE.md
+  # already exists with MYTERM markers at this point, so optional blocks
+  # are appended after the managed block without confusing the sync helper.
+  _prompt_optional_instructions "$HOME/.claude/CLAUDE.md"
+
   # Per-language PostToolUse hooks (e.g. gofmt). Fresh-install only —
   # Update no longer touches user-defined hooks.
   _setup_language_hooks
@@ -277,63 +282,65 @@ _sync_claude_files() {
   log_done "claude settings configured."
 }
 
-# Sync all instructions/*.md (concatenated alphabetically) into the MYTERM
-# marker block in ~/.claude/CLAUDE.md, preserving any content outside markers.
-#   - file missing            → write combined source as-is
-#   - markers present in dst  → replace block in place
-#   - no markers in dst       → backup, then overwrite (legacy migration)
+# Thin Claude-specific wrapper around the shared instructions-block helper.
+# Refreshes both the master MYTERM block and any opt-in OPTIONAL blocks
+# already present in the destination — so repo updates to opt-in files
+# (e.g. response style) propagate on every Update.
 _sync_claude_md_block() {
-  local src_dir="$SCRIPT_DIR/my-claude/instructions"
-  local dst="$HOME/.claude/CLAUDE.md"
-  local begin='<!-- MYTERM:BEGIN -->'
-  local end='<!-- MYTERM:END -->'
+  md_upsert_myterm_block "$HOME/.claude/CLAUDE.md"
+  md_refresh_optional_blocks "$HOME/.claude/CLAUDE.md"
+}
 
-  # Concat all .md files in instructions/ (sorted, alphabetical)
-  local src
-  src=$(mktemp)
-  local found=0
+# Prompt the user for each $SCRIPT_DIR/my-claude/optional/*.md file.
+# On Yes, append a MYTERM:OPTIONAL:<name>:BEGIN/END block to the destination.
+# Already-installed optionals (block markers present) are skipped silently.
+# Opt-out is manual — user removes the block from the destination file.
+_prompt_optional_instructions() {
+  local dst="$1"
+  local src_dir="$SCRIPT_DIR/my-claude/optional"
+  [ -d "$src_dir" ] || return 0
+
+  local f
   for f in "$src_dir"/*.md; do
     [ -f "$f" ] || continue
-    cat "$f" >> "$src"
-    printf "\n\n" >> "$src"
-    found=1
+    local base name begin end
+    base=$(basename "$f" .md)
+    begin="<!-- MYTERM:OPTIONAL:${base}:BEGIN -->"
+    end="<!-- MYTERM:OPTIONAL:${base}:END -->"
+
+    # Already opted in (or user re-added manually) — skip without prompt.
+    if [ -f "$dst" ] && grep -qF "$begin" "$dst"; then
+      continue
+    fi
+
+    # Show file content as the menu note so the user can preview before
+    # choosing. Inline assignment auto-unsets after ui_menu returns.
+    local preview choice=""
+    preview=" ${UI_DIM}── ${base}.md preview ──${UI_RESET}\n"
+    preview+="$(sed 's/^/   /' "$f")"
+    UI_MENU_NOTE="$preview" ui_menu "Add optional instruction: ${base}?" choice \
+      "Yes" \
+      "No (Skip)"
+    echo
+
+    case "$choice" in
+      0)
+        mkdir -p "$(dirname "$dst")"
+        [ -f "$dst" ] || { : > "$dst"; chmod 600 "$dst"; }
+        # Append with a leading blank line for readability.
+        {
+          printf '\n%s\n' "$begin"
+          cat "$f"
+          printf '%s\n' "$end"
+        } >> "$dst"
+        log_done "added optional instruction: ${base}"
+        ;;
+      *)
+        log_step "skipped optional instruction: ${base}"
+        ;;
+    esac
+    sleep 1
   done
-
-  if [ "$found" = "0" ]; then
-    rm -f "$src"
-    return 0
-  fi
-
-  if [ ! -f "$dst" ]; then
-    cp -f "$src" "$dst"
-    chmod 600 "$dst"
-    rm -f "$src"
-    return 0
-  fi
-
-  if ! grep -qF "$begin" "$dst" || ! grep -qF "$end" "$dst"; then
-    local backup="$dst.bak.$(date +%Y%m%d%H%M%S)"
-    cp -f "$dst" "$backup"
-    chmod 600 "$backup"
-    cp -f "$src" "$dst"
-    chmod 600 "$dst"
-    log_step "legacy CLAUDE.md backed up to $backup"
-    rm -f "$src"
-    return 0
-  fi
-
-  local tmp="$dst.tmp.$$"
-  awk -v src="$src" -v begin="$begin" -v end="$end" '
-    function emit_src(   line) {
-      while ((getline line < src) > 0) print line
-      close(src)
-    }
-    index($0, begin) { in_block = 1; emit_src(); next }
-    index($0, end)   { in_block = 0; next }
-    !in_block        { print }
-  ' "$dst" > "$tmp" && mv "$tmp" "$dst"
-  chmod 600 "$dst"
-  rm -f "$src"
 }
 
 # Add PostToolUse hooks for languages detected in PATH. Idempotent — never
