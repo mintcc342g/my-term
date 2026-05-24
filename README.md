@@ -54,7 +54,14 @@ cd my-term
   - Codex가 필요하면 AI tools 단계에서 Codex 선택
 
 ### 주요 기능
-- 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 Codex를 MCP 도구로 병렬 호출 후 종합 답변 (토론 루프 지원)
+- 멀티 에이전트 협업 (`@co`): 프롬프트에 `@co` 붙이면 Codex를 MCP 도구로 병렬 호출 후 종합 답변 (토론 루프 지원).
+  - 에이전트 추가: `~/.claude/my-collab/co-agents.json` 편집. 예시:
+    ```json
+    [
+      { "name": "Codex", "command": "codex exec --skip-git-repo-check" },
+      { "name": "AnotherAgent", "command": "another-cli exec" }
+    ]
+    ```
 - SessionStart 훅: asdf 언어 환경변수(GOROOT, JAVA_HOME 등)를 Claude Code 세션에 자동 주입
 - 언어별 자동 포맷팅 훅 (PostToolUse): Claude가 파일을 수정하면 언어 표준 포매터 자동 실행. 현재는 Go(`gofmt`)만 지원, 다른 언어 추가 가능
 - 상태줄 보호 훅 및 캐시 자동 정리 스크립트 포함

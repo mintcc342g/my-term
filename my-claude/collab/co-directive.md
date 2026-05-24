@@ -1,49 +1,53 @@
-[멀티 에이전트 협업 모드 활성화]
+[Multi-Agent Collaboration Mode Active]
 
-아래 절차를 반드시 따르세요:
+The user's prompt contains `@co`. Follow this procedure exactly to coordinate parallel multi-agent collaboration via MCP tools.
 
-## Phase 1: 컨텍스트 정리
+## Phase 1: Context Organization
 
-현재 대화에서 유저의 질문과 관련된 컨텍스트를 정리하세요.
-- plan이 있으면 plan 전문 포함
-- 분석 중인 데이터, 설계 결정, 관련 파일 목록 등 포함
-- 관련 없는 대화는 제외
+Organize the context relevant to the user's question from the current conversation.
 
-## Phase 2: Round 1 — 초기 의견 수집
+- If a plan exists, include the full plan.
+- Include analysis data, design decisions, related file paths, etc.
+- Exclude unrelated discussion.
 
-아래 에이전트들을 MCP 도구로 호출하세요.
-- 에이전트가 여러 개일 경우: 한 메시지에서 여러 도구 호출을 동시에 보내세요 (병렬 실행).
-- run_in_background는 사용하지 마세요. 일반 foreground 호출을 여러 개 병렬로 보내면 됩니다.
-- 각 에이전트의 prompt 파라미터에 [정리한 컨텍스트 + 유저 프롬프트]를 전달합니다.
-- 추가 파라미터가 명시된 경우 해당 파라미터도 함께 전달하세요.
+## Phase 2: Round 1 — Initial Opinions
+
+Call the configured agents via MCP tools.
+
+- For multiple agents: send all tool calls in a **single message** for parallel execution.
+- Do NOT use `run_in_background`. Use multiple foreground tool calls in parallel.
+- Pass `[organized context + user prompt]` as the `prompt` parameter to each agent.
+- If additional parameters are specified for an agent, pass them as well.
+
 {{AGENT_LIST}}
 
-모든 에이전트의 응답이 도착할 때까지 기다리세요. 응답이 오기 전에 다음 단계로 넘어가지 마세요.
+Wait for ALL agent responses to arrive before proceeding to the next phase. Do not write any final answer prematurely.
 
-## Phase 3: 의견 비교 및 토론 루프 (최대 3라운드)
+## Phase 3: Comparison + Debate Loop (max 3 rounds)
 
-Round 1 응답을 비교하여 의견 차이를 분석하세요.
+Compare Round 1 responses to detect disagreement.
 
-**합의인 경우**: Phase 4로 바로 넘어가세요.
+**On consensus**: skip directly to Phase 4.
 
-**이견이 있는 경우**: 토론 루프를 시작하세요.
-- 각 라운드에서 아래 형식으로 사용자에게 진행 상황을 보여주세요:
+**On disagreement**: start the debate loop.
 
-  ### Round N
+- Show each round's progress to the user using this format (Korean output):
+
+  ### 라운드 N
   **Claude**: [당신의 의견과 근거]
   **[에이전트명]**: [에이전트의 의견 요약]
   **차이점**: [구체적 이견 사항]
 
-- 이견에 대해 당신의 반론 또는 질문을 정리한 후, 에이전트에게 재질의하세요.
-  - 응답에 threadId가 포함된 경우: mcp__codex__codex-reply 도구에 해당 threadId와 prompt를 전달하세요.
-  - threadId가 없는 경우: 원래 도구를 다시 호출하되, 이전 논의 맥락을 prompt에 포함하세요.
-- 에이전트의 재응답을 받은 후 다시 의견 차이를 분석하세요.
-- 합의에 도달하면 루프를 종료하고 Phase 4로 넘어가세요.
-- 최대 3라운드까지 진행합니다. 3라운드 후에도 이견이 있으면 이견을 명시한 채로 Phase 4로 넘어가세요.
+- Formulate your counter-argument or follow-up question for the disagreement, then re-query the agent.
+  - If the prior response included a `threadId`: use the `mcp__codex__codex-reply` tool with that `threadId` and your new `prompt`.
+  - If no `threadId`: re-invoke the original tool, including prior discussion context in `prompt`.
+- After receiving the agent's re-response, analyze for disagreement again.
+- If consensus is reached, end the loop and move to Phase 4.
+- Maximum 3 rounds. After round 3, if disagreement remains, proceed to Phase 4 with the disagreement noted explicitly.
 
-## Phase 4: 최종 종합
+## Phase 4: Final Synthesis
 
-아래 형식으로 최종 응답을 작성하세요:
+Compose the final response in this format (Korean output):
 
 ### 논의 요약
 - 총 라운드 수와 합의/이견 여부
@@ -53,15 +57,18 @@ Round 1 응답을 비교하여 의견 차이를 분석하세요.
 ### 최종 답변
 - 종합된 결론
 
-## 실패 처리
+## Failure Handling
 
-에이전트가 에러/타임아웃으로 실패한 경우:
-- 반드시 "[에이전트명 실패]"를 명시
-- 에러 메시지에 401, 403, "unauthorized", "forbidden", "invalid api key", "token expired" 등 인증 관련 키워드가 포함되어 있으면:
-  → "`codex login`으로 재인증이 필요합니다 (API 키가 만료되었거나 비활성화된 상태입니다)"라고 안내
-- 그 외 에러(500, timeout, network 등)의 경우:
-  → "서버 에러 또는 네트워크 문제로 실패했습니다. 잠시 후 다시 시도해주세요"라고 안내
-- 나머지 에이전트 결과 + 당신의 분석으로 응답
-- 토론 루프는 응답 가능한 에이전트와만 진행
+If an agent fails (error / timeout):
 
-반드시 한국어(Korean)로 응답하세요.
+- You MUST explicitly state `[에이전트명 실패]` (Korean) in the output.
+- If the error message contains auth-related keywords (`401`, `403`, `unauthorized`, `forbidden`, `invalid api key`, `token expired`):
+  → advise: "`codex login`으로 재인증이 필요합니다 (API 키가 만료되었거나 비활성화된 상태입니다)"
+- For other errors (`500`, timeout, network, etc.):
+  → advise: "서버 에러 또는 네트워크 문제로 실패했습니다. 잠시 후 다시 시도해주세요"
+- Continue with the remaining agent results plus your own analysis.
+- The debate loop continues only with responsive agents.
+
+## Response Language
+
+All user-facing output (Round N reports, Discussion Summary, Final Answer, failure messages) MUST be in Korean using polite form (존댓말 / 합니다체). The `@co` keyword itself should not appear in the response.
