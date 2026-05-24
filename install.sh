@@ -17,6 +17,7 @@ source "$SCRIPT_DIR/lib/ui.sh"
 source "$SCRIPT_DIR/lib/rc-block.sh"
 source "$SCRIPT_DIR/installers/required.sh"
 source "$SCRIPT_DIR/installers/convenience.sh"
+source "$SCRIPT_DIR/installers/ides.sh"
 source "$SCRIPT_DIR/installers/oh-my-zsh.sh"
 source "$SCRIPT_DIR/installers/shell-theme.sh"
 source "$SCRIPT_DIR/installers/asdf-langs.sh"
@@ -41,6 +42,8 @@ run_install_interactive() {
   install_required
 
   ui_confirm_run "Convenience tools (CLI, macOS apps, DevOps)" install_convenience
+
+  install_ides
 
   ui_confirm_if_command brew "Oh-my-zsh + zsh plugins" install_oh_my_zsh "Homebrew"
   ui_confirm_if_dir "$HOME/.oh-my-zsh" "Shell theme (newro)" install_shell_theme "oh-my-zsh"
