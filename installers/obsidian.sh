@@ -1,9 +1,9 @@
 #!/bin/bash
-# installers/obsidian.sh — Obsidian app + AI vault tooling (@vl hook, vault path)
+# installers/obsidian.sh — Obsidian app + wiki tooling (@wk hook, wiki path)
 # source'd by install.sh; called from install_ai_tools after the AI menu exits.
 
 install_obsidian() {
-  log_start "Obsidian + vault tooling setup…"
+  log_start "Obsidian + wiki tooling setup…"
 
   if ! command -v brew &>/dev/null; then
     log_fail "Homebrew not found. Please install convenience tools first."
@@ -18,33 +18,33 @@ install_obsidian() {
   }
   log_done "Obsidian installed."
 
-  # 2. Vault storage type
+  # 2. Wiki storage type (Obsidian vault 의 저장 방식 선택)
   local storage=""
-  ui_menu "Vault storage type" storage \
+  ui_menu "Wiki storage type" storage \
     "Local" \
     "iCloud Drive" \
     "Git"
 
   if [ "$storage" = "255" ]; then
-    log_step "Obsidian vault setup cancelled."
+    log_step "Obsidian wiki setup cancelled."
     return 0
   fi
 
-  # 3. Vault path prompt with per-storage guidance
+  # 3. Wiki path prompt with per-storage guidance
   ui_clear_screen
-  echo -e "${UI_BLUE_BOLD} Vault path${UI_RESET}" > /dev/tty
+  echo -e "${UI_BLUE_BOLD} Wiki path${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}Enter the local directory path for the vault (Tab to autocomplete).${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}Enter the local directory path for the wiki (Tab to autocomplete).${UI_RESET}" > /dev/tty
   case "$storage" in
     0)
-      echo -e " ${UI_DIM}  Local vault — any directory works.${UI_RESET}\n" > /dev/tty
+      echo -e " ${UI_DIM}  Local — any directory works.${UI_RESET}\n" > /dev/tty
       ;;
     1)
-      echo -e " ${UI_DIM}  iCloud Drive vault — standard path:${UI_RESET}" > /dev/tty
+      echo -e " ${UI_DIM}  iCloud Drive — Obsidian's standard iCloud vault path:${UI_RESET}" > /dev/tty
       echo -e " ${UI_DIM}    ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/<vault-name>${UI_RESET}\n" > /dev/tty
       ;;
     2)
-      echo -e " ${UI_DIM}  Git vault — clone the repo to a local directory first, then enter${UI_RESET}" > /dev/tty
+      echo -e " ${UI_DIM}  Git — clone the repo to a local directory first, then enter${UI_RESET}" > /dev/tty
       echo -e " ${UI_DIM}  that local path here (NOT a git URL). git config / ssh key may${UI_RESET}" > /dev/tty
       echo -e " ${UI_DIM}  need to be configured beforehand.${UI_RESET}\n" > /dev/tty
       ;;
@@ -67,118 +67,153 @@ install_obsidian() {
   bind '"\e[Z": menu-complete-backward' 2>/dev/null || true
   bind 'set completion-ignore-case on' 2>/dev/null || true
   bind 'set match-hidden-files off' 2>/dev/null || true
-  local prompt=$'\001\033[33;1m\002 vault path: \001\033[0m\002'
-  local vault_path
-  read -e -r -p "$prompt" vault_path < /dev/tty
+  local prompt=$'\001\033[33;1m\002 wiki path: \001\033[0m\002'
+  local wiki_path
+  read -e -r -p "$prompt" wiki_path < /dev/tty
 
   # Expand leading ~ and strip trailing slash for Unix convention consistency.
-  vault_path="${vault_path/#\~/$HOME}"
-  vault_path="${vault_path%/}"
-  if [ -z "$vault_path" ]; then
-    log_fail "Empty vault path. Skipping vault setup."
+  wiki_path="${wiki_path/#\~/$HOME}"
+  wiki_path="${wiki_path%/}"
+  if [ -z "$wiki_path" ]; then
+    log_fail "Empty wiki path. Skipping wiki setup."
     return 1
   fi
 
-  # 4. Create vault directory if missing (no validation beyond creation)
-  if [ ! -d "$vault_path" ]; then
-    mkdir -p "$vault_path" || { log_fail "Failed to create $vault_path"; return 1; }
-    log_done "Created new vault directory: $vault_path"
+  # 4. Create wiki directory if missing (no validation beyond creation)
+  if [ ! -d "$wiki_path" ]; then
+    mkdir -p "$wiki_path" || { log_fail "Failed to create $wiki_path"; return 1; }
+    log_done "Created new wiki directory: $wiki_path"
   else
-    log_step "Using existing vault directory: $vault_path"
+    log_step "Using existing wiki directory: $wiki_path"
   fi
 
-  # 5. Persist OBSIDIAN_VAULT_PATH in zshrc (read by vl-trigger.sh)
-  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-  rc_upsert_block "$ZSHRC" "obsidian-vault-path" "export OBSIDIAN_VAULT_PATH=\"$vault_path\""
-  export ZSHRC_MODIFIED=true
-  log_done "OBSIDIAN_VAULT_PATH=\"$vault_path\" added to .zshrc"
+  # 5. Sync wiki hook script (path 가 sed 로 치환되어 deploy 됨) + register @wk matcher in settings.json
+  _sync_obsidian_wiki_files "$wiki_path"
+  _setup_wiki_hook
 
-  # 6. Sync vault hook script + register @vl matcher in settings.json
-  _sync_obsidian_vault_files
-  _setup_vault_hook
+  # 6. Install default wiki content (schema.md 등) — 기존 파일 있으면 skip.
+  _install_wiki_defaults "$wiki_path"
 
-  # 7. Wire vault context into globally-installed coding agents' instruction
-  # files (Claude / Codex / OpenCode). Detection is per-binary; prompt is
-  # single, mapping is fan-out.
-  _wire_vault_into_ai_tools
+  log_done "Obsidian + wiki tooling configured."
 
-  log_done "Obsidian + vault tooling configured."
-
-  # 8. obsidian-skills plugin guidance — printed AFTER ✔ as a follow-up hint,
+  # 7. obsidian-skills plugin guidance — printed AFTER ✔ as a follow-up hint,
   # matching ui_print_completion 의 "Please run …" 스타일 (indent, 아이콘 X).
   printf "  After first Claude Code launch, manually install the obsidian-skills plugin:\n"
   printf "    /plugin marketplace add kepano/obsidian-skills\n"
   printf "    /plugin install obsidian@obsidian-skills\n"
 }
 
-# Wire ai-logs vault context into the global instruction files of any coding
-# agents detected in PATH. Idempotent — re-running just refreshes the MYTERM
-# block via md_upsert_myterm_block (from lib/instructions-block.sh).
-_wire_vault_into_ai_tools() {
-  local detected=()  # "Label:dst_path" pairs
-  command -v claude   &>/dev/null && detected+=("Claude:$HOME/.claude/CLAUDE.md")
-  command -v codex    &>/dev/null && detected+=("Codex:$HOME/.codex/AGENTS.md")
-  command -v opencode &>/dev/null && detected+=("OpenCode:$HOME/.config/opencode/AGENTS.md")
+# Sync my-claude/wiki/ hook scripts to ~/.claude/my-wiki/. Reused by
+# update_my_claude when wiki tooling is already installed.
+#
+# $1: wiki_path — {{WIKI_PATH}} placeholder 치환에 사용.
+#     install 시에는 사용자 입력값, update 시에는 기존 deploy 된 wk-trigger.sh 에서 추출한 값.
+_sync_obsidian_wiki_files() {
+  local wiki_path="${1:-}"
 
-  if [ ${#detected[@]} -eq 0 ]; then
-    log_step "no coding agents detected — skip vault wiring."
-    return 0
+  if [ -z "$wiki_path" ]; then
+    log_fail "_sync_obsidian_wiki_files called without wiki_path argument"
+    return 1
   fi
 
-  local choice=""
-  ui_menu "Coding agents detected. Wire vault into AI instructions?" choice \
-    "Yes" \
-    "No"
-
-  if [ "$choice" != "0" ]; then
-    log_step "vault wiring skipped."
-    return 0
-  fi
-
-  local entry label dst
-  for entry in "${detected[@]}"; do
-    label="${entry%%:*}"
-    dst="${entry#*:}"
-    md_upsert_myterm_block "$dst"
-    log_done "vault context wired into ${label} (${dst})"
-  done
-}
-
-# Sync my-claude/vault/ scripts to ~/.claude/my-vault/. Reused by
-# update_my_claude when vault tooling is already installed.
-_sync_obsidian_vault_files() {
   local _old_umask
   _old_umask=$(umask)
   umask 077
 
-  if [[ -L "$HOME/.claude/my-vault" ]]; then
-    log_fail "symlink detected at $HOME/.claude/my-vault — aborting for safety."
+  if [[ -L "$HOME/.claude/my-wiki" ]]; then
+    log_fail "symlink detected at $HOME/.claude/my-wiki — aborting for safety."
     umask "$_old_umask"
     return 1
   fi
 
-  mkdir -p "$HOME/.claude/my-vault"
-  chmod 700 "$HOME/.claude/my-vault"
-  if [ -d "$SCRIPT_DIR/my-claude/vault" ]; then
-    cp -f "$SCRIPT_DIR/my-claude/vault/"* "$HOME/.claude/my-vault/"
-    chmod +x "$HOME/.claude/my-vault/"*.sh
+  mkdir -p "$HOME/.claude/my-wiki"
+  chmod 700 "$HOME/.claude/my-wiki"
+  if [ -d "$SCRIPT_DIR/my-claude/wiki" ]; then
+    # wk-* 파일 (훅 스크립트 + 지시문) 만 ~/.claude/my-wiki/ 에 cp.
+    # 나머지 (schema.md 등) 는 _install_wiki_defaults 가 사용자 wiki 로 처리.
+    # *.sh 는 install-time path 치환, *.md 는 runtime 치환이라 그대로 cp.
+    local src dst base
+    for src in "$SCRIPT_DIR/my-claude/wiki/"wk-*; do
+      [ -f "$src" ] || continue
+      base=$(basename "$src")
+      dst="$HOME/.claude/my-wiki/$base"
+      case "$base" in
+        *.sh)
+          sed "s|{{WIKI_PATH}}|${wiki_path}|g" "$src" > "$dst"
+          ;;
+        *)
+          cp -f "$src" "$dst"
+          ;;
+      esac
+    done
+    chmod +x "$HOME/.claude/my-wiki/"*.sh 2>/dev/null || true
   fi
 
   umask "$_old_umask"
-  log_done "vault hook synced."
+  log_done "wiki hook synced."
 }
 
-# Add @vl UserPromptSubmit hook to ~/.claude/settings.json if not present.
-# Idempotent — checks for existing matcher before adding.
-_setup_vault_hook() {
-  local SETTINGS="$HOME/.claude/settings.json"
-  if [ ! -f "$SETTINGS" ]; then
-    log_step "skip @vl hook — ~/.claude/settings.json not found (install Claude Code first)."
+# Install default wiki content (schema.md 등) into user wiki if missing.
+# 기존 파일이 있으면 절대 덮어쓰지 않음 — 사용자 수정분 보호.
+# Reused by install_obsidian (최초) 와 update_my_claude (실수 삭제 복구) 양쪽에서.
+#
+# $1: wiki_path
+# Placeholders 치환:
+#   {{WIKI_NAME}}    → basename of wiki_path
+#   {{INSTALL_DATE}} → 오늘 (YYYY-MM-DD)
+_install_wiki_defaults() {
+  local wiki_path="${1:-}"
+
+  if [ -z "$wiki_path" ]; then
+    log_fail "_install_wiki_defaults called without wiki_path argument"
+    return 1
+  fi
+  if [ ! -d "$wiki_path" ]; then
+    log_fail "wiki path does not exist: $wiki_path"
+    return 1
+  fi
+
+  local wiki_dir="$SCRIPT_DIR/my-claude/wiki"
+  if [ ! -d "$wiki_dir" ]; then
     return 0
   fi
 
-  if jq -e '.hooks.UserPromptSubmit[]? | select(.matcher == "@vl")' "$SETTINGS" >/dev/null 2>&1; then
-    log_step "@vl hook already registered."
+  local wiki_name install_date
+  wiki_name=$(basename "$wiki_path")
+  install_date=$(date +%Y-%m-%d)
+
+  # my-claude/wiki/ 안의 wk-* 는 훅 파일 (_sync_obsidian_wiki_files 가 처리),
+  # 나머지는 사용자 wiki 로 들어가는 default content (schema.md 등).
+  local src dst base
+  for src in "$wiki_dir"/*; do
+    [ -f "$src" ] || continue
+    base=$(basename "$src")
+    case "$base" in
+      wk-*) continue ;;
+    esac
+    dst="$wiki_path/$base"
+    if [ -e "$dst" ]; then
+      log_step "wiki default exists, keep user copy: $base"
+      continue
+    fi
+    sed -e "s|{{WIKI_NAME}}|${wiki_name}|g" \
+        -e "s|{{INSTALL_DATE}}|${install_date}|g" \
+        "$src" > "$dst"
+    log_done "installed wiki default: $base"
+  done
+}
+
+# Add @wk UserPromptSubmit hook to ~/.claude/settings.json if not present.
+# Idempotent — checks for existing matcher before adding.
+_setup_wiki_hook() {
+  local SETTINGS="$HOME/.claude/settings.json"
+  if [ ! -f "$SETTINGS" ]; then
+    log_step "skip @wk hook — ~/.claude/settings.json not found (install Claude Code first)."
+    return 0
+  fi
+
+  if jq -e '.hooks.UserPromptSubmit[]? | select(.matcher == "@wk")' "$SETTINGS" >/dev/null 2>&1; then
+    log_step "@wk hook already registered."
     return 0
   fi
 
@@ -188,17 +223,17 @@ _setup_vault_hook() {
   local hook_tmp
   hook_tmp=$(mktemp)
   if jq '.hooks.UserPromptSubmit //= [] | .hooks.UserPromptSubmit += [{
-    "matcher": "@vl",
+    "matcher": "@wk",
     "hooks": [{
       "type": "command",
-      "command": "bash $HOME/.claude/my-vault/vl-trigger.sh"
+      "command": "bash $HOME/.claude/my-wiki/wk-trigger.sh"
     }]
   }]' "$SETTINGS" > "$hook_tmp"; then
     mv "$hook_tmp" "$SETTINGS"
-    log_done "@vl hook registered in settings.json."
+    log_done "@wk hook registered in settings.json."
   else
     rm -f "$hook_tmp"
-    log_fail "Failed to register @vl hook (jq error)"
+    log_fail "Failed to register @wk hook (jq error)"
   fi
   umask "$_old_umask"
 }

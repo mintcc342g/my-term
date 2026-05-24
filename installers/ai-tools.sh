@@ -443,10 +443,22 @@ update_my_claude() {
     log_step "Claude Code not installed — skipping Claude config sync."
   fi
 
-  if [ -d "$HOME/.claude/my-vault" ]; then
-    _sync_obsidian_vault_files
+  if [ -d "$HOME/.claude/my-wiki" ]; then
+    # wiki path 를 기존 deploy 된 wk-trigger.sh 에서 추출 (install 시 sed 치환된 값).
+    # 추출 실패 시 wiki sync 만 skip — install 재실행으로 복구해야 함.
+    local _wk_trigger="$HOME/.claude/my-wiki/wk-trigger.sh"
+    local _wiki_path=""
+    if [ -f "$_wk_trigger" ]; then
+      _wiki_path=$(sed -nE 's/^WIKI_PATH="(.*)"$/\1/p' "$_wk_trigger" | head -1)
+    fi
+    if [ -n "$_wiki_path" ] && [ -d "$_wiki_path" ]; then
+      _sync_obsidian_wiki_files "$_wiki_path"
+      _install_wiki_defaults "$_wiki_path"
+    else
+      log_fail "wiki path extraction failed (file: $_wk_trigger). Re-run obsidian installer to fix."
+    fi
   else
-    log_step "Obsidian vault tooling not installed — skipping vault sync."
+    log_step "Obsidian wiki tooling not installed — skipping wiki sync."
   fi
 
   if [ -f "$HOME/.claude/my-hud/configure.sh" ] \
