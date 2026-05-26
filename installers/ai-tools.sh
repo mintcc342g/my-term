@@ -179,8 +179,24 @@ _sync_claude_files() {
   mkdir -p "$HOME/.claude/memory"
   chmod 700 "$HOME/.claude/memory"
 
-  # CLAUDE.md — sync only the MYTERM-marked block, preserving any
-  # personal content the user keeps outside the markers.
+  # Legacy master MYTERM block cleanup — one-shot migration after the master
+  # mechanism was removed. Idempotent (no-op when marker absent). Safe vs
+  # OPTIONAL markers because the awk regex is anchored to the exact line.
+  # Can be deleted once all users have run Update at least once.
+  local _claude_md="$HOME/.claude/CLAUDE.md"
+  if [ -f "$_claude_md" ] && grep -qF '<!-- MYTERM:BEGIN -->' "$_claude_md"; then
+    local _cleanup_tmp
+    _cleanup_tmp=$(mktemp)
+    awk '
+      /^<!-- MYTERM:BEGIN -->$/ { in_block = 1; next }
+      /^<!-- MYTERM:END -->$/   { in_block = 0; next }
+      !in_block                 { print }
+    ' "$_claude_md" > "$_cleanup_tmp" && mv "$_cleanup_tmp" "$_claude_md"
+    chmod 600 "$_claude_md"
+    log_done "legacy MYTERM block removed from $_claude_md"
+  fi
+
+  # CLAUDE.md OPTIONAL blocks refresh (opted-in instructions sync)
   _sync_claude_md_block
 
   # hooks
@@ -282,12 +298,9 @@ _sync_claude_files() {
   log_done "claude settings configured."
 }
 
-# Thin Claude-specific wrapper around the shared instructions-block helper.
-# Refreshes both the master MYTERM block and any opt-in OPTIONAL blocks
-# already present in the destination — so repo updates to opt-in files
-# (e.g. response style) propagate on every Update.
+# Refresh opt-in OPTIONAL blocks in user's CLAUDE.md from repo source —
+# so repo updates to opt-in files (e.g. response style) propagate on Update.
 _sync_claude_md_block() {
-  md_upsert_myterm_block "$HOME/.claude/CLAUDE.md"
   md_refresh_optional_blocks "$HOME/.claude/CLAUDE.md"
 }
 
