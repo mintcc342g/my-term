@@ -10,6 +10,7 @@ install_ides() {
     return 1
   fi
 
+  local touched=0
   while true; do
     local choice=""
     local menu_items=()
@@ -25,10 +26,15 @@ install_ides() {
     local action="${menu_actions[$choice]:-exit}"
 
     case "$action" in
-      antigravity) _install_antigravity ;;
+      antigravity) touched=1; _install_antigravity ;;
       exit)        break ;;
     esac
   done
+
+  # Match the "skipped: <label>" breadcrumb that ui_confirm_run leaves —
+  # install_ides is called directly (no ui_confirm_run wrapper), so without
+  # this line a user who skips IDEs sees no trace in the log.
+  [ "$touched" = 0 ] && log_step "skipped: IDE setup"
 }
 
 _install_antigravity() {
