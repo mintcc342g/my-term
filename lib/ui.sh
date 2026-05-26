@@ -120,6 +120,28 @@ ui_menu() {
   done
 }
 
+# ── Skip-log helpers ───────────────────────────────────────────
+# Centralizes the "log a skip line + pause briefly so the next ui_menu's
+# screen clear doesn't eat the message" pattern. Direct callers of
+# install_* (e.g. install_ides, which isn't wrapped in ui_confirm_run)
+# should call these instead of inlining log_step + sleep.
+#
+# Tunable: change UI_SKIP_PAUSE here to adjust pacing globally.
+UI_SKIP_PAUSE="${UI_SKIP_PAUSE:-0.5}"
+
+# "skipped: <label>" — user opted out of an optional step.
+ui_log_skipped() {
+  log_step "skipped: $1" 2>/dev/null || true
+  sleep "$UI_SKIP_PAUSE"
+}
+
+# "skipping <label> — <hint> not available." — prerequisite missing.
+# $2 (hint) defaults to $1 (label) when caller omits it.
+ui_log_skipping_dep() {
+  log_step "skipping $1 — ${2:-$1} not available." 2>/dev/null || true
+  sleep "$UI_SKIP_PAUSE"
+}
+
 # ── Yes/No prompt that runs a function on Yes ──────────────────
 # Usage: ui_confirm_run "Label" function_name
 # Shows a Yes/No menu titled "Label?"; on Yes, calls the named function.
@@ -131,10 +153,9 @@ ui_confirm_run() {
   ui_menu "${label}?" choice "Yes" "No (Skip)"
   echo
   case "$choice" in
-    0) "$func" ;;
-    *) log_step "skipped: $label" 2>/dev/null || true ;;
+    0) "$func"; sleep "$UI_SKIP_PAUSE" ;;
+    *) ui_log_skipped "$label" ;;
   esac
-  sleep 1
 }
 
 # ── ui_confirm_run gated on a command existing in PATH ─────────
@@ -147,8 +168,7 @@ ui_confirm_if_command() {
     ui_confirm_run "$label" "$func"
   else
     echo
-    log_step "skipping $label — $hint not available." 2>/dev/null || true
-    sleep 1
+    ui_log_skipping_dep "$label" "$hint"
   fi
 }
 
@@ -162,8 +182,7 @@ ui_confirm_if_dir() {
     ui_confirm_run "$label" "$func"
   else
     echo
-    log_step "skipping $label — $hint not available." 2>/dev/null || true
-    sleep 1
+    ui_log_skipping_dep "$label" "$hint"
   fi
 }
 
