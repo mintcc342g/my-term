@@ -18,6 +18,7 @@ source "$SCRIPT_DIR/lib/rc-block.sh"
 source "$SCRIPT_DIR/lib/instructions-block.sh"
 source "$SCRIPT_DIR/installers/required.sh"
 source "$SCRIPT_DIR/installers/convenience.sh"
+source "$SCRIPT_DIR/installers/git-ssh.sh"
 source "$SCRIPT_DIR/installers/ides.sh"
 source "$SCRIPT_DIR/installers/oh-my-zsh.sh"
 source "$SCRIPT_DIR/installers/shell-theme.sh"
@@ -43,6 +44,8 @@ run_install_interactive() {
   install_required
 
   ui_confirm_run "Convenience tools (CLI, macOS apps, DevOps)" install_convenience
+
+  ui_confirm_run "Git SSH keys (multi-account)" install_git_ssh
 
   install_ides
 

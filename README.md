@@ -37,12 +37,51 @@ cd my-term
 ### 선택
 각 단계별로 의존성 툴이 설치되어 있지 않을 경우, 설치하지 않고 자동으로 스킵합니다.
 - Convenience tools — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun 등
+- Git SSH keys (multi-account) — 디렉토리별 GitHub 계정 키 자동 분기
 - oh-my-zsh + zsh plugins (syntax-highlighting, autosuggestions)
 - newro theme
 - asdf + 언어 플러그인 (Golang, Java)
 - pyenv + pyenv-virtualenv
 - AI tools — Claude Code, OpenCode, Codex
 - Obsidian + wiki tooling — AI 기억 관리
+
+## Git SSH 키 (다중 계정)
+
+GitHub 계정을 여러 개 쓸 때, 각 계정 키를 디렉토리 단위로 자동 분기해주는 설정입니다. remote URL 은 표준 `git@github.com:...` 그대로 사용하고, `~/.ssh/config` 에 `Match exec` 블록을 박아 현재 작업 디렉토리에 따라 키를 골라줍니다. SourceTree 처럼 `~/.ssh/config` 를 따르는 git 클라이언트에서도 동일하게 동작합니다.
+
+### 동작 방식
+
+- **최초로 만든 키는 default 키로 등록됩니다.** 디렉토리 매칭 없이 fallback 으로 동작하며, 어느 매칭 규칙에도 해당하지 않는 경로에서 git 작업을 하면 이 키가 사용됩니다.
+- **두 번째 키부터는 디렉토리를 지정**합니다. 입력한 경로(및 그 하위)에서 작업할 때만 해당 키가 자동 선택됩니다. 지정한 디렉토리가 존재하지 않으면 함께 생성해줍니다.
+- 키 파일명은 입력한 nickname 으로 결정됩니다 (`~/.ssh/id_<nickname>`). 이미 같은 이름의 키가 있으면 거절합니다 — 다른 nickname 으로 다시 입력해주세요.
+- 키 생성 후에는 public key 가 클립보드에 자동 복사되므로, [GitHub Settings → SSH keys](https://github.com/settings/ssh/new) 에 바로 붙여넣기 할 수 있습니다.
+- GitHub 등록을 마치고 Enter 를 누르면 "키를 더 만들지" 선택지가 나옵니다. 필요한 만큼 반복해서 생성하세요.
+
+### 키 추가
+
+키를 더 만들고 싶을 땐 **installer 를 다시 실행**해서 Git SSH 단계에서 Yes 를 선택하세요. `~/.ssh/config` 에 default 키가 있는 것을 자동으로 감지해서, 첫 등록 단계를 건너뛰고 디렉토리 매칭 키 등록으로 바로 넘어갑니다 (기존 default 키는 덮어쓰지 않습니다).
+
+자동 감지는 두 가지 경우 모두 동작합니다:
+- 이전에 installer 로 등록한 default 키 (installer 매니지드 블록 안의 `Host github.com`)
+- 사용자가 `~/.ssh/config` 에 직접 작성한 `Host github.com` 설정
+
+후자의 경우, 새 디렉토리 매칭 키가 기존 설정에 가려지지 않도록 installer 매니지드 블록이 `~/.ssh/config` 맨 위쪽으로 이동합니다. 진행 전에 안내 화면에서 확인을 받습니다.
+
+만약 매니지드 블록 안팎에 `Host github.com` 이 둘 다 있는 충돌 상태가 감지되면 installer 는 정리 안내 후 종료합니다 (한쪽이 ssh 의 first-match 규칙으로 가려져 있는 상태이므로 직접 정리가 필요합니다).
+
+### 검증
+
+```bash
+cd <등록한 디렉토리>
+ssh -T git@github.com
+```
+
+`Hi <github-username>!` 메시지가 나오면 그 디렉토리에 매칭된 키로 정상 인증된 것입니다.
+
+### 제약
+
+- 디렉토리 매칭은 키 생성 시 입력한 경로(및 하위)에서만 동작합니다. 그 외 경로에서는 default 키로 폴백됩니다.
+- 같은 디렉토리를 두 번 등록하면 더 최근에 등록한 키가 우선 적용됩니다 (이전 등록은 `~/.ssh/config` 에 남지만 무시됨). 정리는 직접 편집해주세요.
 
 ## AI 어시스턴트 (Claude Code & Codex)
 `my-claude/` 디렉토리의 설정을 `~/.claude`에 동기화하여 사용
