@@ -98,9 +98,24 @@ git_behind=0
 if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   git_branch=$(git -C "$cwd" branch --show-current 2>/dev/null | tr -d '\n')
   if [ -n "$git_branch" ]; then
+    # 비교 ref 결정: @{upstream} 우선, 없으면 push 대상 리모트의 동명 ref로 fallback.
+    # fallback 리모트 해석 순서는 git push가 따르는 것과 동일:
+    #   branch.<n>.pushRemote → remote.pushDefault → origin
+    cmp_ref=""
     if git -C "$cwd" rev-parse --abbrev-ref "${git_branch}@{upstream}" >/dev/null 2>&1; then
-      git_ahead=$(git -C "$cwd" rev-list --count "${git_branch}@{upstream}..HEAD" 2>/dev/null || echo 0)
-      git_behind=$(git -C "$cwd" rev-list --count "HEAD..${git_branch}@{upstream}" 2>/dev/null || echo 0)
+      cmp_ref="${git_branch}@{upstream}"
+    else
+      fb_remote=$(git -C "$cwd" config --get "branch.${git_branch}.pushRemote" 2>/dev/null \
+               || git -C "$cwd" config --get remote.pushDefault 2>/dev/null \
+               || echo origin)
+      if git -C "$cwd" rev-parse --verify --quiet "refs/remotes/${fb_remote}/${git_branch}" >/dev/null 2>&1; then
+        cmp_ref="refs/remotes/${fb_remote}/${git_branch}"
+      fi
+    fi
+
+    if [ -n "$cmp_ref" ]; then
+      git_ahead=$(git -C "$cwd" rev-list --count "${cmp_ref}..HEAD" 2>/dev/null || echo 0)
+      git_behind=$(git -C "$cwd" rev-list --count "HEAD..${cmp_ref}" 2>/dev/null || echo 0)
       [[ "$git_ahead" =~ ^[0-9]+$ ]] || git_ahead=0
       [[ "$git_behind" =~ ^[0-9]+$ ]] || git_behind=0
       if [ "$git_ahead" -eq 0 ] && [ "$git_behind" -eq 0 ]; then
