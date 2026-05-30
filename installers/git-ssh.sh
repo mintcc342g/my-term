@@ -94,11 +94,28 @@ install_git_ssh() {
     has_default=true
   fi
 
+  local created=false
   while true; do
-    if ! _git_ssh_create_one "$SSH_CONFIG" "$has_default"; then
+    # rc: 0 = 등록 성공(또는 재시도용 soft error), 1 = 치명적 오류,
+    #     2 = 빈 닉네임으로 사용자가 키 생성을 종료 → 루프 탈출.
+    # set -e 환경이라 비-0 반환이 스크립트를 죽이지 않도록 `|| rc=$?` 로 받는다.
+    local rc=0
+    _git_ssh_create_one "$SSH_CONFIG" "$has_default" || rc=$?
+    if [ "$rc" -eq 1 ]; then
       umask "$_old_umask"
       return 1
     fi
+    # 빈 닉네임으로 종료. 이번 실행에서 등록한 키가 하나도 없으면 (예: 첫
+    # 화면에서 바로 비우고 나감) 완료가 아니라 skip 으로 표기한다.
+    if [ "$rc" -eq 2 ]; then
+      if [ "$created" = "false" ]; then
+        umask "$_old_umask"
+        ui_log_skipped "Git SSH"
+        return 0
+      fi
+      break
+    fi
+    created=true
     # First successful registration becomes default — subsequent ones are matched.
     [ "$has_default" = "false" ] && has_default=true
 
@@ -125,10 +142,10 @@ _git_ssh_create_one() {
   local nickname
   read -r nickname < /dev/tty
 
+  # 빈 닉네임은 "그만하고 다음 단계로" 신호 — 안내 문구로 미리 고지했으므로
+  # 별도 에러 없이 abort code(2) 만 반환한다.
   if [ -z "$nickname" ]; then
-    log_fail "$L_GITSSH_EMPTY_NICK"
-    sleep 1
-    return 0
+    return 2
   fi
   # 파일명에 안전한 문자만 허용.
   if [[ ! "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]]; then

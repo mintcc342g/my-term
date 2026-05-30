@@ -18,16 +18,18 @@ install_ides() {
 
     menu_items+=("Antigravity"); menu_actions+=("antigravity")
     # Add more IDEs here (VSCode, GoLand, …) as needed.
-    menu_items+=("$L_NO_SKIP");   menu_actions+=("exit")
+    menu_items+=("$L_NO_SKIP");   menu_actions+=("skip")
+    menu_items+=("$L_MENU_EXIT"); menu_actions+=("quit")
 
     ui_menu "$L_IDE_MENU_TITLE" choice "${menu_items[@]}"
 
     [ "$choice" = "255" ] && break
-    local action="${menu_actions[$choice]:-exit}"
+    local action="${menu_actions[$choice]:-skip}"
 
     case "$action" in
       antigravity) touched=1; _install_antigravity ;;
-      exit)        break ;;
+      skip)        break ;;
+      quit)        ui_abort 0 ;;
     esac
   done
 

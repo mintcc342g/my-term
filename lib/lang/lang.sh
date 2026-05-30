@@ -39,10 +39,10 @@ tf() {
 # 로드한다. 취소(q/esc)면 현재 기본값(en) 유지.
 ui_select_language() {
   local _sel=""
-  ui_menu "Language / 언어 선택" _sel "English" "한국어"
+  ui_menu "언어 선택 / Language" _sel "한국어" "English"
   case "$_sel" in
-    0) lang_load en ;;
-    1) lang_load ko ;;
+    0) lang_load ko ;;
+    1) lang_load en ;;
     *) : ;;
   esac
 }

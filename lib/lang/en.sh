@@ -10,7 +10,7 @@ L_NO_SKIP="No (Skip)"
 L_NO_EXIT="No (Exit)"
 L_NO_DONE="No (Done)"
 L_DONE_ITEM="✓ Done"
-L_UI_HINT="↑↓ move │ Enter select │ Ctrl+C quit"
+L_UI_HINT="↑↓ move │ Enter select"
 L_EXIT_ABORTED="Aborted — exiting installer."
 
 # ── Main menu (install.sh) ──────────────────────────────────────
@@ -73,7 +73,6 @@ L_GITSSH_ANOTHER_TITLE="Create another SSH key?"
 L_GITSSH_ENTER_NEXT="Press Enter for the next step…"
 L_GITSSH_ENTER_DONE="Press Enter when done…"
 L_GITSSH_NICK_LABEL="nickname: "
-L_GITSSH_EMPTY_NICK="Enter a nickname."
 L_GITSSH_INVALID_NICK="Invalid nickname (a-z, 0-9, _, - only)."
 L_GITSSH_KEY_EXISTS="Key already exists at %s. Enter a different nickname."
 L_GITSSH_EMAIL_LABEL="email (key comment): "
@@ -150,10 +149,11 @@ lang_gitssh_nick_help() {
   echo -e " ─────────────────────" > /dev/tty
   echo -e " ${UI_DIM}This nickname is used in the key filename (~/.ssh/id_<nickname>).${UI_RESET}" > /dev/tty
   if [ "$has_default" = "false" ]; then
-    echo -e " ${UI_DIM}The first key becomes the default (no directory match, used as fallback).${UI_RESET}\n" > /dev/tty
+    echo -e " ${UI_DIM}The first key becomes the default (no directory match, used as fallback).${UI_RESET}" > /dev/tty
   else
-    echo -e " ${UI_DIM}Later keys are registered with directory matching.${UI_RESET}\n" > /dev/tty
+    echo -e " ${UI_DIM}Later keys are registered with directory matching.${UI_RESET}" > /dev/tty
   fi
+  echo -e " ${UI_DIM}${UI_ITALIC}Press Enter without a nickname to stop here and move to the next step.${UI_RESET}\n" > /dev/tty
 }
 
 # directory help screen.

@@ -11,7 +11,7 @@ L_NO_SKIP="아니요 (건너뛰기)"
 L_NO_EXIT="아니요 (종료)"
 L_NO_DONE="아니요 (완료)"
 L_DONE_ITEM="✓ 완료"
-L_UI_HINT="↑↓ 이동 │ Enter 선택 │ Ctrl+C 종료"
+L_UI_HINT="↑↓ 이동 │ Enter 선택"
 L_EXIT_ABORTED="설치를 중단하고 종료합니다."
 
 # ── 메인 메뉴 (install.sh) ──────────────────────────────────────
@@ -74,7 +74,6 @@ L_GITSSH_ANOTHER_TITLE="키를 더 만들까요?"
 L_GITSSH_ENTER_NEXT="Enter 로 다음 단계로…"
 L_GITSSH_ENTER_DONE="등록을 마쳤으면 Enter…"
 L_GITSSH_NICK_LABEL="닉네임: "
-L_GITSSH_EMPTY_NICK="닉네임을 입력하세요."
 L_GITSSH_INVALID_NICK="닉네임이 올바르지 않습니다 (a-z, 0-9, _, - 만 사용)."
 L_GITSSH_KEY_EXISTS="%s 에 이미 키가 있습니다. 다른 닉네임을 입력하세요."
 L_GITSSH_EMAIL_LABEL="email (키 주석): "
@@ -151,10 +150,11 @@ lang_gitssh_nick_help() {
   echo -e " ─────────────────────" > /dev/tty
   echo -e " ${UI_DIM}이 닉네임이 키 파일명에 사용됩니다 (~/.ssh/id_<nickname>).${UI_RESET}" > /dev/tty
   if [ "$has_default" = "false" ]; then
-    echo -e " ${UI_DIM}최초 입력 키는 default 키로 등록됩니다 (디렉토리 매칭 X, fallback 으로 동작).${UI_RESET}\n" > /dev/tty
+    echo -e " ${UI_DIM}최초 입력 키는 default 키로 등록됩니다 (디렉토리 매칭 X, fallback 으로 동작).${UI_RESET}" > /dev/tty
   else
-    echo -e " ${UI_DIM}이후 키는 디렉토리 매칭 방식으로 등록됩니다.${UI_RESET}\n" > /dev/tty
+    echo -e " ${UI_DIM}이후 키는 디렉토리 매칭 방식으로 등록됩니다.${UI_RESET}" > /dev/tty
   fi
+  echo -e " ${UI_DIM}${UI_ITALIC}닉네임을 입력하지 않고 Enter 를 누르면 키 생성을 종료하고 다음 단계로 넘어갑니다.${UI_RESET}\n" > /dev/tty
 }
 
 # 디렉토리 안내 화면.
