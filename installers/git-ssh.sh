@@ -20,6 +20,32 @@ install_git_ssh() {
   mkdir -p "$SSH_DIR"
   chmod 700 "$SSH_DIR"
 
+  # 진입 안내 — 키-디렉토리 매칭 동작을 키 생성 전에 알리고 진행 여부를 확인.
+  # 디렉토리 컨벤션을 사후에 깨달으면 리포 재배치 + .git/config / .gitmodules
+  # 의 host alias 잔재 정리까지 가야 해서 비용이 큼. ui_menu 는 리드로우마다
+  # 화면을 지우므로 안내문은 UI_MENU_NOTE 로 전달 (Case B 와 동일 패턴).
+  local intro=""
+  intro+=" ─────────────────────\n"
+  intro+=" 키를 2개 이상 만들 거라면, 만들기 전에 어느\n"
+  intro+=" 디렉토리에서 어떤 키를 쓸지 먼저 정해두세요.\n"
+  intro+="\n"
+  intro+="   예)  ~/Documents/my    →  id_my    (개인)\n"
+  intro+="        ~/Documents/works →  id_work  (회사)\n"
+  intro+="\n"
+  intro+=" 키가 2개 이상이면 ssh 가 github.com 을 인증할 때\n"
+  intro+=" 어느 키를 쓸지 판단하지 못하므로, 디렉토리별로\n"
+  intro+=" 키를 지정해줘야 합니다.\n"
+  intro+="\n"
+  intro+=" GitHub SSH Key 설정을 진행할까요?"
+
+  local proceed=""
+  UI_MENU_NOTE="$intro" ui_menu "Git SSH — multi-account setup" proceed "예" "아니오"
+  if [ "$proceed" != "0" ]; then
+    umask "$_old_umask"
+    ui_log_skipped "Git SSH"
+    return 0
+  fi
+
   # default 키 감지 — 두 갈래:
   #   managed  : 매니지드 블록 안의 Host github.com (이전 installer 실행 결과)
   #   external : 매니지드 블록 밖의 Host github.com (사용자가 직접 작성)
@@ -58,9 +84,26 @@ install_git_ssh() {
 
   local has_default=false
   if [ "$has_managed_default" = "true" ]; then
+    # Case A: my-term 이 관리하는 default 키가 이미 있음 — 추가 등록 여부만 확인.
+    # 예전엔 log_step + sleep 로 잠깐 띄웠다가 다음 화면(ui_clear_screen)이
+    # 덮어써 깜빡였음. Case B 처럼 ui_menu 로 머무르게 함.
+    local note=""
+    note+=" ─────────────────────\n"
+    note+=" 아래 키를 default 로 이미 사용하고 있습니다.\n"
+    note+="    ${managed_default_key}\n"
+    note+="\n"
+    note+=" 새로 만드는 키는 디렉토리별로 매칭해서 추가합니다.\n"
+    note+="\n"
+    note+=" 키를 새로 추가할까요?"
+
+    local cont=""
+    UI_MENU_NOTE="$note" ui_menu "이미 사용 중인 default 키가 있습니다" cont "예" "아니오"
+    if [ "$cont" != "0" ]; then
+      umask "$_old_umask"
+      ui_log_skipped "Git SSH"
+      return 0
+    fi
     has_default=true
-    log_step "Existing default key detected (${managed_default_key:-unknown}) — new keys will be registered per directory."
-    sleep 1
   elif [ "$has_external_default" = "true" ]; then
     # Case B: 사용자 기존 default 를 존중하되, 매니지드 블록을 파일 맨 위로
     # 배치해야 이후 추가되는 Match 블록이 가려지지 않음.
