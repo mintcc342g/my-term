@@ -58,19 +58,19 @@ on_off() {
 select_theme() {
   local current_marker_0="" current_marker_1="" current_marker_2=""
   [ "$theme" = "mygo" ] && current_marker_0=" (current)"
-  [ "$theme" = "eimes" ] && current_marker_1=" (current)"
+  [ "$theme" = "aemeath" ] && current_marker_1=" (current)"
   [ "$theme" = "ave-mujica" ] && current_marker_2=" (current)"
 
   local choice
   ui_menu "Select Theme" choice \
     "mygo${current_marker_0}" \
-    "eimes${current_marker_1}" \
+    "aemeath${current_marker_1}" \
     "ave-mujica${current_marker_2}" \
     "← Back"
 
   case "$choice" in
     0) theme="mygo" ;;
-    1) theme="eimes" ;;
+    1) theme="aemeath" ;;
     2) theme="ave-mujica" ;;
   esac
 }

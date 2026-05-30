@@ -432,12 +432,12 @@ source "$SCRIPT_DIR/render.sh"
 source "$SCRIPT_DIR/render-compact.sh"
 # Validate theme name (prevent path traversal)
 if [[ ! "$theme" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-  theme="mygo"
+  theme="aemeath"
 fi
 theme_file="$SCRIPT_DIR/themes/${theme}.sh"
 if [ ! -f "$theme_file" ]; then
-  theme="mygo"
-  theme_file="$SCRIPT_DIR/themes/mygo.sh"
+  theme="aemeath"
+  theme_file="$SCRIPT_DIR/themes/aemeath.sh"
 fi
 if [[ -L "$theme_file" ]]; then
   exit 1

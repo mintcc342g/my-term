@@ -1,5 +1,5 @@
 #!/bin/bash
-# Theme: eimes — Nord8 blue → Nord15 pink
+# Theme: aemeath — Nord8 blue → Nord15 pink
 
 GRAD_START_R=136; GRAD_START_G=192; GRAD_START_B=208
 GRAD_END_R=180;   GRAD_END_G=142;   GRAD_END_B=173
