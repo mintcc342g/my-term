@@ -36,6 +36,11 @@ if [ "$(uname -s)" = "Linux" ]; then
     exit 1
 fi
 
+# ── Language selection ──────────────────────────────────────────
+# ui.sh already loaded the default (en); let the user switch up front so all
+# subsequent menus/prompts render in one language.
+ui_select_language
+
 # ── Component orchestrator (Yes/No per component, dependency-aware) ──
 run_install_interactive() {
   log_start "Running installer…"
@@ -43,17 +48,17 @@ run_install_interactive() {
   # Required tools first — declines exit the script entirely.
   install_required
 
-  ui_confirm_run "Convenience tools (CLI, macOS apps, DevOps)" install_convenience
+  ui_confirm_run "$L_STEP_CONVENIENCE" install_convenience
 
-  ui_confirm_run "Git SSH keys (multi-account)" install_git_ssh
+  ui_confirm_run "$L_STEP_GIT_SSH" install_git_ssh
 
   install_ides
 
-  ui_confirm_if_command brew "Oh-my-zsh + zsh plugins" install_oh_my_zsh "Homebrew"
-  ui_confirm_if_dir "$HOME/.oh-my-zsh" "Shell theme (newro)" install_shell_theme "oh-my-zsh"
-  ui_confirm_if_command brew "asdf + languages" install_asdf_langs "Homebrew"
-  ui_confirm_if_command brew "pyenv" install_pyenv "Homebrew"
-  ui_confirm_if_command brew "AI tools (Claude, OpenCode, Codex)" install_ai_tools "Homebrew"
+  ui_confirm_if_command brew "$L_STEP_OMZ" install_oh_my_zsh "Homebrew"
+  ui_confirm_if_dir "$HOME/.oh-my-zsh" "$L_STEP_THEME" install_shell_theme "oh-my-zsh"
+  ui_confirm_if_command brew "$L_STEP_ASDF" install_asdf_langs "Homebrew"
+  ui_confirm_if_command brew "$L_STEP_PYENV" install_pyenv "Homebrew"
+  ui_confirm_if_command brew "$L_STEP_AI" install_ai_tools "Homebrew"
 }
 
 # ── Main menu ───────────────────────────────────────────────────
@@ -62,18 +67,18 @@ while true; do
   menu_items=()
   menu_actions=()
 
-  menu_items+=("Install");  menu_actions+=("install")
-  menu_items+=("Update");   menu_actions+=("update")
+  menu_items+=("$L_MENU_INSTALL");  menu_actions+=("install")
+  menu_items+=("$L_MENU_UPDATE");   menu_actions+=("update")
 
   # HUD configure menu only when modular HUD is installed.
   # Legacy users won't see this until they run Update once (which migrates).
   if [ -f "$HOME/.claude/my-hud/configure.sh" ]; then
-    menu_items+=("HUD configure"); menu_actions+=("hud-config")
+    menu_items+=("$L_MENU_HUD_CONFIG"); menu_actions+=("hud-config")
   fi
 
-  menu_items+=("✗ Exit");   menu_actions+=("exit")
+  menu_items+=("$L_MENU_EXIT");   menu_actions+=("exit")
 
-  ui_menu "my-term installer" choice "${menu_items[@]}"
+  ui_menu "$L_MENU_TITLE" choice "${menu_items[@]}"
 
   [ "$choice" = "255" ] && break
   action="${menu_actions[$choice]:-exit}"

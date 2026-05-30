@@ -17,6 +17,18 @@ UI_PINK=$'\033[38;5;205m'
 UI_PURPLE=$'\033[35m'
 UI_GREEN=$'\033[92m'
 
+# ── Language catalog bootstrap ─────────────────────────────────
+# Locate lib/lang next to this file (works in repo and the deployed HUD copy)
+# and load the default catalog. install.sh overrides via ui_select_language
+# after the user picks a language; standalone callers (configure.sh) stay on
+# the MYTERM_LANG env default (en). Colors above are already defined, so catalog
+# strings that embed ${UI_*} expand correctly at source time.
+_UI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$_UI_DIR/lang/lang.sh" ]; then
+  source "$_UI_DIR/lang/lang.sh"
+  [ -z "${_MYTERM_LANG_LOADED:-}" ] && lang_load "${MYTERM_LANG:-en}"
+fi
+
 # ── Clear screen + home cursor ─────────────────────────────────
 # Usage: ui_clear_screen
 ui_clear_screen() {
@@ -77,22 +89,23 @@ ui_menu() {
       echo -e "${UI_MENU_NOTE}" > /dev/tty
     fi
     echo " ─────────────────────" > /dev/tty
-    echo " ${UI_DIM}↑↓ move │ Enter select${UI_RESET}" > /dev/tty
+    echo " ${UI_DIM}${L_UI_HINT}${UI_RESET}" > /dev/tty
     echo "" > /dev/tty
 
     local UI_CYAN=$'\033[36;1m'
     for i in "${!items[@]}"; do
       local num=$((i + 1))
       local item="${items[$i]}"
-      # Items whose first character isn't ASCII alphanumeric are treated as
-      # navigation actions (e.g. "← Back", "✓ Save & Exit", "✗ Exit") and
-      # rendered without the numeric prefix.
+      # Items beginning with a UI nav symbol (✗ ✓ ← →) are navigation actions
+      # (e.g. "← Back", "✓ Save & Exit", "✗ Exit") and render without a numeric
+      # prefix. Everything else — including non-ASCII text such as Korean — is a
+      # selectable option and gets numbered. (Matching the symbol prefix rather
+      # than "first char is non-alnum" keeps Korean items numbered.)
       local label
-      if [[ ! "${item:0:1}" =~ [a-zA-Z0-9] ]]; then
-        label="$item"
-      else
-        label="${num}) $item"
-      fi
+      case "$item" in
+        '✗'*|'✓'*|'←'*|'→'*) label="$item" ;;
+        *)                    label="${num}) $item" ;;
+      esac
       if [ "$i" -eq "$sel" ]; then
         echo "  ${UI_CYAN}❯ ${label}${UI_RESET}" > /dev/tty
       else
@@ -150,7 +163,7 @@ ui_log_skipping_dep() {
 ui_confirm_run() {
   local label="$1" func="$2"
   local choice=""
-  ui_menu "${label}?" choice "Yes" "No (Skip)"
+  ui_menu "${label}?" choice "$L_YES" "$L_NO_SKIP"
   echo
   case "$choice" in
     0) "$func"; sleep "$UI_SKIP_PAUSE" ;;
@@ -193,9 +206,9 @@ ui_print_completion() {
   local action="${1:-install}"
   local headline=""
   case "$action" in
-    update)     headline="Update complete!" ;;
-    hud-config) headline="HUD configured." ;;
-    install|*)  headline="Installation complete!" ;;
+    update)     headline="$L_DONE_UPDATE" ;;
+    hud-config) headline="$L_DONE_HUDCFG" ;;
+    install|*)  headline="$L_DONE_INSTALL" ;;
   esac
 
   ui_clear_screen
@@ -205,11 +218,11 @@ ui_print_completion() {
   # Action-specific follow-up note
   case "$action" in
     update)
-      printf "  ${UI_YELLOW_BOLD}↻${UI_RESET} Restart Claude Code sessions to apply.\n\n"
+      printf "  ${UI_YELLOW_BOLD}↻${UI_RESET} %s\n\n" "$L_DONE_RESTART_CC"
       ;;
     install|*)
       if [ "${ZSHRC_MODIFIED:-}" = "true" ]; then
-        printf "  Please run ${UI_YELLOW_BOLD}'source \${HOME}/.zshrc'${UI_RESET} or ${UI_YELLOW_BOLD}restart${UI_RESET} your shell.\n\n"
+        lang_done_source_zshrc
       else
         echo
       fi

@@ -6,7 +6,7 @@ install_obsidian() {
   log_start "Obsidian + wiki tooling setup…"
 
   if ! command -v brew &>/dev/null; then
-    log_fail "Homebrew not found. Please install convenience tools first."
+    log_fail "$L_ERR_NO_BREW"
     return 1
   fi
 
@@ -20,35 +20,19 @@ install_obsidian() {
 
   # 2. Wiki storage type (Obsidian vault 의 저장 방식 선택)
   local storage=""
-  ui_menu "Wiki storage type" storage \
-    "Local" \
+  ui_menu "$L_OBS_STORAGE_TITLE" storage \
+    "$L_OBS_STORAGE_LOCAL" \
     "iCloud Drive" \
     "Git"
 
   if [ "$storage" = "255" ]; then
-    log_step "Obsidian wiki setup cancelled."
+    log_step "$L_OBS_CANCELLED"
     return 0
   fi
 
   # 3. Wiki path prompt with per-storage guidance
   ui_clear_screen
-  echo -e "${UI_BLUE_BOLD} Wiki path${UI_RESET}" > /dev/tty
-  echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}Enter the local directory path for the wiki (Tab to autocomplete).${UI_RESET}" > /dev/tty
-  case "$storage" in
-    0)
-      echo -e " ${UI_DIM}  Local — any directory works.${UI_RESET}\n" > /dev/tty
-      ;;
-    1)
-      echo -e " ${UI_DIM}  iCloud Drive — Obsidian's standard iCloud vault path:${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}    ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/<vault-name>${UI_RESET}\n" > /dev/tty
-      ;;
-    2)
-      echo -e " ${UI_DIM}  Git — clone the repo to a local directory first, then enter${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}  that local path here (NOT a git URL). git config / ssh key may${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}  need to be configured beforehand.${UI_RESET}\n" > /dev/tty
-      ;;
-  esac
+  lang_obs_wikipath_help "$storage"
   # Prompt embedded in `read -p` so readline knows its length and can't
   # backspace-erase past it. \001\002 mark non-printing escape sequences
   # (color codes) so readline accounts for visible width correctly.
@@ -67,7 +51,7 @@ install_obsidian() {
   bind '"\e[Z": menu-complete-backward' 2>/dev/null || true
   bind 'set completion-ignore-case on' 2>/dev/null || true
   bind 'set match-hidden-files off' 2>/dev/null || true
-  local prompt=$'\001\033[33;1m\002 wiki path: \001\033[0m\002'
+  local prompt=$'\001\033[33;1m\002'" ${L_OBS_WIKIPATH_LABEL}"$'\001\033[0m\002'
   local wiki_path
   read -e -r -p "$prompt" wiki_path < /dev/tty
 
@@ -75,7 +59,7 @@ install_obsidian() {
   wiki_path="${wiki_path/#\~/$HOME}"
   wiki_path="${wiki_path%/}"
   if [ -z "$wiki_path" ]; then
-    log_fail "Empty wiki path. Skipping wiki setup."
+    log_fail "$L_OBS_EMPTY_PATH"
     return 1
   fi
 
@@ -98,7 +82,7 @@ install_obsidian() {
 
   # 7. obsidian-skills plugin guidance — printed AFTER ✔ as a follow-up hint,
   # matching ui_print_completion 의 "Please run …" 스타일 (indent, 아이콘 X).
-  printf "  After first Claude Code launch, manually install the obsidian-skills plugin:\n"
+  printf "  %s\n" "$L_OBS_PLUGIN_HINT"
   printf "    /plugin marketplace add kepano/obsidian-skills\n"
   printf "    /plugin install obsidian@obsidian-skills\n"
 }

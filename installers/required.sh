@@ -4,10 +4,10 @@
 
 install_required() {
   local choice=""
-  UI_MENU_NOTE=" ${UI_RED_BOLD}⚠ Required — declining will exit the installer immediately.${UI_RESET}" \
-    ui_menu "Install required tools (Homebrew + jq)?" choice \
-      "Yes" \
-      "No (Exit)"
+  UI_MENU_NOTE=" ${UI_RED_BOLD}${L_REQ_NOTE}${UI_RESET}" \
+    ui_menu "$L_REQ_TITLE" choice \
+      "$L_YES" \
+      "$L_NO_EXIT"
 
   echo
   if [ "$choice" != "0" ]; then

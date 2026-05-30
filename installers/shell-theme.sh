@@ -6,7 +6,7 @@ install_shell_theme() {
   log_start "install newro theme…"
 
   if [ ! -d "${HOME}/.oh-my-zsh" ]; then
-    log_fail "oh-my-zsh not found. Please install oh-my-zsh first."
+    log_fail "$L_ERR_NO_OMZ"
     return 1
   fi
 

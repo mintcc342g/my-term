@@ -24,22 +24,10 @@ install_git_ssh() {
   # 디렉토리 컨벤션을 사후에 깨달으면 리포 재배치 + .git/config / .gitmodules
   # 의 host alias 잔재 정리까지 가야 해서 비용이 큼. ui_menu 는 리드로우마다
   # 화면을 지우므로 안내문은 UI_MENU_NOTE 로 전달 (Case B 와 동일 패턴).
-  local intro=""
-  intro+=" ─────────────────────\n"
-  intro+=" 키를 2개 이상 만들 거라면, 만들기 전에 어느\n"
-  intro+=" 디렉토리에서 어떤 키를 쓸지 먼저 정해두세요.\n"
-  intro+="\n"
-  intro+="   예)  ~/Documents/my    →  id_my    (개인)\n"
-  intro+="        ~/Documents/works →  id_work  (회사)\n"
-  intro+="\n"
-  intro+=" 키가 2개 이상이면 ssh 가 github.com 을 인증할 때\n"
-  intro+=" 어느 키를 쓸지 판단하지 못하므로, 디렉토리별로\n"
-  intro+=" 키를 지정해줘야 합니다.\n"
-  intro+="\n"
-  intro+=" GitHub SSH Key 설정을 진행할까요?"
+  local intro; intro="$(lang_gitssh_intro)"
 
   local proceed=""
-  UI_MENU_NOTE="$intro" ui_menu "Git SSH — multi-account setup" proceed "예" "아니오"
+  UI_MENU_NOTE="$intro" ui_menu "$L_GITSSH_INTRO_TITLE" proceed "$L_YES" "$L_NO"
   if [ "$proceed" != "0" ]; then
     umask "$_old_umask"
     ui_log_skipped "Git SSH"
@@ -65,17 +53,8 @@ install_git_ssh() {
   # Case D: 매니지드 안팎에 default 가 둘 다 — 사용자가 정리해야 함.
   if [ "$has_managed_default" = "true" ] && [ "$has_external_default" = "true" ]; then
     ui_clear_screen
-    echo -e "${UI_BLUE_BOLD} 'Host github.com' 설정이 둘 다 있습니다${UI_RESET}" > /dev/tty
-    echo -e " ─────────────────────" > /dev/tty
-    echo -e " ${UI_DIM}~/.ssh/config 에 'Host github.com' 이 매니지드 블록 안팎에 모두${UI_RESET}" > /dev/tty
-    echo -e " ${UI_DIM}존재합니다. ssh 는 둘 중 위쪽 값만 사용하므로 한 쪽이 가려진${UI_RESET}" > /dev/tty
-    echo -e " ${UI_DIM}상태예요.${UI_RESET}" > /dev/tty
-    echo > /dev/tty
-    echo -e " ${UI_DIM}  매니지드 외부 (직접 작성): ${external_default_key}${UI_RESET}" > /dev/tty
-    echo -e " ${UI_DIM}  매니지드 내부 (installer): ${managed_default_key}${UI_RESET}" > /dev/tty
-    echo > /dev/tty
-    echo -e " ${UI_DIM}~/.ssh/config 를 직접 정리하신 뒤 다시 실행해주세요.${UI_RESET}\n" > /dev/tty
-    echo -ne " ${UI_DIM}Enter 로 다음 단계로…${UI_RESET}" > /dev/tty
+    lang_gitssh_conflict "$external_default_key" "$managed_default_key"
+    echo -ne " ${UI_DIM}${L_GITSSH_ENTER_NEXT}${UI_RESET}" > /dev/tty
     read -r _ < /dev/tty
     umask "$_old_umask"
     ui_log_skipped "Git SSH"
@@ -87,17 +66,10 @@ install_git_ssh() {
     # Case A: my-term 이 관리하는 default 키가 이미 있음 — 추가 등록 여부만 확인.
     # 예전엔 log_step + sleep 로 잠깐 띄웠다가 다음 화면(ui_clear_screen)이
     # 덮어써 깜빡였음. Case B 처럼 ui_menu 로 머무르게 함.
-    local note=""
-    note+=" ─────────────────────\n"
-    note+=" 아래 키를 default 로 이미 사용하고 있습니다.\n"
-    note+="    ${managed_default_key}\n"
-    note+="\n"
-    note+=" 새로 만드는 키는 디렉토리별로 매칭해서 추가합니다.\n"
-    note+="\n"
-    note+=" 키를 새로 추가할까요?"
+    local note; note="$(lang_gitssh_caseA_note "$managed_default_key")"
 
     local cont=""
-    UI_MENU_NOTE="$note" ui_menu "이미 사용 중인 default 키가 있습니다" cont "예" "아니오"
+    UI_MENU_NOTE="$note" ui_menu "$L_GITSSH_CASEA_TITLE" cont "$L_YES" "$L_NO"
     if [ "$cont" != "0" ]; then
       umask "$_old_umask"
       ui_log_skipped "Git SSH"
@@ -109,15 +81,10 @@ install_git_ssh() {
     # 배치해야 이후 추가되는 Match 블록이 가려지지 않음.
     # ui_menu 는 매 리드로우마다 화면을 지우므로 안내문은 UI_MENU_NOTE 로
     # 전달해야 메뉴와 함께 표시됨 (obsidian/ai-tools 의 패턴과 동일).
-    local note=""
-    note+=" ${UI_DIM}~/.ssh/config 에 이미 'Host github.com' 설정이 있어요.${UI_RESET}\n"
-    note+=" ${UI_DIM}이 키를 그대로 default 로 사용합니다:${UI_RESET}\n"
-    note+="    ${external_default_key}\n"
-    note+="\n"
-    note+=" ${UI_DIM}추가로 키를 등록하실 거라면 진행해주세요.${UI_RESET}"
+    local note; note="$(lang_gitssh_caseB_note "$external_default_key")"
 
     local cont=""
-    UI_MENU_NOTE="$note" ui_menu "기존 default 키가 감지됐습니다 — 진행할까요?" cont "Yes" "No"
+    UI_MENU_NOTE="$note" ui_menu "$L_GITSSH_CASEB_TITLE" cont "$L_YES" "$L_NO"
     if [ "$cont" != "0" ]; then
       umask "$_old_umask"
       ui_log_skipped "Git SSH"
@@ -136,13 +103,13 @@ install_git_ssh() {
     [ "$has_default" = "false" ] && has_default=true
 
     local more=""
-    ui_menu "Create another SSH key?" more "Yes" "No (Done)"
+    ui_menu "$L_GITSSH_ANOTHER_TITLE" more "$L_YES" "$L_NO_DONE"
     [ "$more" != "0" ] && break
   done
 
   umask "$_old_umask"
   log_done "Git SSH setup complete."
-  printf "  ${UI_DIM}검증: cd <등록한 디렉토리> && ssh -T git@github.com${UI_RESET}\n"
+  printf "  ${UI_DIM}%s${UI_RESET}\n" "$L_GITSSH_VERIFY"
 }
 
 # One iteration: prompt nickname/email, generate key, register, pbcopy, pause.
@@ -153,43 +120,36 @@ _git_ssh_create_one() {
 
   # ── nickname ─────────────────────────────────────────────────
   ui_clear_screen
-  echo -e "${UI_BLUE_BOLD} SSH key — nickname${UI_RESET}" > /dev/tty
-  echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}이 닉네임이 키 파일명에 사용됩니다 (~/.ssh/id_<nickname>).${UI_RESET}" > /dev/tty
-  if [ "$has_default" = "false" ]; then
-    echo -e " ${UI_DIM}최초 입력 키는 default 키로 등록됩니다 (디렉토리 매칭 X, fallback 으로 동작).${UI_RESET}\n" > /dev/tty
-  else
-    echo -e " ${UI_DIM}이후 키는 디렉토리 매칭 방식으로 등록됩니다.${UI_RESET}\n" > /dev/tty
-  fi
-  echo -ne " ${UI_YELLOW_BOLD}nickname: ${UI_RESET}" > /dev/tty
+  lang_gitssh_nick_help "$has_default"
+  echo -ne " ${UI_YELLOW_BOLD}${L_GITSSH_NICK_LABEL}${UI_RESET}" > /dev/tty
   local nickname
   read -r nickname < /dev/tty
 
   if [ -z "$nickname" ]; then
-    log_fail "Empty nickname."
+    log_fail "$L_GITSSH_EMPTY_NICK"
     sleep 1
     return 0
   fi
   # 파일명에 안전한 문자만 허용.
   if [[ ! "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-    log_fail "Invalid nickname (a-z, 0-9, _, - only)."
+    log_fail "$L_GITSSH_INVALID_NICK"
     sleep 1
     return 0
   fi
   local key_path="$HOME/.ssh/id_$nickname"
   if [ -e "$key_path" ] || [ -e "${key_path}.pub" ]; then
-    log_fail "Key already exists at $key_path. 다른 nickname 을 입력하세요."
+    log_fail "$(tf L_GITSSH_KEY_EXISTS "$key_path")"
     sleep 1
     return 0
   fi
 
   # ── email ────────────────────────────────────────────────────
   echo > /dev/tty
-  echo -ne " ${UI_YELLOW_BOLD}email (key comment): ${UI_RESET}" > /dev/tty
+  echo -ne " ${UI_YELLOW_BOLD}${L_GITSSH_EMAIL_LABEL}${UI_RESET}" > /dev/tty
   local email
   read -r email < /dev/tty
   if [ -z "$email" ]; then
-    log_fail "Empty email."
+    log_fail "$L_GITSSH_EMPTY_EMAIL"
     sleep 1
     return 0
   fi
@@ -232,13 +192,13 @@ _git_ssh_create_one() {
     log_done "Public key copied to clipboard."
   fi
   echo > /dev/tty
-  echo -e " ${UI_BOLD}Public key:${UI_RESET}" > /dev/tty
+  echo -e " ${UI_BOLD}${L_GITSSH_PUBKEY_LABEL}${UI_RESET}" > /dev/tty
   cat "$pub_key" > /dev/tty
   echo > /dev/tty
-  echo -e " ${UI_YELLOW_BOLD}→${UI_RESET} GitHub Settings → SSH keys 에 등록하세요:" > /dev/tty
+  echo -e " ${UI_YELLOW_BOLD}→${UI_RESET} ${L_GITSSH_REGISTER_GH}" > /dev/tty
   echo -e "    https://github.com/settings/ssh/new" > /dev/tty
   echo > /dev/tty
-  echo -ne " ${UI_DIM}등록 완료 후 Enter…${UI_RESET}" > /dev/tty
+  echo -ne " ${UI_DIM}${L_GITSSH_ENTER_DONE}${UI_RESET}" > /dev/tty
   read -r _ < /dev/tty
   return 0
 }
@@ -248,18 +208,14 @@ _git_ssh_create_one() {
 # 빈 입력은 거절 (디렉토리는 필수).
 _git_ssh_prompt_directory() {
   ui_clear_screen
-  echo -e "${UI_BLUE_BOLD} SSH key — directory${UI_RESET}" > /dev/tty
-  echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}이 키를 사용할 디렉토리 경로 (Tab 자동완성).${UI_RESET}" > /dev/tty
-  echo -e " ${UI_DIM}해당 경로(및 하위)에서 git 작업 시 이 키가 자동 선택됩니다.${UI_RESET}" > /dev/tty
-  echo -e " ${UI_DIM}경로가 없으면 자동으로 생성됩니다.${UI_RESET}\n" > /dev/tty
+  lang_gitssh_dir_help
 
   set -o emacs 2>/dev/null || true
   bind '"\t": menu-complete' 2>/dev/null || true
   bind '"\e[Z": menu-complete-backward' 2>/dev/null || true
   bind 'set completion-ignore-case on' 2>/dev/null || true
   bind 'set match-hidden-files off' 2>/dev/null || true
-  local prompt=$'\001\033[33;1m\002 directory: \001\033[0m\002'
+  local prompt=$'\001\033[33;1m\002'" ${L_GITSSH_DIR_LABEL}"$'\001\033[0m\002'
 
   local dir_path
   while true; do
@@ -267,7 +223,7 @@ _git_ssh_prompt_directory() {
     dir_path="${dir_path/#\~/$HOME}"
     dir_path="${dir_path%/}"
     [ -n "$dir_path" ] && break
-    echo -e " ${UI_RED_BOLD}디렉토리는 필수입니다.${UI_RESET}" > /dev/tty
+    echo -e " ${UI_RED_BOLD}${L_GITSSH_DIR_REQUIRED}${UI_RESET}" > /dev/tty
   done
   printf '%s' "$dir_path"
 }

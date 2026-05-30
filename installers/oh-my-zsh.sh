@@ -14,7 +14,7 @@ install_oh_my_zsh() {
 
   log_start "brew install zsh plugins…"
   if ! command -v brew &>/dev/null; then
-    log_fail "Homebrew not found. Please install convenience tools first."
+    log_fail "$L_ERR_NO_BREW"
     return 1
   fi
   brew install zsh-autosuggestions zsh-syntax-highlighting

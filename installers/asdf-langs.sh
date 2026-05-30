@@ -6,7 +6,7 @@ install_asdf_langs() {
   log_start "brew install asdf…"
 
   if ! command -v brew &>/dev/null; then
-    log_fail "Homebrew not found. Please install convenience tools first."
+    log_fail "$L_ERR_NO_BREW"
     return 1
   fi
   brew install asdf
@@ -22,7 +22,7 @@ fi'
   local choice=""
 
   while true; do
-    ui_menu "asdf — select language to configure" choice \
+    ui_menu "$L_ASDF_MENU_TITLE" choice \
       "Golang" \
       "Java"
 
@@ -33,7 +33,7 @@ fi'
         rc_upsert_block "$ZPROFILE" "asdf-golang" '#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh'
         log_done "Golang plugin added."
         echo
-        echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Golang${RESET}, please ${RED_BOLD}uncomment${RESET} the Golang environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
+        lang_asdf_warning "Golang"
         echo
         sleep 2
         ;;
@@ -43,7 +43,7 @@ fi'
         rc_upsert_block "$ZPROFILE" "asdf-java" '#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh'
         log_done "Java plugin added."
         echo
-        echo "${YELLOW_BOLD}[WARNING]${RESET} ${RED_BOLD}After installing Java${RESET}, please ${RED_BOLD}uncomment${RESET} the Java environment configuration in your ${RED_BOLD}.zprofile.${RESET}"
+        lang_asdf_warning "Java"
         echo
         sleep 2
         ;;

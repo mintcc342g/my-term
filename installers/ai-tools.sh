@@ -49,7 +49,7 @@ install_ai_tools() {
   log_start "AI tools setup…"
 
   if ! command -v brew &>/dev/null; then
-    log_fail "Homebrew not found. Please install convenience tools first."
+    log_fail "$L_ERR_NO_BREW"
     return 1
   fi
 
@@ -61,11 +61,11 @@ install_ai_tools() {
   #   최신 버전 확인: npm view oh-my-opencode version
   #   설치: bunx oh-my-opencode@<version> install
   while true; do
-    ui_menu "AI tools — select to install (or Done to continue)" choice \
+    ui_menu "$L_AI_MENU_TITLE" choice \
       "Claude Code" \
       "OpenCode" \
       "Codex" \
-      "✓ Done"
+      "$L_DONE_ITEM"
 
     case "$choice" in
       0) _install_claude_code ;;
@@ -87,14 +87,14 @@ install_ai_tools() {
   done
 
   # Obsidian + vault tooling — Claude/AI 연계 용도라 AI tools 단계 끝에서 묻습니다.
-  ui_confirm_run "Obsidian + vault tooling" install_obsidian
+  ui_confirm_run "$L_STEP_OBSIDIAN" install_obsidian
 }
 
 _install_claude_code() {
   local method=""
-  ui_menu "Claude Code install method" method \
-    "Stable (brew cask — manual upgrade)" \
-    "Latest (brew cask @latest — always newest)"
+  ui_menu "$L_AI_METHOD_TITLE" method \
+    "$L_AI_METHOD_STABLE" \
+    "$L_AI_METHOD_LATEST"
 
   case "$method" in
     0)
@@ -114,17 +114,17 @@ _install_claude_code() {
 
   # Claude alias
   ui_clear_screen
-  echo -e "${UI_BLUE_BOLD} Claude alias setup${UI_RESET}" > /dev/tty
+  echo -e "${UI_BLUE_BOLD} ${L_AI_ALIAS_HEADER}${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}Enter alias for claude command (default: c)${UI_RESET}\n" > /dev/tty
-  echo -ne " ${UI_YELLOW_BOLD}alias: ${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}${L_AI_ALIAS_PROMPT}${UI_RESET}\n" > /dev/tty
+  echo -ne " ${UI_YELLOW_BOLD}${L_AI_ALIAS_LABEL}${UI_RESET}" > /dev/tty
   local alias_name
   read -r alias_name < /dev/tty
   [ -z "$alias_name" ] && alias_name="c"
 
   # Sanitize: only allow valid shell identifier chars
   if [[ ! "$alias_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-    log_fail "Invalid alias name. Using default: c"
+    log_fail "$L_AI_INVALID_ALIAS"
     alias_name="c"
   fi
 
@@ -149,9 +149,9 @@ _install_claude_code() {
 
   # HUD install offer
   local hud_choice=""
-  ui_menu "Install HUD statusline?" hud_choice \
-    "Yes" \
-    "No (Skip)"
+  ui_menu "$L_AI_HUD_TITLE" hud_choice \
+    "$L_YES" \
+    "$L_NO_SKIP"
 
   case "$hud_choice" in
     0) _install_hud ;;
@@ -329,11 +329,11 @@ _prompt_optional_instructions() {
     # Show file content as the menu note so the user can preview before
     # choosing. Inline assignment auto-unsets after ui_menu returns.
     local preview choice=""
-    preview=" ${UI_DIM}── ${base}.md preview ──${UI_RESET}\n"
+    preview=" ${UI_DIM}$(tf L_AI_OPT_PREVIEW "$base")${UI_RESET}\n"
     preview+="$(sed 's/^/   /' "$f")"
-    UI_MENU_NOTE="$preview" ui_menu "Add optional instruction: ${base}?" choice \
-      "Yes" \
-      "No (Skip)"
+    UI_MENU_NOTE="$preview" ui_menu "$(tf L_AI_OPT_TITLE "$base")" choice \
+      "$L_YES" \
+      "$L_NO_SKIP"
     echo
 
     case "$choice" in
@@ -366,9 +366,9 @@ _setup_language_hooks() {
   if command -v go &>/dev/null || command -v gofmt &>/dev/null; then
     if ! grep -q 'gofmt' "$SETTINGS" 2>/dev/null; then
       local gofmt_choice=""
-      ui_menu "Go detected — add gofmt hook to Claude?" gofmt_choice \
-        "Yes" \
-        "No (Skip)"
+      ui_menu "$L_AI_GOFMT_TITLE" gofmt_choice \
+        "$L_YES" \
+        "$L_NO_SKIP"
       if [ "$gofmt_choice" = "0" ]; then
         local GOFMT_CMD='echo "$TOOL_INPUT" | jq -r '"'"'.file_path // empty'"'"' | while IFS= read -r f; do [[ -n "$f" && "$f" == *.go ]] && gofmt -w -- "$f"; done'
         local gofmt_tmp
@@ -415,6 +415,10 @@ _sync_hud_files() {
   chmod +x "$HOME/.claude/my-hud/"*.sh
   cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
   cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
+  # lang catalog — ui.sh bootstraps i18n from lib/lang next to it, so the
+  # deployed copy needs it too (keeps HUD configure.sh working standalone).
+  mkdir -p "$HOME/.claude/my-hud/lib/lang"
+  cp -f "$SCRIPT_DIR/lib/lang/"*.sh "$HOME/.claude/my-hud/lib/lang/"
 
   # config.json — only copy if not exists (preserve user settings)
   if [ ! -f "$HOME/.claude/my-hud/config.json" ]; then
