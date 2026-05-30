@@ -449,7 +449,7 @@ nbsp=$(printf '\302\240')
 
 render_hud() {
   if [ "$hud_mode" = "compact" ]; then
-    render_compact "$short_dir" "$git_branch" "$model_name" "$rl_5h_pct"
+    render_compact "$short_dir" "$git_branch" "$model_name" "$rl_5h_pct" "$pct"
     return
   fi
 

@@ -27,7 +27,7 @@ _grad_text() {
 
 
 render_compact() {
-  local cwd="$1" git_branch="$2" model="$3" rl_5h="$4"
+  local cwd="$1" git_branch="$2" model="$3" rl_5h="$4" ctx="$5"
 
   # Dir: …/current_dir
   local dir_name
@@ -55,6 +55,7 @@ render_compact() {
   [ -n "$git_branch" ] && segs+=(" ${git_branch} ")
   [ -n "$model" ] && segs+=(" ${model} ")
   segs+=(" 5H:${rl_5h}% ")
+  segs+=(" CTX:${ctx}% ")
 
   # Calculate total width (+2 for caps, +1 per separator between segments)
   local total_w=2 count=${#segs[@]}
@@ -68,6 +69,7 @@ render_compact() {
     local new_segs=(" ${compact_dir} ")
     [ -n "$git_branch" ] && new_segs+=(" ${git_branch} ")
     new_segs+=(" 5H:${rl_5h}% ")
+    new_segs+=(" CTX:${ctx}% ")
     segs=("${new_segs[@]}")
     count=${#segs[@]}
     total_w=2
@@ -77,8 +79,8 @@ render_compact() {
     total_w=$(( total_w + count - 1 ))
   fi
   if [ "$total_w" -gt "$OW" ] && [ "$count" -gt 2 ]; then
-    segs=(" ${compact_dir} " " 5H:${rl_5h}% ")
-    count=2
+    segs=(" ${compact_dir} " " 5H:${rl_5h}% " " CTX:${ctx}% ")
+    count=3
     total_w=2
     for ((s=0; s<count; s++)); do
       total_w=$(( total_w + ${#segs[$s]} ))
