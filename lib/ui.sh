@@ -57,11 +57,30 @@ ui_read_key() {
       '[C'|'[D') echo "ignore" ;;
       *)    echo "esc" ;;
     esac
+  elif [[ "$key" == $'\x03' || "$key" == $'\x04' ]]; then
+    # Ctrl+C / Ctrl+D. In `stty raw` mode ISIG is disabled, so these arrive as
+    # bytes (ETX/EOT) instead of signals — the script's INT trap never fires.
+    # Surface them as an explicit abort so the menu can quit immediately.
+    echo "interrupt"
   elif [[ "$key" == "" || "$key" == $'\n' || "$key" == $'\r' ]]; then
     echo "enter"
   else
     echo "$key"
   fi
+}
+
+# ── Abort the whole installer ──────────────────────────────────
+# Usage: ui_abort [exit_code]
+# Restores the cursor + cooked terminal and exits the process. Used by both the
+# explicit "✗ Exit" menu item and the Ctrl+C handler, so a user can bail out of
+# any step without relying on a working SIGINT. Self-contained (no log_* helper)
+# because configure.sh sources ui.sh without defining them.
+ui_abort() {
+  printf '\033[?25h' > /dev/tty 2>/dev/null || true
+  stty sane < /dev/tty 2>/dev/null || true
+  printf '\n%s✖%s %s\n' \
+    "${UI_RED_BOLD}" "${UI_RESET}" "${L_EXIT_ABORTED:-Aborted — exiting.}" > /dev/tty 2>/dev/null || true
+  exit "${1:-0}"
 }
 
 # ── Generic arrow-key menu ──────────────────────────────────────
@@ -124,6 +143,7 @@ ui_menu() {
         return 0
         ;;
       ignore) ;;
+      interrupt) ui_abort 130 ;;
       q|esc)
         printf '\033[?25h' > /dev/tty
         printf -v "$__result_var" '%s' "255"
@@ -163,10 +183,13 @@ ui_log_skipping_dep() {
 ui_confirm_run() {
   local label="$1" func="$2"
   local choice=""
-  ui_menu "${label}?" choice "$L_YES" "$L_NO_SKIP"
+  # Yes / No(Skip) / Exit. The "✗ Exit" item lets the user quit the installer
+  # mid-run from any step (ui_menu renders ✗-prefixed items without a number).
+  ui_menu "${label}?" choice "$L_YES" "$L_NO_SKIP" "$L_MENU_EXIT"
   echo
   case "$choice" in
     0) "$func"; sleep "$UI_SKIP_PAUSE" ;;
+    2) ui_abort 0 ;;
     *) ui_log_skipped "$label" ;;
   esac
 }

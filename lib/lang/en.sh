@@ -10,7 +10,8 @@ L_NO_SKIP="No (Skip)"
 L_NO_EXIT="No (Exit)"
 L_NO_DONE="No (Done)"
 L_DONE_ITEM="✓ Done"
-L_UI_HINT="↑↓ move │ Enter select"
+L_UI_HINT="↑↓ move │ Enter select │ Ctrl+C quit"
+L_EXIT_ABORTED="Aborted — exiting installer."
 
 # ── Main menu (install.sh) ──────────────────────────────────────
 L_MENU_TITLE="my-term installer"

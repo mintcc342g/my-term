@@ -11,7 +11,8 @@ L_NO_SKIP="아니요 (건너뛰기)"
 L_NO_EXIT="아니요 (종료)"
 L_NO_DONE="아니요 (완료)"
 L_DONE_ITEM="✓ 완료"
-L_UI_HINT="↑↓ 이동 │ Enter 선택"
+L_UI_HINT="↑↓ 이동 │ Enter 선택 │ Ctrl+C 종료"
+L_EXIT_ABORTED="설치를 중단하고 종료합니다."
 
 # ── 메인 메뉴 (install.sh) ──────────────────────────────────────
 L_MENU_TITLE="my-term 설치 도구"
