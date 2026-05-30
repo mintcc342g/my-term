@@ -170,7 +170,7 @@ metric_row() {
 }
 
 metric_row_inv() {
-  local label="$1" pct=$2 reset="${3:-}"
+  local label="$1" pct=$2 reset="${3:-}" effort="${4:-}"
   local pct_str sc bar_color
   [[ "$pct" =~ ^[0-9]+$ ]] || pct=0
   pct_str=$(printf "%3d%%" "$pct")
@@ -194,7 +194,7 @@ metric_row_inv() {
     for ((i=0; i<empty; i++)); do bar_out+="$BAR_EMPTY"; done
   fi
   local content=" ${LB}${bold}${label}${rst}${BG} ${bar_out}${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$effort"
 }
 
 # ── Section renderers ───────────────────────────────────────────
@@ -296,12 +296,12 @@ render_claude() {
 }
 
 render_codex() {
-  local model="$1" reset="$2" left="$3"
+  local model="$1" reset="$2" left="$3" effort="${4:-}"
   local cx_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_RESET} ${rst}${BG}${HI2}${reset}${rst}${BG}"
   # "MDL sp model sp(2) sep sp icon sp reset"
   local cx_vw=$(( ${#LBL_MDL} + 1 + ${#model} + 2 + 1 + 1 + 2 + ${#reset} ))
   sep_line "codex"
   row "$cx_content" "$cx_vw"
-  metric_row_inv "LEFT" "$left"
+  metric_row_inv "LEFT" "$left" "" "$effort"
 }
 

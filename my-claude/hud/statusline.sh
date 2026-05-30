@@ -290,12 +290,15 @@ fi
 # ── Codex usage (from cache) ────────────────────────────────────
 CODEX_USAGE_CACHE="$cache_dir/codex-usage.json"
 codex_left_pct=""
-# Read codex model from config.toml
+# Read codex model + reasoning effort from config.toml
 codex_model="Unknown"
+codex_effort=""
 if [ -f "$HOME/.codex/config.toml" ]; then
-  _cm=$(grep '^model' "$HOME/.codex/config.toml" 2>/dev/null | head -1 | sed 's/.*= *"//; s/".*//')
+  _cm=$(grep '^model ' "$HOME/.codex/config.toml" 2>/dev/null | head -1 | sed 's/.*= *"//; s/".*//')
   [ -n "$_cm" ] && codex_model="$_cm"
-  unset _cm
+  _ce=$(grep '^model_reasoning_effort' "$HOME/.codex/config.toml" 2>/dev/null | head -1 | sed 's/.*= *"//; s/".*//')
+  [ -n "$_ce" ] && codex_effort="$_ce"
+  unset _cm _ce
 fi
 codex_reset_fmt=""
 
@@ -465,7 +468,7 @@ render_hud() {
   fi
 
   if [ "$sec_codex" = "true" ]; then
-    render_codex "$codex_model" "$codex_reset_fmt" "$codex_left_pct"
+    render_codex "$codex_model" "$codex_reset_fmt" "$codex_left_pct" "$codex_effort"
   fi
 
   build_bottom
