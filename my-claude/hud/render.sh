@@ -24,6 +24,7 @@ ICON_GIT_BEHIND=$'\xe2\x87\xa3'       # U+21E3 downwards harpoon
 ICON_GIT_NOUPSTREAM=$'\xf3\xb0\x8c\xba' # U+F033A md-link_variant_off
 ICON_SESS=$'\xef\x80\x97'             # U+F017 clock
 ICON_RESET=$'\xe2\x86\xbb'            # U+21BB reset indicator (BMP, system fallback)
+ICON_EFFORT=$'\xf3\xb0\x88\xb8'       # U+F0238 md-fire (reasoning effort)
 LBL_MDL='MDL'                         # model label
 
 # ── Gradient ────────────────────────────────────────────────────
@@ -143,23 +144,29 @@ build_bottom() {
 _metric_vw() { echo $(( 1 + ${#1} + 1 + BW + 2 + ${#2} )); }
 
 _metric_finish() {
-  local content="$1" vw=$2 reset="$3"
+  local content="$1" vw=$2 reset="$3" effort="${4:-}"
   if [ -n "$reset" ]; then
     local reset_str="${ICON_RESET} ${reset}"
     # " │ reset_str" → sp(1) + sep(1) + sp(1) + reset_str
     content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
     vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
   fi
+  if [ -n "$effort" ]; then
+    local effort_str="${ICON_EFFORT} ${effort}"
+    # " │ effort_str" → sp(1) + sep(1) + sp(1) + effort_str
+    content+=" ${FD}│${rst}${BG} ${LB}${bold}${effort_str}${rst}${BG}"
+    vw=$(( vw + 1 + 1 + 1 + ${#effort_str} ))
+  fi
   row "$content" "$vw"
 }
 
 metric_row() {
-  local label="$1" pct=$2 reset="${3:-}"
+  local label="$1" pct=$2 reset="${3:-}" effort="${4:-}"
   local pct_str sc
   pct_str=$(printf "%3d%%" "$pct")
   sc=$(sev_color "$pct")
   local content=" ${LB}${bold}${label}${rst}${BG} $(bar "$pct" "$BW")${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$effort"
 }
 
 metric_row_inv() {
@@ -276,7 +283,7 @@ render_workspace() {
 }
 
 render_claude() {
-  local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_5h_reset="$5" rl_wk="$6" rl_wk_reset="$7" ctx="$8"
+  local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_5h_reset="$5" rl_wk="$6" rl_wk_reset="$7" ctx="$8" effort="${9:-}"
   local cache_str="${cache}%"
   local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_SESS} ${rst}${BG}${HI2}${sess}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
   # "MDL sp model sp(2) sep sp icon sp sess sp(2) sep sp CACHE sp cache_str"
@@ -285,7 +292,7 @@ render_claude() {
   row "$cl_content" "$cl_vw"
   metric_row "5H  " "$rl_5h" "$rl_5h_reset"
   metric_row "WK  " "$rl_wk" "$rl_wk_reset"
-  metric_row "CTX " "$ctx"
+  metric_row "CTX " "$ctx" "" "$effort"
 }
 
 render_codex() {

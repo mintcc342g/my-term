@@ -22,7 +22,7 @@ mkdir -p "$cache_dir" "$tmp_dir" 2>/dev/null || true
 chmod 700 "$cache_dir" "$tmp_dir" 2>/dev/null || true
 
 # ── Parse stdin JSON ────────────────────────────────────────────
-IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms stdin_rl_5h_pct stdin_rl_5h_reset stdin_rl_wk_pct stdin_rl_wk_reset < <(
+IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_duration_ms stdin_rl_5h_pct stdin_rl_5h_reset stdin_rl_wk_pct stdin_rl_wk_reset effort_level < <(
   printf '%s' "$input" | jq -r '[
     (.workspace.current_dir // .cwd // ""),
     (.model.display_name // "Unknown"),
@@ -34,7 +34,8 @@ IFS=$'\t' read -r cwd model_name pct input_tokens cache_create cache_read total_
     (.rate_limits.five_hour.used_percentage // ""),
     (.rate_limits.five_hour.resets_at // ""),
     (.rate_limits.seven_day.used_percentage // ""),
-    (.rate_limits.seven_day.resets_at // "")
+    (.rate_limits.seven_day.resets_at // ""),
+    (.effort.level // "")
   ] | @tsv'
 )
 
@@ -460,7 +461,7 @@ render_hud() {
   fi
 
   if [ "$sec_claude" = "true" ]; then
-    render_claude "$model_name" "$sess_fmt" "${cache_pct}" "$rl_5h_pct" "$rl_5h_reset_fmt" "$rl_wk_pct" "$rl_wk_reset_fmt" "$pct"
+    render_claude "$model_name" "$sess_fmt" "${cache_pct}" "$rl_5h_pct" "$rl_5h_reset_fmt" "$rl_wk_pct" "$rl_wk_reset_fmt" "$pct" "$effort_level"
   fi
 
   if [ "$sec_codex" = "true" ]; then
