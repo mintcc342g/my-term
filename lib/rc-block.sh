@@ -44,3 +44,26 @@ rc_upsert_block() {
     printf '\n%s\n%s\n%s\n' "$begin" "$content" "$end" >> "$file"
   fi
 }
+
+# rc_remove_block FILE TAG
+#   - Remove the marker pair and everything between them (inverse of upsert).
+#   - No-op if FILE missing or the start marker is absent.
+# Only touches the my-term managed block; user content outside the markers is
+# left as-is. The leading blank line upsert may have added is left untouched
+# (cosmetic only).
+rc_remove_block() {
+  local file="$1" tag="$2"
+  local begin="#-- my-term:${tag}: start"
+  local end="#-- my-term:${tag}: end"
+
+  [ -f "$file" ] || return 0
+  grep -qF "$begin" "$file" 2>/dev/null || return 0
+
+  local tmp
+  tmp=$(mktemp)
+  awk -v begin="$begin" -v end="$end" '
+    $0 == begin { in_block = 1; next }
+    $0 == end   { in_block = 0; next }
+    !in_block   { print }
+  ' "$file" > "$tmp" && mv "$tmp" "$file" || rm -f "$tmp"
+}

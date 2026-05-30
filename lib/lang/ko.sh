@@ -19,6 +19,7 @@ L_MENU_TITLE="my-term 설치 도구"
 L_MENU_INSTALL="설치"
 L_MENU_UPDATE="업데이트"
 L_MENU_HUD_CONFIG="HUD 설정"
+L_MENU_DELETE="삭제 (my-term 설정 제거)"
 L_MENU_EXIT="✗ 종료"
 
 # ── 단계 라벨 (install.sh ui_confirm_run / ai-tools) ────────────
@@ -35,11 +36,35 @@ L_STEP_OBSIDIAN="Obsidian + vault 도구"
 L_DONE_INSTALL="설치 완료!"
 L_DONE_UPDATE="업데이트 완료!"
 L_DONE_HUDCFG="HUD 설정 완료."
+L_DONE_DELETE="my-term 설정을 지웠습니다."
+L_DONE_DELETE_HINT="다시 설정하려면 Install 을 실행하세요."
+L_DELETE_CANCELLED="삭제를 취소했습니다."
 L_DONE_RESTART_CC="적용하려면 Claude Code 세션을 다시 시작하세요."
 
 # 여러 색상이 섞인 안내 (literal ${HOME} 는 \$ 로 유지).
 lang_done_source_zshrc() {
   printf "  ${UI_YELLOW_BOLD}'source \${HOME}/.zshrc'${UI_RESET} 를 실행하거나 셸을 ${UI_YELLOW_BOLD}다시 시작${UI_RESET}하세요.\n\n"
+}
+
+# ── 삭제 (ai-tools.sh delete_my_claude) ─────────────────────────
+L_DELETE_CONFIRM_TITLE="my-term 설정을 삭제할까요? 되돌릴 수 없습니다."
+
+# 무엇을 지우고 무엇을 남기는지 보여주는 확인 안내. 메뉴 노트로 출력된다.
+lang_delete_plan() {
+  local s="\n"
+  s+="   ${UI_RED_BOLD}삭제하는 것:${UI_RESET}\n"
+  s+="     ~/.claude/my-hud, my-hooks, my-collab, my-wiki ${UI_DIM}(직접 바꾼 HUD 테마·collab 설정 포함)${UI_RESET}\n"
+  s+="     ~/.zshrc, ~/.zprofile, ~/.ssh/config 의 #-- my-term: 블록\n"
+  s+="     ~/.claude/CLAUDE.md 의 OPTIONAL 지시문 블록\n"
+  s+="     ~/.claude/settings.json 의 statusLine + my-term 훅\n"
+  s+="     ~/.claude.json 의 codex MCP 항목\n"
+  s+="\n"
+  s+="   ${UI_GREEN_BOLD}삭제하지 않는 것:${UI_RESET}\n"
+  s+="     ~/.claude/memory ${UI_DIM}(저장해 둔 기억)${UI_RESET}\n"
+  s+="     SSH 키 파일 ~/.ssh/id_* ${UI_DIM}(config 블록만 지움)${UI_RESET}\n"
+  s+="     settings.json 의 permissions.deny 보안 규칙\n"
+  s+="     brew 패키지, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian\n"
+  printf '%s' "$s"
 }
 
 # ── 공용 오류 안내 ──────────────────────────────────────────────

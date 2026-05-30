@@ -228,11 +228,19 @@ ui_confirm_if_dir() {
 # Reads $ZSHRC_MODIFIED to decide whether to remind about reloading shell.
 ui_print_completion() {
   local action="${1:-install}"
+
+  # Cancelled delete: one line, no 🎉, no banner.
+  if [ "$action" = "delete-cancelled" ]; then
+    printf '%s✔%s %s\n' "${UI_GREEN_BOLD}" "${UI_RESET}" "$L_DELETE_CANCELLED"
+    return 0
+  fi
+
   local headline=""
   case "$action" in
-    update)     headline="$L_DONE_UPDATE" ;;
-    hud-config) headline="$L_DONE_HUDCFG" ;;
-    install|*)  headline="$L_DONE_INSTALL" ;;
+    update)      headline="$L_DONE_UPDATE" ;;
+    hud-config)  headline="$L_DONE_HUDCFG" ;;
+    delete)      headline="$L_DONE_DELETE" ;;
+    install|*)   headline="$L_DONE_INSTALL" ;;
   esac
 
   ui_clear_screen
@@ -243,6 +251,12 @@ ui_print_completion() {
   case "$action" in
     update)
       printf "  ${UI_YELLOW_BOLD}↻${UI_RESET} %s\n\n" "$L_DONE_RESTART_CC"
+      ;;
+    delete)
+      # Shell rc blocks were removed — advise reloading the shell, then how to
+      # set things up again.
+      printf "  ${UI_YELLOW_BOLD}↻${UI_RESET} %s\n" "$L_DONE_DELETE_HINT"
+      lang_done_source_zshrc
       ;;
     install|*)
       if [ "${ZSHRC_MODIFIED:-}" = "true" ]; then

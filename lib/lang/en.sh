@@ -18,6 +18,7 @@ L_MENU_TITLE="my-term installer"
 L_MENU_INSTALL="Install"
 L_MENU_UPDATE="Update"
 L_MENU_HUD_CONFIG="HUD configure"
+L_MENU_DELETE="Delete (remove my-term config)"
 L_MENU_EXIT="✗ Exit"
 
 # ── Step labels (install.sh ui_confirm_run / ai-tools) ──────────
@@ -34,11 +35,35 @@ L_STEP_OBSIDIAN="Obsidian + vault tooling"
 L_DONE_INSTALL="Installation complete!"
 L_DONE_UPDATE="Update complete!"
 L_DONE_HUDCFG="HUD configured."
+L_DONE_DELETE="my-term config removed."
+L_DONE_DELETE_HINT="Re-run Install to set it up again."
+L_DELETE_CANCELLED="Delete cancelled."
 L_DONE_RESTART_CC="Restart Claude Code sessions to apply."
 
 # multi-color note (literal ${HOME} kept via \$).
 lang_done_source_zshrc() {
   printf "  Please run ${UI_YELLOW_BOLD}'source \${HOME}/.zshrc'${UI_RESET} or ${UI_YELLOW_BOLD}restart${UI_RESET} your shell.\n\n"
+}
+
+# ── Delete (ai-tools.sh delete_my_claude) ───────────────────────
+L_DELETE_CONFIRM_TITLE="Delete my-term config? This cannot be undone."
+
+# Confirmation note: what gets removed vs. kept. Shown as the menu note.
+lang_delete_plan() {
+  local s="\n"
+  s+="   ${UI_RED_BOLD}Will remove:${UI_RESET}\n"
+  s+="     ~/.claude/my-hud, my-hooks, my-collab, my-wiki ${UI_DIM}(incl. your HUD theme / collab config)${UI_RESET}\n"
+  s+="     #-- my-term: blocks in ~/.zshrc, ~/.zprofile, ~/.ssh/config\n"
+  s+="     OPTIONAL instruction blocks in ~/.claude/CLAUDE.md\n"
+  s+="     statusLine + my-term hooks in ~/.claude/settings.json\n"
+  s+="     codex MCP entry in ~/.claude.json\n"
+  s+="\n"
+  s+="   ${UI_GREEN_BOLD}Will keep:${UI_RESET}\n"
+  s+="     ~/.claude/memory ${UI_DIM}(your saved memory)${UI_RESET}\n"
+  s+="     SSH key files ~/.ssh/id_* ${UI_DIM}(only the config block is removed)${UI_RESET}\n"
+  s+="     permissions.deny security rules in settings.json\n"
+  s+="     brew packages, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian\n"
+  printf '%s' "$s"
 }
 
 # ── Shared error guidance ───────────────────────────────────────

@@ -60,3 +60,21 @@ md_refresh_optional_blocks() {
     chmod 600 "$dst"
   done <<< "$names"
 }
+
+# md_remove_optional_blocks DST_FILE
+#   - Strip every MYTERM:OPTIONAL:<name>:BEGIN/END block (markers + content)
+#     from DST_FILE. Inverse of the opt-in append in _prompt_optional_instructions.
+#   - User content outside the markers is preserved. No-op if no blocks present.
+md_remove_optional_blocks() {
+  local dst="$1"
+  [ -f "$dst" ] || return 0
+  grep -qE '<!-- MYTERM:OPTIONAL:[A-Za-z0-9._-]+:BEGIN -->' "$dst" 2>/dev/null || return 0
+
+  local tmp="$dst.tmp.$$"
+  awk '
+    /^<!-- MYTERM:OPTIONAL:[A-Za-z0-9._-]+:BEGIN -->$/ { in_block = 1; next }
+    /^<!-- MYTERM:OPTIONAL:[A-Za-z0-9._-]+:END -->$/   { in_block = 0; next }
+    !in_block                                          { print }
+  ' "$dst" > "$tmp" && mv "$tmp" "$dst"
+  chmod 600 "$dst"
+}

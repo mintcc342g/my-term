@@ -487,3 +487,151 @@ update_my_claude() {
     log_step "HUD not installed — skipping HUD sync."
   fi
 }
+
+# ── Delete: remove my-term's deployed footprint (inverse of install/update) ──
+# Pure removal. Explains scope, then requires an explicit Yes before touching
+# anything. Re-run Install afterwards to set things up again — Update only
+# re-syncs ~/.claude and would NOT restore the removed shell rc / ssh blocks.
+#
+# Removed:
+#   - Owned dirs:  ~/.claude/{my-hud,my-hooks,my-collab,my-wiki} (incl. user-
+#                  customized config.json / co-agents.json — true clean slate)
+#   - Marker blocks in ~/.zshrc, ~/.zprofile and ~/.ssh/config (#-- my-term:*)
+#   - OPTIONAL instruction blocks in ~/.claude/CLAUDE.md
+#   - statusLine + my-term hook entries in ~/.claude/settings.json
+#   - The codex MCP entry my-term added to ~/.claude.json (exact match only)
+#
+# Preserved (never touched):
+#   - ~/.claude/memory  (user-accumulated; install/update never write it)
+#   - SSH key files (~/.ssh/id_*) — credentials; only the config block is removed
+#   - permissions.deny security rules in settings.json (additive hardening)
+#   - Third-party tools (brew packages, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian)
+#   - Any user content outside my-term markers
+delete_my_claude() {
+  # Explain scope, then require explicit confirmation. Nothing is removed yet.
+  local choice=""
+  UI_MENU_NOTE="$(lang_delete_plan)" ui_menu "$L_DELETE_CONFIRM_TITLE" choice \
+    "$L_YES" \
+    "$L_NO"
+  echo
+  if [ "$choice" != "0" ]; then
+    # Cancelled — ui_print_completion prints a single line, no banner.
+    DELETE_LAST_ACTION="delete-cancelled"
+    return 0
+  fi
+
+  log_start "Deleting my-term footprint…"
+  _delete_owned_dirs
+  _delete_settings_json
+  _delete_claude_json_codex
+  _delete_claude_md_optional
+  _delete_rc_blocks
+  DELETE_LAST_ACTION="delete"
+  log_done "Delete complete. Re-run Install to set things up again."
+}
+
+# Remove the dirs my-term fully owns. memory/ is deliberately excluded — it
+# holds user-accumulated data that install/update never write. Symlinked
+# targets are skipped (defense against symlink-swap into a sensitive path).
+_delete_owned_dirs() {
+  local d tgt
+  for d in my-hud my-hooks my-collab my-wiki; do
+    tgt="$HOME/.claude/$d"
+    if [ -L "$tgt" ]; then
+      log_fail "symlink at $tgt — skipping for safety."
+      continue
+    fi
+    if [ -d "$tgt" ]; then
+      rm -rf "$tgt"
+      log_done "removed $tgt"
+    fi
+  done
+}
+
+# Strip my-term marker blocks from shell rc files and ~/.ssh/config. All use
+# the same `#-- my-term:<tag>:` convention, so rc_remove_block handles each.
+# SSH key files referenced by the git-ssh block are left in place.
+_delete_rc_blocks() {
+  local f t
+  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television git-ssh"
+  for f in "$HOME/.zshrc" "$HOME/.zprofile"; do
+    [ -f "$f" ] || continue
+    for t in $tags; do
+      rc_remove_block "$f" "$t"
+    done
+  done
+  if [ -f "$HOME/.ssh/config" ] && [ ! -L "$HOME/.ssh/config" ]; then
+    rc_remove_block "$HOME/.ssh/config" "git-ssh"
+  fi
+  log_done "shell rc / ssh config blocks removed."
+}
+
+# Remove my-term's settings.json contributions that would otherwise dangle once
+# the owned dirs are gone: statusLine (points at my-hud) and any hook entry whose
+# command references a deployed my-* script. permissions.deny is KEPT — it is
+# additive security hardening that references no my-term file and breaks nothing.
+# Individual non-my-term hooks in shared groups (e.g. gofmt) are preserved.
+_delete_settings_json() {
+  local SETTINGS="$HOME/.claude/settings.json"
+  [ -f "$SETTINGS" ] || return 0
+  if [ -L "$SETTINGS" ]; then
+    log_fail "symlink at $SETTINGS — skipping settings.json cleanup."
+    return 0
+  fi
+
+  local tmp
+  tmp=$(mktemp)
+  if jq '
+    (if ((.statusLine.command // "") | test("my-hud/statusline\\.sh")) then del(.statusLine) else . end)
+    | (if has("hooks") then
+        .hooks |= (
+          with_entries(
+            .value |= (
+              map(.hooks |= map(select((.command // "") | test("my-hooks/|my-collab/|my-hud/") | not)))
+              | map(select((.hooks // []) | length > 0))
+            )
+          )
+          | with_entries(select((.value // []) | length > 0))
+        )
+      else . end)
+  ' "$SETTINGS" > "$tmp"; then
+    mv "$tmp" "$SETTINGS"
+    chmod 600 "$SETTINGS"
+    log_done "settings.json: statusLine + my-term hooks removed (deny rules kept)."
+  else
+    rm -f "$tmp"
+    log_fail "settings.json jq failed — left unchanged."
+  fi
+}
+
+# Remove the codex MCP server entry my-term added to ~/.claude.json, but only
+# when it exactly matches what _setup_codex_mcp writes — never clobber a
+# user-customized codex entry. ~/.claude.json also holds Claude session state;
+# we touch nothing else.
+_delete_claude_json_codex() {
+  local CJ="$HOME/.claude.json"
+  [ -f "$CJ" ] || return 0
+  [ -L "$CJ" ] && return 0
+  if jq -e '(.mcpServers.codex // empty) == {"command":"codex","args":["mcp-server"]}' \
+      "$CJ" >/dev/null 2>&1; then
+    local tmp
+    tmp=$(mktemp)
+    if jq 'del(.mcpServers.codex)' "$CJ" > "$tmp"; then
+      mv "$tmp" "$CJ"
+      chmod 600 "$CJ"
+      log_done "codex MCP entry removed from ~/.claude.json."
+    else
+      rm -f "$tmp"
+      log_fail "~/.claude.json jq failed — left unchanged."
+    fi
+  fi
+}
+
+# Strip opted-in OPTIONAL instruction blocks from the user's CLAUDE.md.
+_delete_claude_md_optional() {
+  local md="$HOME/.claude/CLAUDE.md"
+  [ -f "$md" ] || return 0
+  [ -L "$md" ] && return 0
+  md_remove_optional_blocks "$md"
+  log_done "CLAUDE.md OPTIONAL blocks removed."
+}

@@ -70,6 +70,13 @@ while true; do
   menu_items+=("$L_MENU_INSTALL");  menu_actions+=("install")
   menu_items+=("$L_MENU_UPDATE");   menu_actions+=("update")
 
+  # Delete menu only when a my-term footprint exists in ~/.claude. Removes
+  # my-term's deployed config; preserves memory, SSH keys, and third-party tools.
+  if [ -d "$HOME/.claude/my-hud" ] || [ -d "$HOME/.claude/my-hooks" ] \
+     || [ -d "$HOME/.claude/my-collab" ] || [ -d "$HOME/.claude/my-wiki" ]; then
+    menu_items+=("$L_MENU_DELETE"); menu_actions+=("delete")
+  fi
+
   # HUD configure menu only when modular HUD is installed.
   # Legacy users won't see this until they run Update once (which migrates).
   if [ -f "$HOME/.claude/my-hud/configure.sh" ]; then
@@ -86,6 +93,7 @@ while true; do
   case "$action" in
     install)      last_action="install" ; run_install_interactive ; break ;;
     update)       last_action="update"  ; update_my_claude ; break ;;
+    delete)       delete_my_claude ; last_action="${DELETE_LAST_ACTION:-delete}" ; break ;;
     hud-config)
       last_action="hud-config"
       bash "$SCRIPT_DIR/my-claude/hud/configure.sh"
