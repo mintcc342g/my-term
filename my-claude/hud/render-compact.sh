@@ -36,9 +36,9 @@ render_compact() {
   local compact_dir="…/${dir_name}"
   if [[ "$cwd" == "$HOME" || "$cwd" == "~" ]]; then compact_dir="~"; fi
 
-  # Branch: max 7 chars
-  if [ -n "$git_branch" ] && [ ${#git_branch} -gt 7 ]; then
-    git_branch="${git_branch:0:7}…"
+  # Branch: max 10 chars
+  if [ -n "$git_branch" ] && [ ${#git_branch} -gt 10 ]; then
+    git_branch="${git_branch:0:10}…"
   fi
 
   # Model: keep up to version number (e.g. "Opus 4.6..")
