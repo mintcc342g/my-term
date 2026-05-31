@@ -330,16 +330,22 @@ format_reset() {
   format_relative "$reset_epoch"
 }
 
-# Rate limit reset times
-# stdin provides Unix epoch seconds → format_relative directly
-# API cache provides ISO timestamps → format_reset (ISO → epoch → relative)
-if [ "$rl_source" = "stdin" ]; then
-  rl_5h_reset_fmt=$(format_relative "$rl_5h_reset")
-  rl_wk_reset_fmt=$(format_relative "$rl_wk_reset")
-else
-  rl_5h_reset_fmt=$(format_reset "$rl_5h_reset")
-  rl_wk_reset_fmt=$(format_reset "$rl_wk_reset")
-fi
+# Format a reset value that may be EITHER epoch seconds OR an ISO 8601 string.
+# stdin is not single-format: it sends epoch in some sessions and ISO in others
+# (and cache is always ISO), so detect by content instead of trusting rl_source.
+# All-digits → epoch (format_relative); anything with T/-/: → ISO (format_reset).
+format_reset_any() {
+  local v="$1"
+  [ -z "$v" ] && return
+  case "$v" in
+    *[!0-9]*) format_reset "$v" ;;
+    *)        format_relative "$v" ;;
+  esac
+}
+
+# Rate limit reset times (source-agnostic: handles epoch and ISO transparently)
+rl_5h_reset_fmt=$(format_reset_any "$rl_5h_reset")
+rl_wk_reset_fmt=$(format_reset_any "$rl_wk_reset")
 [ -z "$rl_5h_reset_fmt" ] && rl_5h_reset_fmt="--"
 [ -z "$rl_wk_reset_fmt" ] && rl_wk_reset_fmt="--"
 
