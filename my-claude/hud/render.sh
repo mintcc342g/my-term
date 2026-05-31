@@ -65,12 +65,20 @@ sev_color() {
 }
 
 # ── Row builder ─────────────────────────────────────────────────
+# Inner horizontal margin (gutter) applied to BOTH sides of every content row.
+# Usable content width is therefore IW - 2*PAD (see ROW_INNER below); render
+# functions must truncate against ROW_INNER, not IW, or the right border shifts.
+PAD=1
+ROW_INNER=$(( IW - 2 * PAD ))
+
 row() {
   local content="$1" vw=$2
-  local pad=$(( IW - vw ))
-  [ "$pad" -lt 0 ] && pad=0
-  printf '%s│%s%s%*s%s│%s\n' \
-    "$(grad_fg 0 $OW)" "$rst$BG" "$content" "$pad" "" \
+  local fill=$(( ROW_INNER - vw ))
+  [ "$fill" -lt 0 ] && fill=0
+  # "│" + PAD spaces + content + (fill + PAD) spaces + "│"
+  printf '%s│%s%*s%s%*s%s│%s\n' \
+    "$(grad_fg 0 $OW)" "$rst$BG" \
+    "$PAD" "" "$content" "$(( fill + PAD ))" "" \
     "$(grad_fg $((OW-1)) $OW)" "$rst"
 }
 
@@ -139,38 +147,39 @@ build_bottom() {
 }
 
 # ── Metric row builders ─────────────────────────────────────────
-# vw layout: " LABEL bar  pct_str"
-#             sp(1) + label + sp(1) + bar + sp(2) + pct
+# Metric rows sit one extra column inward vs other rows (on top of row()'s
+# gutter) — the leading sp(1) below. vw layout: " LABEL bar  pct_str".
+#   sp(1) + label + sp(1) + bar + sp(2) + pct
 _metric_vw() { echo $(( 1 + ${#1} + 1 + BW + 2 + ${#2} )); }
 
 _metric_finish() {
-  local content="$1" vw=$2 reset="$3" effort="${4:-}"
+  local content="$1" vw=$2 reset="$3" sess="${4:-}"
   if [ -n "$reset" ]; then
     local reset_str="${ICON_RESET} ${reset}"
     # " │ reset_str" → sp(1) + sep(1) + sp(1) + reset_str
     content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
     vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
   fi
-  if [ -n "$effort" ]; then
-    local effort_str="${ICON_EFFORT} ${effort}"
-    # " │ effort_str" → sp(1) + sep(1) + sp(1) + effort_str
-    content+=" ${FD}│${rst}${BG} ${LB}${bold}${effort_str}${rst}${BG}"
-    vw=$(( vw + 1 + 1 + 1 + ${#effort_str} ))
+  if [ -n "$sess" ]; then
+    local sess_str="${ICON_SESS} ${sess}"
+    # " │ sess_str" → sp(1) + sep(1) + sp(1) + sess_str
+    content+=" ${FD}│${rst}${BG} ${LB}${bold}${sess_str}${rst}${BG}"
+    vw=$(( vw + 1 + 1 + 1 + ${#sess_str} ))
   fi
   row "$content" "$vw"
 }
 
 metric_row() {
-  local label="$1" pct=$2 reset="${3:-}" effort="${4:-}"
+  local label="$1" pct=$2 reset="${3:-}" sess="${4:-}"
   local pct_str sc
   pct_str=$(printf "%3d%%" "$pct")
   sc=$(sev_color "$pct")
   local content=" ${LB}${bold}${label}${rst}${BG} $(bar "$pct" "$BW")${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$effort"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$sess"
 }
 
 metric_row_inv() {
-  local label="$1" pct=$2 reset="${3:-}" effort="${4:-}"
+  local label="$1" pct=$2 reset="${3:-}"
   local pct_str sc bar_color
   [[ "$pct" =~ ^[0-9]+$ ]] || pct=0
   pct_str=$(printf "%3d%%" "$pct")
@@ -194,7 +203,7 @@ metric_row_inv() {
     for ((i=0; i<empty; i++)); do bar_out+="$BAR_EMPTY"; done
   fi
   local content=" ${LB}${bold}${label}${rst}${BG} ${bar_out}${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$effort"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset"
 }
 
 # ── Section renderers ───────────────────────────────────────────
@@ -232,24 +241,24 @@ render_workspace() {
   local ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
 
   # If too wide, truncate branch first (to 7+…)
-  if [ "$ws_vw" -gt "$IW" ] && [ ${#git_branch} -gt 8 ]; then
+  if [ "$ws_vw" -gt "$ROW_INNER" ] && [ ${#git_branch} -gt 8 ]; then
     git_branch="${git_branch:0:7}…"
     ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
   fi
 
   # If still too wide, truncate dir to current dir only (upstream marker is preserved)
-  if [ "$ws_vw" -gt "$IW" ]; then
+  if [ "$ws_vw" -gt "$ROW_INNER" ]; then
     cwd=$(basename "$cwd")
     ws_vw=$(_ws_vw "$cwd" "$git_branch" "$up_vw")
   fi
 
   # If STILL too wide (current dir itself is long), truncate dir with …
-  if [ "$ws_vw" -gt "$IW" ]; then
+  if [ "$ws_vw" -gt "$ROW_INNER" ]; then
     local avail
     if [ -n "$git_branch" ]; then
-      avail=$(( IW - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - up_vw - 1 ))
+      avail=$(( ROW_INNER - 2 - 2 - 1 - 1 - 2 - ${#git_branch} - up_vw - 1 ))
     else
-      avail=$(( IW - 2 - 1 ))
+      avail=$(( ROW_INNER - 2 - 1 ))
     fi
     [ "$avail" -lt 3 ] && avail=3
     cwd="${cwd:0:$avail}…"
@@ -282,26 +291,50 @@ render_workspace() {
   row "$ws_content" "$ws_vw"
 }
 
+# Effort segment for the model row: "  │ 🔥 effort" (sp2 sep sp + icon sp effort).
+# Sets globals _effort_seg (rendered string) and _effort_vw (visual width, 0 if empty).
+# Not a subshell/command-sub so the width assignment reaches the caller.
+_effort_seg() {
+  local effort="$1"
+  _effort_seg=""
+  _effort_vw=0
+  [ -z "$effort" ] && return
+  _effort_seg="  ${FD}│${rst}${BG} ${LB}${bold}${ICON_EFFORT} ${effort}${rst}${BG}"
+  _effort_vw=$(( 2 + 1 + 1 + 1 + 1 + ${#effort} ))
+}
+
 render_claude() {
   local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_5h_reset="$5" rl_wk="$6" rl_wk_reset="$7" ctx="$8" effort="${9:-}"
   local cache_str="${cache}%"
-  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_SESS} ${rst}${BG}${HI2}${sess}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
-  # "MDL sp model sp(2) sep sp icon sp sess sp(2) sep sp CACHE sp cache_str"
-  local cl_vw=$(( ${#LBL_MDL} + 1 + ${#model} + 2 + 1 + 1 + 2 + ${#sess} + 2 + 1 + 1 + 6 + ${#cache_str} ))
+  _effort_seg "$effort"
+
+  # Row layout: "MDL <model> [effort]  │ CACHE <cache>"  (session moved to CTX row)
+  # Everything except <model> is fixed; truncate model when the row overflows.
+  local cache_vw=$(( 2 + 1 + 1 + 6 + ${#cache_str} ))  # "  │ CACHE " + cache_str
+  local fixed_vw=$(( ${#LBL_MDL} + 1 + _effort_vw + cache_vw ))
+  if [ $(( fixed_vw + ${#model} )) -gt "$ROW_INNER" ]; then
+    local avail=$(( ROW_INNER - fixed_vw - 1 ))  # -1 for the … glyph
+    [ "$avail" -lt 3 ] && avail=3
+    model="${model:0:$avail}…"
+  fi
+
+  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
+  local cl_vw=$(( ${#LBL_MDL} + 1 + ${#model} + _effort_vw + cache_vw ))
   sep_line "claude"
   row "$cl_content" "$cl_vw"
   metric_row "5H  " "$rl_5h" "$rl_5h_reset"
   metric_row "WK  " "$rl_wk" "$rl_wk_reset"
-  metric_row "CTX " "$ctx" "" "$effort"
+  metric_row "CTX " "$ctx" "" "$sess"
 }
 
 render_codex() {
   local model="$1" reset="$2" left="$3" effort="${4:-}"
-  local cx_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_RESET} ${rst}${BG}${HI2}${reset}${rst}${BG}"
-  # "MDL sp model sp(2) sep sp icon sp reset"
-  local cx_vw=$(( ${#LBL_MDL} + 1 + ${#model} + 2 + 1 + 1 + 2 + ${#reset} ))
+  _effort_seg "$effort"
+  local cx_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_RESET} ${rst}${BG}${HI2}${reset}${rst}${BG}"
+  # "MDL sp model [effort] sp(2) sep sp icon sp reset"
+  local cx_vw=$(( ${#LBL_MDL} + 1 + ${#model} + _effort_vw + 2 + 1 + 1 + 2 + ${#reset} ))
   sep_line "codex"
   row "$cx_content" "$cx_vw"
-  metric_row_inv "LEFT" "$left" "" "$effort"
+  metric_row_inv "LEFT" "$left"
 }
 
