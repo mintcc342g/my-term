@@ -90,8 +90,9 @@ else
   cache_pct=0
 fi
 
-# ── Git branch (max 30 chars, truncate to 7+… if too long) ─────
-MAX_BRANCH_LEN=30
+# ── Git branch length limits (truncate to limit+… if longer) ──
+MAX_BRANCH_LEN=30      # full mode
+COMPACT_BRANCH_LEN=10  # compact mode (consumed by render-compact.sh)
 git_branch=""
 git_upstream_state=""
 git_ahead=0
@@ -130,7 +131,7 @@ if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   fi
 fi
 if [ -n "$git_branch" ] && [ ${#git_branch} -gt $MAX_BRANCH_LEN ]; then
-  git_branch="${git_branch:0:7}…"
+  git_branch="${git_branch:0:$MAX_BRANCH_LEN}…"
 fi
 
 # ── Rate limits (stdin JSON primary, external API fallback) ─────
@@ -372,9 +373,10 @@ IFS=$'\t' read -r theme CONFIG_OW BW sec_workspace sec_claude sec_codex < <(
 [[ "$CONFIG_OW" =~ ^[0-9]+$ ]] || CONFIG_OW=60
 [[ "$BW" =~ ^[0-9]+$ ]] || BW=14
 
-# ── Detect terminal width (walk parent processes to find TTY) ───
-detect_term_width() {
-  local pid=$$ tty_dev="" width=""
+# ── Detect terminal size (walk parent processes to find TTY) ───
+# Echoes "COLS ROWS" — stty size returns "rows cols" so we swap.
+detect_term_size() {
+  local pid=$$ tty_dev="" sz="" rows="" cols=""
   local i=0
   while [ $i -lt 8 ] && [ -n "$pid" ] && [ "$pid" != "0" ]; do
     tty_dev=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
@@ -384,34 +386,56 @@ detect_term_width() {
         /dev/*) ;;
         *) tty_dev="/dev/$tty_dev" ;;
       esac
-      width=$(stty size < "$tty_dev" 2>/dev/null | awk '{print $2}')
-      [ -n "$width" ] && [ "$width" -gt 0 ] 2>/dev/null && { echo "$width"; return; }
+      sz=$(stty size < "$tty_dev" 2>/dev/null)
+      rows=${sz%% *}; cols=${sz##* }
+      [ -n "$cols" ] && [ "$cols" -gt 0 ] 2>/dev/null && { echo "$cols ${rows:-0}"; return; }
     fi
     pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
     i=$((i + 1))
   done
   # Fallback
-  tput cols 2>/dev/null || echo 80
+  echo "$(tput cols 2>/dev/null || echo 80) $(tput lines 2>/dev/null || echo 24)"
 }
 
-# Check COLUMNS env first (Claude Code may set this), then detect via TTY walk
-if [[ "${COLUMNS:-}" =~ ^[0-9]+$ ]] && [ "${COLUMNS}" -gt 0 ]; then
-  TERM_WIDTH=$COLUMNS
-else
-  TERM_WIDTH=$(detect_term_width)
+# Width: COLUMNS env first (Claude Code may set it); height: LINES env first.
+# Fall back to a single TTY walk for whichever isn't provided.
+TERM_WIDTH=""; TERM_HEIGHT=""
+[[ "${COLUMNS:-}" =~ ^[0-9]+$ ]] && [ "${COLUMNS}" -gt 0 ] && TERM_WIDTH=$COLUMNS
+[[ "${LINES:-}" =~ ^[0-9]+$ ]] && [ "${LINES}" -gt 0 ] && TERM_HEIGHT=$LINES
+if [ -z "$TERM_WIDTH" ] || [ -z "$TERM_HEIGHT" ]; then
+  read -r _det_cols _det_rows < <(detect_term_size)
+  [ -z "$TERM_WIDTH" ] && TERM_WIDTH=$_det_cols
+  [ -z "$TERM_HEIGHT" ] && TERM_HEIGHT=$_det_rows
 fi
 [[ "$TERM_WIDTH" =~ ^[0-9]+$ ]] || TERM_WIDTH=80
+[[ "$TERM_HEIGHT" =~ ^[0-9]+$ ]] || TERM_HEIGHT=24
 
-# Minimum width — below this, output nothing
-MIN_WIDTH=50
-if [ "$TERM_WIDTH" -lt "$MIN_WIDTH" ] 2>/dev/null; then
+# Minimum width — below this, output nothing.
+# Auto-derived from the smallest compact composition (render-compact.sh
+# final fallback): "…/dir" + 5H + CTX segments, +2 caps, +2 separators.
+if [[ "$short_dir" == "$HOME" || "$short_dir" == "~" ]]; then
+  _mw_dir=" ~ "
+else
+  _mw_dir=" …/$(basename "$short_dir") "
+fi
+_mw_5h=" 5H:${rl_5h_pct}% "
+_mw_ctx=" CTX:${pct}% "
+MIN_WIDTH=$(( ${#_mw_dir} + ${#_mw_5h} + ${#_mw_ctx} + 2 + 2 ))
+
+# Height thresholds (rows): below MIN → hide entirely, below COMPACT → force
+# compact so the multi-line full HUD doesn't eat scarce vertical space.
+MIN_HEIGHT=10
+COMPACT_HEIGHT_THRESHOLD=50
+
+# Hide entirely if too narrow OR too short
+if [ "$TERM_WIDTH" -lt "$MIN_WIDTH" ] 2>/dev/null || [ "$TERM_HEIGHT" -lt "$MIN_HEIGHT" ] 2>/dev/null; then
   exit 0
 fi
 
-# Determine mode based on terminal width
-COMPACT_THRESHOLD=100
+# Determine mode based on terminal width AND height
+COMPACT_THRESHOLD=80
 hud_mode="full"
-if [ "$TERM_WIDTH" -lt "$COMPACT_THRESHOLD" ]; then
+if [ "$TERM_WIDTH" -lt "$COMPACT_THRESHOLD" ] || [ "$TERM_HEIGHT" -lt "$COMPACT_HEIGHT_THRESHOLD" ] 2>/dev/null; then
   hud_mode="compact"
   OW=$TERM_WIDTH
 else

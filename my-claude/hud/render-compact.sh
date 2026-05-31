@@ -6,6 +6,7 @@
 
 PL_CAP=$'\xee\x82\xbc'   # U+E0BC — both caps, fg/bg swapped per side
 : "${rst:=$'\033[0m'}"   # ensure rst is defined even if sourced standalone
+: "${COMPACT_BRANCH_LEN:=10}"  # branch limit; statusline.sh overrides, default for standalone
 
 # Print text with per-character gradient bg, fixed bright fg
 # Inline gradient calc to avoid per-char subshell fork
@@ -36,9 +37,9 @@ render_compact() {
   local compact_dir="…/${dir_name}"
   if [[ "$cwd" == "$HOME" || "$cwd" == "~" ]]; then compact_dir="~"; fi
 
-  # Branch: max 10 chars
-  if [ -n "$git_branch" ] && [ ${#git_branch} -gt 10 ]; then
-    git_branch="${git_branch:0:10}…"
+  # Branch: max COMPACT_BRANCH_LEN chars
+  if [ -n "$git_branch" ] && [ ${#git_branch} -gt "$COMPACT_BRANCH_LEN" ]; then
+    git_branch="${git_branch:0:$COMPACT_BRANCH_LEN}…"
   fi
 
   # Model: keep up to version number (e.g. "Opus 4.6..")
