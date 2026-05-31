@@ -31,12 +31,12 @@ Compare Round 1 responses to detect disagreement.
 
 **On disagreement**: start the debate loop.
 
-- Show each round's progress to the user using this format (Korean output):
+- Show each round's progress to the user using this format:
 
-  ### 라운드 N
-  **Claude**: [당신의 의견과 근거]
-  **[에이전트명]**: [에이전트의 의견 요약]
-  **차이점**: [구체적 이견 사항]
+  ### Round N
+  **Claude**: [your opinion and rationale]
+  **[agent name]**: [summary of the agent's opinion]
+  **Differences**: [specific points of disagreement]
 
 - Formulate your counter-argument or follow-up question for the disagreement, then re-query the agent.
   - If the prior response included a `threadId`: use the `mcp__codex__codex-reply` tool with that `threadId` and your new `prompt`.
@@ -47,28 +47,29 @@ Compare Round 1 responses to detect disagreement.
 
 ## Phase 4: Final Synthesis
 
-Compose the final response in this format (Korean output):
+Compose the final response in this format:
 
-### 논의 요약
-- 총 라운드 수와 합의/이견 여부
-- 합의된 부분: 간결하게 정리
-- 끝까지 이견인 부분: 각 측 입장과 근거를 명시하고, 당신의 최종 판단을 근거와 함께 제시
+### Discussion Summary
+- Total number of rounds and whether consensus or disagreement was reached
+- Points of agreement: summarize concisely
+- Points still in disagreement: state each side's position and rationale, then give your final judgment with reasoning
 
-### 최종 답변
-- 종합된 결론
+### Final Answer
+- The synthesized conclusion
 
 ## Failure Handling
 
 If an agent fails (error / timeout):
 
-- You MUST explicitly state `[에이전트명 실패]` (Korean) in the output.
+- You MUST explicitly state `[<agent name> failed]` in the output.
 - If the error message contains auth-related keywords (`401`, `403`, `unauthorized`, `forbidden`, `invalid api key`, `token expired`):
-  → advise: "`codex login`으로 재인증이 필요합니다 (API 키가 만료되었거나 비활성화된 상태입니다)"
+  → advise: "Re-authenticate with `codex login` (the API key has expired or been disabled)."
 - For other errors (`500`, timeout, network, etc.):
-  → advise: "서버 에러 또는 네트워크 문제로 실패했습니다. 잠시 후 다시 시도해주세요"
+  → advise: "Failed due to a server error or network issue. Please try again shortly."
 - Continue with the remaining agent results plus your own analysis.
 - The debate loop continues only with responsive agents.
 
-## Response Language
+## Output
 
-All user-facing output (Round N reports, Discussion Summary, Final Answer, failure messages) MUST be in Korean using polite form (존댓말 / 합니다체). The `@co` keyword itself should not appear in the response.
+- All user-facing output (round reports, discussion summary, final answer, relayed failure messages) MUST be in {{RESPONSE_LANG}}. Run the collaboration in {{RESPONSE_LANG}} end to end so no translation step is needed.
+- The `@co` keyword itself should not appear in the response.

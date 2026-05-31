@@ -135,13 +135,10 @@ _install_claude_code() {
   fi
   log_done "alias '${alias_name}=claude' added."
 
-  # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab)
+  # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab).
+  # Korean-default instruction blocks (response style) are installed inside
+  # _sync_claude_files, so they apply on both install and Update.
   _sync_claude_files
-
-  # Offer opt-in personal instructions (response style, etc.). CLAUDE.md
-  # already exists with MYTERM markers at this point, so optional blocks
-  # are appended after the managed block without confusing the sync helper.
-  _prompt_optional_instructions "$HOME/.claude/CLAUDE.md"
 
   # Per-language PostToolUse hooks (e.g. gofmt). Fresh-install only —
   # Update no longer touches user-defined hooks.
@@ -196,8 +193,11 @@ _sync_claude_files() {
     log_done "legacy MYTERM block removed from $_claude_md"
   fi
 
-  # CLAUDE.md OPTIONAL blocks refresh (opted-in instructions sync)
+  # CLAUDE.md managed blocks: refresh existing ones from repo source, then
+  # auto-install the Korean-default blocks (response style + 한국어/존댓말).
+  # Both are no-ops when nothing applies, so this is safe on install + Update.
   _sync_claude_md_block
+  _install_ko_default_instructions "$_claude_md"
 
   # hooks
   mkdir -p "$HOME/.claude/my-hooks"
@@ -205,10 +205,16 @@ _sync_claude_files() {
   cp -f "$SCRIPT_DIR/my-claude/hooks/"* "$HOME/.claude/my-hooks/"
   chmod +x "$HOME/.claude/my-hooks/"*.sh
 
-  # collab
+  # collab — agents config + hook script (verbatim) + the directive with its
+  # response language ({{RESPONSE_LANG}}) baked in for the install language, so
+  # the @co flow runs end to end in that language (no translation round-trip).
   mkdir -p "$HOME/.claude/my-collab"
   chmod 700 "$HOME/.claude/my-collab"
-  cp -f "$SCRIPT_DIR/my-claude/collab/"* "$HOME/.claude/my-collab/"
+  local _lang_name="English"; [ "${MYTERM_LANG:-en}" = "ko" ] && _lang_name="Korean"
+  cp -f "$SCRIPT_DIR/my-claude/collab/co-agents.json" \
+        "$SCRIPT_DIR/my-claude/collab/codex-collab.sh" "$HOME/.claude/my-collab/"
+  sed "s|{{RESPONSE_LANG}}|${_lang_name}|g" "$SCRIPT_DIR/my-claude/collab/co-directive.md" \
+    > "$HOME/.claude/my-collab/co-directive.md"
   chmod +x "$HOME/.claude/my-collab/"*.sh
   chmod 600 "$HOME/.claude/my-collab/co-agents.json"
   chmod 600 "$HOME/.claude/my-collab/co-directive.md"
@@ -298,61 +304,55 @@ _sync_claude_files() {
   log_done "claude settings configured."
 }
 
-# Refresh opt-in OPTIONAL blocks in user's CLAUDE.md from repo source —
-# so repo updates to opt-in files (e.g. response style) propagate on Update.
+# Refresh managed OPTIONAL blocks in user's CLAUDE.md from repo source — so
+# repo edits to those files (e.g. response style) propagate on Update. Only
+# rebuilds blocks already present; initial install is _install_ko_default_instructions.
 _sync_claude_md_block() {
   md_refresh_optional_blocks "$HOME/.claude/CLAUDE.md"
 }
 
-# Prompt the user for each $SCRIPT_DIR/my-claude/optional/*.md file.
-# On Yes, append a MYTERM:OPTIONAL:<name>:BEGIN/END block to the destination.
-# Already-installed optionals (block markers present) are skipped silently.
-# Opt-out is manual — user removes the block from the destination file.
-_prompt_optional_instructions() {
+# Auto-install the managed instruction blocks from $SCRIPT_DIR/my-claude/optional/*.md
+# into the destination CLAUDE.md. These blocks (response style + Korean/존댓말
+# tone) are Korean-install only — skipped entirely for other languages, where
+# the Korean-templated features (@co, @wk) carry their own conventions.
+#
+# Each file becomes a MYTERM:OPTIONAL:<name>:BEGIN/END block so that Update
+# (md_refresh_optional_blocks) keeps it in sync with the repo source. The
+# OPTIONAL marker name is kept for backward compatibility with already-deployed
+# blocks. Opt-out is manual — user removes the block from the destination file
+# (already-present blocks are skipped here, so a manual removal sticks).
+_install_ko_default_instructions() {
   local dst="$1"
   local src_dir="$SCRIPT_DIR/my-claude/optional"
   [ -d "$src_dir" ] || return 0
 
+  # Korean install only. Other languages skip — features fall back to their own
+  # output conventions, and the user's CLAUDE.md stays free of Korean rules.
+  [ "${MYTERM_LANG:-en}" = "ko" ] || return 0
+
   local f
   for f in "$src_dir"/*.md; do
     [ -f "$f" ] || continue
-    local base name begin end
+    local base begin end
     base=$(basename "$f" .md)
     begin="<!-- MYTERM:OPTIONAL:${base}:BEGIN -->"
     end="<!-- MYTERM:OPTIONAL:${base}:END -->"
 
-    # Already opted in (or user re-added manually) — skip without prompt.
+    # Already present (or user re-added manually) — skip. A manual removal of
+    # the block therefore persists across Update.
     if [ -f "$dst" ] && grep -qF "$begin" "$dst"; then
       continue
     fi
 
-    # Show file content as the menu note so the user can preview before
-    # choosing. Inline assignment auto-unsets after ui_menu returns.
-    local preview choice=""
-    preview=" ${UI_DIM}$(tf L_AI_OPT_PREVIEW "$base")${UI_RESET}\n"
-    preview+="$(sed 's/^/   /' "$f")"
-    UI_MENU_NOTE="$preview" ui_menu "$(tf L_AI_OPT_TITLE "$base")" choice \
-      "$L_YES" \
-      "$L_NO_SKIP"
-    echo
-
-    case "$choice" in
-      0)
-        mkdir -p "$(dirname "$dst")"
-        [ -f "$dst" ] || { : > "$dst"; chmod 600 "$dst"; }
-        # Append with a leading blank line for readability.
-        {
-          printf '\n%s\n' "$begin"
-          cat "$f"
-          printf '%s\n' "$end"
-        } >> "$dst"
-        log_done "added optional instruction: ${base}"
-        ;;
-      *)
-        log_step "skipped optional instruction: ${base}"
-        ;;
-    esac
-    sleep 1
+    mkdir -p "$(dirname "$dst")"
+    [ -f "$dst" ] || { : > "$dst"; chmod 600 "$dst"; }
+    # Append with a leading blank line for readability.
+    {
+      printf '\n%s\n' "$begin"
+      cat "$f"
+      printf '%s\n' "$end"
+    } >> "$dst"
+    log_done "added instruction: ${base}"
   done
 }
 

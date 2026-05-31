@@ -2,17 +2,18 @@
 # lib/instructions-block.sh — managed-block helper for AI agent instruction
 # markdown files.
 #
-# Opt-in personal instructions live in $SCRIPT_DIR/my-claude/optional/*.md.
-# When the user accepts one at install time, the installer appends a per-name
-# OPTIONAL marker block to the destination:
+# Managed instruction blocks live in $SCRIPT_DIR/my-claude/optional/*.md.
+# _install_ko_default_instructions appends a per-name OPTIONAL marker block to
+# the destination on Korean installs (the OPTIONAL marker name is retained for
+# backward compatibility with already-deployed blocks):
 #
 #   <!-- MYTERM:OPTIONAL:<name>:BEGIN -->
 #   <content of optional/<name>.md>
 #   <!-- MYTERM:OPTIONAL:<name>:END -->
 #
 # md_refresh_optional_blocks rebuilds each existing OPTIONAL block in place
-# (so repo updates to opt-in files propagate on Update). The presence of the
-# block markers in the destination IS the opt-in record — no manifest needed.
+# (so repo updates to those files propagate on Update). The presence of the
+# block markers in the destination is the install record — no manifest needed.
 # Opt-out is manual: delete the OPTIONAL block from the destination file.
 #
 # md_refresh_optional_blocks DST_FILE
@@ -63,7 +64,7 @@ md_refresh_optional_blocks() {
 
 # md_remove_optional_blocks DST_FILE
 #   - Strip every MYTERM:OPTIONAL:<name>:BEGIN/END block (markers + content)
-#     from DST_FILE. Inverse of the opt-in append in _prompt_optional_instructions.
+#     from DST_FILE. Inverse of the append in _install_ko_default_instructions.
 #   - User content outside the markers is preserved. No-op if no blocks present.
 md_remove_optional_blocks() {
   local dst="$1"

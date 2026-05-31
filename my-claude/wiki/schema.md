@@ -10,54 +10,54 @@ tags:
 ---
 
 <!-- DEFAULT_SCHEMA_GREETING:BEGIN -->
-> [!info] **기본 schema 안내 (첫 안내 후 삭제 대상)**
+> [!info] **Default schema notice (delete after the first guidance)**
 >
-> 이 schema 는 my-term installer 가 기본값으로 생성한 것입니다. 사용자에게 다음을 안내한 후 이 `DEFAULT_SCHEMA_GREETING` 블록 전체를 삭제하세요:
+> This schema was created as a default by the my-term installer. After guiding the user through the following, delete this entire `DEFAULT_SCHEMA_GREETING` block:
 >
-> 1. schema 의 핵심 구조 한 줄씩 (폴더 / frontmatter / type / 3-op)
-> 2. user 가 이 기본 schema 를 그대로 사용할지, 수정할지 묻기
-> 3. user 응답 후 이 블록을 마커 (`<!-- DEFAULT_SCHEMA_GREETING:BEGIN -->` ~ `<!-- DEFAULT_SCHEMA_GREETING:END -->`) 포함 통째로 제거하고 frontmatter 의 `updated:` 를 오늘 날짜로 갱신
+> 1. The core structure of the schema, one line each (folders / frontmatter / type / 3-op)
+> 2. Ask whether the user wants to use this default schema as-is or modify it
+> 3. After the user responds, remove this block in full (including the markers `<!-- DEFAULT_SCHEMA_GREETING:BEGIN -->` ~ `<!-- DEFAULT_SCHEMA_GREETING:END -->`) and update `updated:` in the frontmatter to today's date
 <!-- DEFAULT_SCHEMA_GREETING:END -->
 
-# 스키마
+# Schema
 
-이 vault 의 구조 · type · 운영 규칙 정본. LLM 과 user 모두 이 문서를 기준으로 노트를 만들고 유지한다.
+The source of truth for this vault's structure, types, and operating rules. Both the LLM and the user create and maintain notes based on this document.
 
-## 목적
+## Purpose
 
-이 vault 는 **다중 머신·세션 간 컨텍스트 연속성** 저장소다.
+This vault is a store for **context continuity across machines and sessions**.
 
-AI agent 메모리 (Claude `~/.claude/`, Codex `~/.codex/` 등) 는 머신 종속이라 다른 머신·재설치·새 세션에서 손실·단절된다. vault 는 git 으로 동기화되어 머신·세션·도구가 바뀌어도 user 와 agent 가 같은 작업을 자연스럽게 이어갈 수 있게 한다.
+AI agent memory (Claude `~/.claude/`, Codex `~/.codex/`, etc.) is machine-bound, so it is lost or broken across different machines, reinstalls, and new sessions. The vault is synced via git so the user and the agent can naturally continue the same work even when the machine, session, or tool changes.
 
-karpathy LLM Wiki Pattern (compounding knowledge) 은 그 위에 얹은 부산물이지 primary 가 아니다. **primary 는 작업 연속성**.
+The karpathy LLM Wiki Pattern (compounding knowledge) is a byproduct layered on top, not the primary goal. **The primary goal is work continuity.**
 
-## 구조 원칙: 폴더 + frontmatter 2-tier 분류
+## Structure Principle: folder + frontmatter 2-tier classification
 
-- **폴더 = 상위 범주** (`works/`, `meta/`)
-- **frontmatter `topic` = 폴더 하위 세부 주제** (예: `vault-structure`, `api-design`)
-- 시스템 폴더 (별도): `raw/`, `views/`
+- **Folder = top-level category** (`works/`, `meta/`)
+- **frontmatter `topic` = sub-topic under the folder** (e.g. `vault-structure`, `api-design`)
+- System folders (separate): `raw/`, `views/`
 
 ```
 {{WIKI_NAME}}/
-├── schema.md, index.md, log.md   # 시스템 (root)
-├── views/                        # Bases 동적 뷰
-├── raw/                          # 원본 대화
-├── meta/                         # vault 자체 결정/규칙
-├── works/                        # 업무 프로젝트
+├── schema.md, index.md, log.md   # system (root)
+├── views/                        # Bases dynamic views
+├── raw/                          # original conversations
+├── meta/                         # the vault's own decisions/rules
+├── works/                        # work projects
 │   └── <project>/<file>.md
-└── toy/                          # 개인 프로젝트
+└── toy/                          # personal projects
     └── <file>.md
 ```
 
-## Frontmatter 컨벤션
+## Frontmatter Convention
 
-### 필수
+### Required
 
 ```yaml
 ---
 title: Note Title (English)
 type: concept | decision | project
-topic: <세부 슬러그>     # 예: vault-structure, api-design
+topic: <sub-slug>     # e.g. vault-structure, api-design
 status: draft | active | stale
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -65,125 +65,124 @@ tags: []
 ---
 ```
 
-### 선택
+### Optional
 
-- `sources: ["[[raw/...]]"]` — 원본 대화 링크
-- `project: <이름>` — 프로젝트 소속
-- `related: ["[[...]]"]` — 연관 노트
+- `sources: ["[[raw/...]]"]` — link to the original conversation
+- `project: <name>` — project membership
+- `related: ["[[...]]"]` — related notes
 
-## Type 정의
+## Type Definitions
 
-| type | 의미 | 예 |
+| type | meaning | example |
 |---|---|---|
-| `concept` | 개념 · 원리 · 패턴 | Dependency Injection Pattern |
-| `decision` | 의사결정 + 근거 | Database Choice — Postgres vs MySQL |
-| `project` | 진행 중 작업 | API Server Refactor |
+| `concept` | concept · principle · pattern | Dependency Injection Pattern |
+| `decision` | decision + rationale | Database Choice — Postgres vs MySQL |
+| `project` | work in progress | API Server Refactor |
 
 ## Topic Slugs
 
-폴더 하위 **세부 주제**. 폴더보다 구체적. 소문자 케밥.
+A **sub-topic** under a folder. More specific than the folder. lowercase kebab.
 
-| 폴더 | topic 예 |
+| folder | topic examples |
 |---|---|
 | `meta/` | `vault-structure`, `vault-system` |
 | `works/<project>/` | `api-design`, `infra-config`, `deployment` |
 | `toy/` | `commit-convention`, `dev-workflow`, `editor-tooling` |
 
-한 폴더 안에서 `topic` 별 group 필요해지면 Bases 로.
+When a single folder needs grouping by `topic`, use Bases.
 
-## 분류 도구 매핑
+## Classification Tool Mapping
 
-| 차원 | 구현 |
+| dimension | implementation |
 |---|---|
-| 상위 범주 | 폴더 (`works/<project>/`, `meta/`) |
-| 세부 주제 | `topic:` frontmatter |
-| 종류 | `type:` frontmatter |
-| 상태 | `status:` frontmatter |
-| 날짜 | `created:`, `updated:` |
-| 자유 | `tags:` |
-| 관계 | `[[wikilink]]` |
-| 동적 그룹 | `views/*.base` |
+| top-level category | folder (`works/<project>/`, `meta/`) |
+| sub-topic | `topic:` frontmatter |
+| kind | `type:` frontmatter |
+| status | `status:` frontmatter |
+| date | `created:`, `updated:` |
+| free-form | `tags:` |
+| relations | `[[wikilink]]` |
+| dynamic groups | `views/*.base` |
 
-## 파일명
+## File Names
 
-**파일명 = 영어 노트 제목** (frontmatter `title` 과 동일).
+**File name = English note title** (same as frontmatter `title`).
 
-- 영어 식별자, 케밥 케이스 / 날짜 prefix 금지
-- 날짜는 frontmatter `created:` 가 책임짐
-- 같은 제목 충돌 시 제목을 더 구체화 (예: `Job vs Deployment (k8s)`)
-- 시스템 파일 (`schema.md`, `index.md`, `log.md`, `views/*.base`) 동일
+- English identifier, kebab-case / no date prefix
+- the date is owned by frontmatter `created:`
+- on title collision, make the title more specific (e.g. `Job vs Deployment (k8s)`)
+- same for system files (`schema.md`, `index.md`, `log.md`, `views/*.base`)
 
-## Raw 저장 정책 (B 모드)
+## Raw Storage Policy (mode B)
 
-기본 모드: **LLM 자동 판단 + user 거부권**.
+Default mode: **LLM auto-decides + user veto**.
 
-### 남김
-- 의사결정 근거가 빽빽한 토론
-- 사실 확인 / 검증 거친 대화
-- 다른 wiki 페이지의 `sources:` 로 link 될 만한 대화
+### Keep
+- discussions dense with decision rationale
+- conversations that went through fact-checking / verification
+- conversations worth linking as `sources:` from another wiki page
 
-### 안 남김
-- 단순 명령 실행
-- 단순 질의응답
-- 정제 끝나 wiki 에 100% 흡수된 대화
+### Don't keep
+- simple command execution
+- simple Q&A
+- conversations fully absorbed into the wiki after refinement
 
-### 절차
-대화 끝나면 LLM 한 줄 보고. user OK / Cancel.
+### Procedure
+When a conversation ends, the LLM gives a one-line report. User OK / Cancel.
 
-### Raw 파일명
-`raw/<Note Title>.md` (영어, 케밥 / 날짜 prefix 금지). 날짜는 `date:` frontmatter.
+### Raw file name
+`raw/<Note Title>.md` (English, kebab / no date prefix). The date goes in the `date:` frontmatter.
 
 ## 3-Op (karpathy LLM Wiki Pattern)
 
-| op | 동작 |
+| op | action |
 |---|---|
-| **Ingest** | 새 자료 → 관련 wiki 페이지 갱신 + [[log]] 기록 |
-| **Query** | 질문 → wiki 활용해서 답. 가치 있는 답은 새 페이지로 + [[log]] |
-| **Lint** | 주기적 점검: 모순 · stale · orphan · 끊긴 참조 + [[log]] |
+| **Ingest** | new material → update the related wiki page + record in [[log]] |
+| **Query** | question → answer using the wiki. A valuable answer becomes a new page + [[log]] |
+| **Lint** | periodic check: contradictions · stale · orphan · broken references + [[log]] |
 
-3-op 의 모든 실행은 [[log]] **연도 파일** (`log/<YYYY>.md`) 에 prefix 형식 (`## [YYYY-MM-DD] ingest|query|lint | 제목`) 으로 기록. [[log]] 자체는 인덱스. file 수준 변경은 git 이 책임.
+Every 3-op execution is recorded in the [[log]] **year file** (`log/<YYYY>.md`) in the prefix format (`## [YYYY-MM-DD] ingest|query|lint | title`). [[log]] itself is the index. File-level changes are owned by git.
 
-### Query 흡수 정책
+### Query Absorption Policy
 
 karpathy: "Good answers can be filed back into the wiki as new pages."
 
-답이 wiki 에 흡수될지 판단 기준:
+Criteria for whether an answer is absorbed into the wiki:
 
-| 조건 | 처리 |
+| condition | handling |
 |---|---|
-| 재사용 가능 + 일반성 (개념/원리) | **새 페이지** (`concept` type) |
-| 기존 wiki 페이지에 자연스럽게 끼움 | **기존 페이지 갱신** |
-| 일회성, 절차적, 짧음 | **흡수 안 함** (log 의 query 항목만) |
+| reusable + general (concept/principle) | **new page** (`concept` type) |
+| fits naturally into an existing wiki page | **update the existing page** |
+| one-off, procedural, short | **not absorbed** (only the query entry in log) |
 
-3가지 신호:
-- **재사용성** — 다른 query 답할 때 다시 참조될 가능성
-- **일반성** — 특정 시점/맥락 무관하게 valid
-- **밀도** — 답이 단락 이상의 부피
+Three signals:
+- **reusability** — likelihood of being referenced again when answering other queries
+- **generality** — valid regardless of a specific time/context
+- **density** — the answer has more than a paragraph of substance
 
-흡수 안 한 query 도 log 에 기록 가능. lint 시 "흡수 누락" 점검.
+A non-absorbed query may still be logged. At lint time, check for "missed absorption".
 
-## 진화 원칙
+## Evolution Principles
 
-- 처음 5–10 개 대화에서 패턴 관찰
-- 새 type / 필드는 schema 에 반영
-- 3-op 실행은 [[log]] 에 기록
+- observe patterns over the first 5–10 conversations
+- reflect new types / fields in the schema
+- record 3-op executions in [[log]]
 
-## 언어 컨벤션
+## Language Convention
 
-식별자성 텍스트와 본문성 텍스트를 구분:
+Distinguish identifier text from prose:
 
-- **본문 (H1 포함 아래) 한국어** — 가독성 우선
-- **파일명 / frontmatter / 태그 / wikilink 식별자: 영어** — filter / graph / link 일관성
-- **frontmatter `title` ≠ H1**: title 은 영어 식별자, H1 은 한국어 본문 제목
-- **`.base` 내부** (`displayName`, view `name`, filter 식): 영어
-- **대화 / `.claude/memory/`: 한국어 (존댓말)**
+- **Body (H1 and below): {{RESPONSE_LANG}}** — readability first
+- **File name / frontmatter / tags / wikilink identifiers: English, kebab-case** — filter / graph / link consistency
+- **frontmatter `title` may differ from H1**: `title` is the English identifier, H1 is the readable heading in {{RESPONSE_LANG}}
+- **Inside `.base`** (`displayName`, view `name`, filter expressions): English identifiers
 
-## Obsidian 문법 (자주 쓰는 것)
+## Obsidian Syntax (commonly used)
 
-- 링크: `[[Note Name]]`, `[[Note Name|표시]]`, `[[Note Name#Heading]]`
-- 임베드: `![[Note Name]]`, `![[image.png|300]]`
-- 인라인 태그: `#tag`, `#nested/tag`
-- Callout: `> [!info] 제목` (`note`/`tip`/`warning`/`info`/`example`/`quote`/`bug`/`danger`/`success`/`failure`/`question`/`abstract`/`todo`)
-- 하이라이트: `==텍스트==`
-- 숨김: `%%hidden%%`
-- 블록 ID: `텍스트 ^block-id`
+- Links: `[[Note Name]]`, `[[Note Name|display]]`, `[[Note Name#Heading]]`
+- Embeds: `![[Note Name]]`, `![[image.png|300]]`
+- Inline tags: `#tag`, `#nested/tag`
+- Callout: `> [!info] Title` (`note`/`tip`/`warning`/`info`/`example`/`quote`/`bug`/`danger`/`success`/`failure`/`question`/`abstract`/`todo`)
+- Highlight: `==text==`
+- Hidden: `%%hidden%%`
+- Block ID: `text ^block-id`

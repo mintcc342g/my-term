@@ -34,13 +34,13 @@ fi
 # 그건 디렉토리가 아니므로 아래 -d 체크에서 자연스럽게 잡힘.
 if [ -z "$WIKI_PATH" ] || [ ! -d "$WIKI_PATH" ]; then
   cat <<EOF
-[wiki 컨텍스트 로드 실패]
+[wiki context load failed]
 
-\`@wk\` 키워드가 감지됐으나 wiki 경로가 설정되지 않았거나 존재하지 않습니다.
-(현재 값: "$WIKI_PATH")
+\`@wk\` was detected but the wiki path is not set or does not exist.
+(current value: "$WIKI_PATH")
 
-사용자에게 다음을 안내하세요:
-  - my-term install.sh 의 "Obsidian + wiki tooling" 단계로 재설정
+Please guide the user to:
+  - reconfigure via the "Obsidian + wiki tooling" step of my-term install.sh
 EOF
   exit 0
 fi
@@ -48,11 +48,11 @@ fi
 # --- directive 파일 로드 + 치환 + 주입 ---
 DIRECTIVE_FILE="$(dirname "$0")/wk-directive.md"
 if [[ -L "$DIRECTIVE_FILE" ]]; then
-  printf '%s\n' "[@wk] 지시문 파일이 symlink입니다. 거부합니다."
+  printf '%s\n' "[@wk] Directive file is a symlink. Refusing."
   exit 1
 fi
 if [ ! -f "$DIRECTIVE_FILE" ]; then
-  printf '%s\n' "[@wk] 지시문 파일이 없습니다: $DIRECTIVE_FILE"
+  printf '%s\n' "[@wk] Directive file not found: $DIRECTIVE_FILE"
   exit 1
 fi
 

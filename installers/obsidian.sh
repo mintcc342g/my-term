@@ -113,23 +113,14 @@ _sync_obsidian_wiki_files() {
   mkdir -p "$HOME/.claude/my-wiki"
   chmod 700 "$HOME/.claude/my-wiki"
   if [ -d "$SCRIPT_DIR/my-claude/wiki" ]; then
-    # wk-* 파일 (훅 스크립트 + 지시문) 만 ~/.claude/my-wiki/ 에 cp.
-    # 나머지 (schema.md 등) 는 _install_wiki_defaults 가 사용자 wiki 로 처리.
-    # *.sh 는 install-time path 치환, *.md 는 runtime 치환이라 그대로 cp.
-    local src dst base
-    for src in "$SCRIPT_DIR/my-claude/wiki/"wk-*; do
-      [ -f "$src" ] || continue
-      base=$(basename "$src")
-      dst="$HOME/.claude/my-wiki/$base"
-      case "$base" in
-        *.sh)
-          sed "s|{{WIKI_PATH}}|${wiki_path}|g" "$src" > "$dst"
-          ;;
-        *)
-          cp -f "$src" "$dst"
-          ;;
-      esac
-    done
+    # wk-* 만 ~/.claude/my-wiki/ 로 deploy (schema.md 는 _install_wiki_defaults 담당).
+    #   - wk-trigger.sh: install 시점에 WIKI_PATH 치환
+    #   - wk-directive.md: 응답 언어({{RESPONSE_LANG}}) 를 설치 언어로 치환
+    local _lang_name="English"; [ "${MYTERM_LANG:-en}" = "ko" ] && _lang_name="Korean"
+    sed "s|{{WIKI_PATH}}|${wiki_path}|g" "$SCRIPT_DIR/my-claude/wiki/wk-trigger.sh" \
+      > "$HOME/.claude/my-wiki/wk-trigger.sh"
+    sed "s|{{RESPONSE_LANG}}|${_lang_name}|g" "$SCRIPT_DIR/my-claude/wiki/wk-directive.md" \
+      > "$HOME/.claude/my-wiki/wk-directive.md"
     chmod +x "$HOME/.claude/my-wiki/"*.sh 2>/dev/null || true
   fi
 
@@ -168,13 +159,15 @@ _install_wiki_defaults() {
 
   # my-claude/wiki/ 안의 wk-* 는 훅 파일 (_sync_obsidian_wiki_files 가 처리),
   # 나머지는 사용자 wiki 로 들어가는 default content (schema.md 등).
+  local _lang_name="English"; [ "${MYTERM_LANG:-en}" = "ko" ] && _lang_name="Korean"
   local src dst base
   for src in "$wiki_dir"/*; do
     [ -f "$src" ] || continue
     base=$(basename "$src")
     case "$base" in
-      wk-*) continue ;;
+      wk-*) continue ;;                 # 훅 지시문은 _sync_obsidian_wiki_files 담당
     esac
+    # 사용자 wiki 에 같은 파일(예: schema.md)이 이미 있으면 절대 안 덮음.
     dst="$wiki_path/$base"
     if [ -e "$dst" ]; then
       log_step "wiki default exists, keep user copy: $base"
@@ -182,6 +175,7 @@ _install_wiki_defaults() {
     fi
     sed -e "s|{{WIKI_NAME}}|${wiki_name}|g" \
         -e "s|{{INSTALL_DATE}}|${install_date}|g" \
+        -e "s|{{RESPONSE_LANG}}|${_lang_name}|g" \
         "$src" > "$dst"
     log_done "installed wiki default: $base"
   done

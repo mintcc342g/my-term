@@ -31,24 +31,24 @@ fi
 clean_prompt="$(printf '%s' "$prompt" | jq -Rrs 'gsub("@co\\s*"; "") | gsub("^\\s+|\\s+$"; "")')"
 
 if [[ -z "$clean_prompt" || "$clean_prompt" == '""' ]]; then
-  printf '%s\n' "[co-mux] 프롬프트가 비어 있습니다."
+  printf '%s\n' "[co-mux] Empty prompt."
   exit 0
 fi
 
 # --- 에이전트 설정 로드 ---
 if [[ ! -f "$AGENTS_CONFIG" ]]; then
-  printf '%s\n' "[co-mux] 에이전트 설정 파일이 없습니다: $AGENTS_CONFIG"
+  printf '%s\n' "[co-mux] Agent config file not found: $AGENTS_CONFIG"
   exit 0
 fi
 
 # --- 에이전트 설정 파일 무결성 검증 ---
 if [[ -L "$AGENTS_CONFIG" ]]; then
-  printf '%s\n' "[co-mux] 에이전트 설정 파일이 symlink입니다. 거부합니다."
+  printf '%s\n' "[co-mux] Agent config file is a symlink. Refusing."
   exit 1
 fi
 config_owner=$(stat -f %u "$AGENTS_CONFIG" 2>/dev/null)
 if [[ "$config_owner" != "$(id -u)" ]]; then
-  printf '%s\n' "[co-mux] 에이전트 설정 파일 소유자가 현재 사용자와 다릅니다."
+  printf '%s\n' "[co-mux] Agent config file owner differs from the current user."
   exit 1
 fi
 config_perm=$(stat -f '%Lp' "$AGENTS_CONFIG" 2>/dev/null)
@@ -58,7 +58,7 @@ fi
 
 agent_count="$(jq 'length' "$AGENTS_CONFIG" 2>/dev/null || printf '0')"
 if [[ "$agent_count" -eq 0 ]]; then
-  printf '%s\n' "[co-mux] 설정된 에이전트가 없습니다."
+  printf '%s\n' "[co-mux] No agents configured."
   exit 0
 fi
 
@@ -71,11 +71,11 @@ while IFS=$'\t' read -r name server tool timeout params_json; do
   # params가 있으면 호출 시 포함할 파라미터 안내 생성
   params_note=""
   if [ -n "$params_json" ] && [ "$params_json" != "null" ] && [ "$params_json" != "{}" ]; then
-    params_note=" (추가 파라미터: ${params_json})"
+    params_note=" (extra params: ${params_json})"
   fi
 
   agent_list="${agent_list}
-- **${name}**: \`${mcp_tool}\` 도구를 호출하세요.${params_note} (timeout: ${timeout}ms)"
+- **${name}**: call the \`${mcp_tool}\` tool.${params_note} (timeout: ${timeout}ms)"
 done < <(jq -r '.[] | [
   .name,
   .server,
@@ -87,11 +87,11 @@ done < <(jq -r '.[] | [
 # --- Claude에 협업 지시문 주입 ---
 DIRECTIVE_FILE="$(dirname "$0")/co-directive.md"
 if [[ -L "$DIRECTIVE_FILE" ]]; then
-  printf '%s\n' "[co-mux] 지시문 파일이 symlink입니다. 거부합니다."
+  printf '%s\n' "[co-mux] Directive file is a symlink. Refusing."
   exit 1
 fi
 if [[ ! -f "$DIRECTIVE_FILE" ]]; then
-  printf '%s\n' "[co-mux] 지시문 파일이 없습니다: $DIRECTIVE_FILE"
+  printf '%s\n' "[co-mux] Directive file not found: $DIRECTIVE_FILE"
   exit 1
 fi
 
