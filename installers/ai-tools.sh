@@ -403,9 +403,25 @@ _migrate_legacy_hud() {
   fi
 }
 
+# Mirror *.sh from src→dst: copy/overwrite the files the repo ships, and prune
+# ones it no longer does (renamed/removed). Stops stale themes from lingering
+# and defeating statusline's "missing theme → default" fallback. Nothing is
+# hardcoded — the repo dir is the source of truth.
+_mirror_sh() {
+  local src="$1" dst="$2" f base
+  mkdir -p "$dst"
+  for f in "$dst"/*.sh; do
+    [ -e "$f" ] || continue
+    base="$(basename "$f")"
+    [ -f "$src/$base" ] || rm -f "$f"
+  done
+  cp -f "$src"/*.sh "$dst"/
+}
+
 # Sync HUD scripts/themes/lib without launching the configure UI.
-# Pure cp (overwrites same-named files); legacy cleanup lives in
-# _migrate_legacy_hud. Shared by _install_hud and update_my_claude.
+# Top-level scripts/lib are pure cp; themes are mirrored (prune orphans).
+# Legacy layout cleanup lives in _migrate_legacy_hud. Shared by _install_hud
+# and update_my_claude.
 _sync_hud_files() {
   log_step "syncing HUD files…"
 
@@ -413,7 +429,7 @@ _sync_hud_files() {
   chmod 700 "$HOME/.claude" "$HOME/.claude/my-hud"
   cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
   chmod +x "$HOME/.claude/my-hud/"*.sh
-  cp -f "$SCRIPT_DIR/my-claude/hud/themes/"*.sh "$HOME/.claude/my-hud/themes/"
+  _mirror_sh "$SCRIPT_DIR/my-claude/hud/themes" "$HOME/.claude/my-hud/themes"
   cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
   # lang catalog — ui.sh bootstraps i18n from lib/lang next to it, so the
   # deployed copy needs it too (keeps HUD configure.sh working standalone).
@@ -423,6 +439,26 @@ _sync_hud_files() {
   # config.json — only copy if not exists (preserve user settings)
   if [ ! -f "$HOME/.claude/my-hud/config.json" ]; then
     cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
+  fi
+
+  # Heal a stale theme: if config.theme points at a theme the repo no longer
+  # ships (renamed/removed), reset it to the repo's own default. Only .theme is
+  # rewritten; the default is read from the repo config — no theme name is
+  # hardcoded, and a valid selection is left untouched.
+  local cfg="$HOME/.claude/my-hud/config.json"
+  if [ -f "$cfg" ]; then
+    local cur def tmp
+    cur=$(jq -r '.theme // empty' "$cfg")
+    if [ -n "$cur" ] && [ ! -f "$HOME/.claude/my-hud/themes/$cur.sh" ]; then
+      def=$(jq -r '.theme' "$SCRIPT_DIR/my-claude/hud/config.json")
+      tmp=$(mktemp)
+      if jq --arg t "$def" '.theme = $t' "$cfg" > "$tmp"; then
+        mv "$tmp" "$cfg"
+        log_step "theme '$cur' no longer exists → reset to '$def'"
+      else
+        rm -f "$tmp"
+      fi
+    fi
   fi
 
   # Ensure statusLine points at the (possibly updated) statusline.sh
