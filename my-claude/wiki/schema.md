@@ -31,6 +31,14 @@ AI agent memory (Claude `~/.claude/`, Codex `~/.codex/`, etc.) is machine-bound,
 
 The karpathy LLM Wiki Pattern (compounding knowledge) is a byproduct layered on top, not the primary goal. **The primary goal is work continuity.**
 
+## Memory Unification
+
+A corollary of `## Purpose`: **the single store for persistent information is the wiki note.** Don't use AI agent memory (Claude `~/.claude/.../memory/`, etc.) — it's machine-bound, so continuity breaks.
+
+- **No referencing**: when writing notes, don't cite or link AI agent memory. The rationale must exist as a wiki note, and you link that with `[[link]]`.
+- **No storing**: don't write new entries into AI agent memory.
+- **Memory-like info → `memory` tag**: when "worth remembering" info appears (user preferences · feedback · working principles), make it a wiki note and add `memory` to `tags`. `type` follows its nature (`decision`/`concept`), the folder follows the related project (cross-cutting identification via the `memory` tag). Retrieve it from the wiki too (`tag:#memory` search / Bases).
+
 ## Structure Principle: folder + frontmatter 2-tier classification
 
 - **Folder = top-level category** (`works/`, `meta/`)
@@ -70,6 +78,8 @@ tags: []
 - `sources: ["[[raw/...]]"]` — link to the original conversation
 - `project: <name>` — project membership
 - `related: ["[[...]]"]` — related notes
+- `confidence: high | medium | low` — confidence in the note's core claim. Used by a handoff agent to judge trust
+- `last_verified: YYYY-MM-DD` — last date the content was fact-checked (`updated` is the edit date; this is the verification date)
 
 ## Type Definitions
 
@@ -162,6 +172,36 @@ Three signals:
 
 A non-absorbed query may still be logged. At lint time, check for "missed absorption".
 
+### Lint Check — Broken References (dangling link)
+
+A `[[target]]` that matches no actual note (`.md`) / view (`.base`) is a broken reference. After a rename/delete, leftover links break the graph, so scan at `Lint` time (from the vault root):
+
+```bash
+python3 - <<'PY'
+import os, re
+files=[os.path.relpath(os.path.join(r,f),'.')
+       for r,d,fs in os.walk('.') if '/.git' not in r and '/.obsidian' not in r
+       for f in fs if f.endswith(('.md','.base'))]
+stems={f.rsplit('.',1)[0] for f in files}
+names=stems|{os.path.basename(s) for s in stems}
+ok=lambda t: t in names or any(s.endswith('/'+t) for s in stems)
+for f in files:
+    for i,l in enumerate(open(f,encoding='utf-8'),1):
+        for m in re.finditer(r'\[\[([^\]|#^]+)', l):
+            t=m.group(1).strip()
+            if t and not ok(t) and '(unwritten)' not in l:
+                print(f'{f}:{i}  -> {t}')
+PY
+```
+
+When found: stale rename/delete → **update to the current name**. For historical context (past log entries, etc.), use the `[[current name|name-at-the-time]]` alias — keep the link alive while preserving the original display.
+
+#### Excluded from the check (intended mismatches)
+
+- **Planned forward-ref**: `[[Note Name]] (unwritten)` — the `(unwritten)` marker is required. Reserves a note to write later (link liberally).
+- **AI agent memory mention**: per `## Memory Unification`, new references are forbidden; existing historical mentions use `code` notation, so they aren't links and are irrelevant to dangling checks.
+- **Syntax examples**: explanatory examples in `schema.md` / `meta/` docs (`[[Note Name]]`, `[[...]]`, `[[image.png]]`, etc.).
+
 ## Evolution Principles
 
 - observe patterns over the first 5–10 conversations
@@ -172,10 +212,41 @@ A non-absorbed query may still be logged. At lint time, check for "missed absorp
 
 Distinguish identifier text from prose:
 
-- **Body (H1 and below): {{RESPONSE_LANG}}** — readability first
+- **System documents: English** — `schema.md`, `index.md`, `log.md` (+ `log/<YYYY>.md`), `views/*.base`. The user doesn't read these; the agent does, and English saves tokens. Content notes (`works/`, `meta/`, etc.) and captured `raw/` conversations follow the body language below.
+- **Content-note body (H1 and below): {{RESPONSE_LANG}}** — readability first
 - **File name / frontmatter / tags / wikilink identifiers: English, kebab-case** — filter / graph / link consistency
 - **frontmatter `title` may differ from H1**: `title` is the English identifier, H1 is the readable heading in {{RESPONSE_LANG}}
 - **Inside `.base`** (`displayName`, view `name`, filter expressions): English identifiers
+
+## Content Discipline — No Filler
+
+Note structure is free per type · content. But regardless of kind, the following don't go in the body (strip them at ingest):
+
+- **Persuasion / reassurance tone**: "don't waver", "this is the right answer" — psychology, not fact
+- **Decorative analogies**: analogies not strictly needed for understanding
+- **Counter-argument drama**: narrative kept alive to sustain a persuasive flow. If there was a discussion, keep only the *points and conclusion* as facts
+
+Criterion: "Does the person · agent picking up the work need this to grasp the fact / decision / reason?" → if not, cut it. "Readability first" (Language Convention) means easy for a human to read, not an invitation to add persuasion or decoration.
+
+## Belief Revision Tracking
+
+Only when an existing claim is **overturned / corrected**, preserve the old belief in a collapsed callout (additions / refinements don't count). Not applied retroactively.
+
+- The current fact stays in the body; the old belief goes one-per-line into a `> [!quote]-` collapsed callout
+- Format: `- ~YYYY-MM-DD: old claim — source [[...]]`
+- Per-claim, inline. frontmatter `updated` is a file-level timestamp, so it's separate
+- [[log]] tracks op · file changes (what happened); this callout tracks belief revision (which belief changed) — complementary
+- At lint time: if an ingest overturned an existing claim but no revision callout was added, flag it
+
+Example:
+
+```markdown
+The withdrawal-prep DB is Y.
+
+> [!quote]- previous belief
+> - ~2026-05-29: thought it was X — source [[original note]]
+> - 2026-05-30: corrected to Y — source [[original note]]
+```
 
 ## Obsidian Syntax (commonly used)
 
