@@ -21,8 +21,8 @@ HI2="$(fg 103 168 201)"
 LB="$(fg 103 168 201)"
 FD="$(fg 76 86 106)"
 BOFF="$(fg 59 66 82)"
-C_WARN="$(fg 255 255 190)"
-C_CRIT="$(fg 255 255 136)"
+C_WARN="$(fg 250 250 186)"
+C_CRIT="$(fg 255 240 60)"
 C_BAR="$(fg 103 168 201)"
 
 # Per-icon colors — each theme owns these (currently LB except where customized)
