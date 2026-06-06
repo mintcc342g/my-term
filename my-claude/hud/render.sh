@@ -27,6 +27,10 @@ ICON_RESET=$'\xe2\x86\xbb'            # U+21BB reset indicator (BMP, system fall
 ICON_EFFORT=$'\xf3\xb0\x88\xb8'       # U+F0238 md-fire (reasoning effort)
 LBL_MDL='MDL'                         # model label
 
+# ── Icon renderer ───────────────────────────────────────────────
+# Render an icon glyph $1 in color $2. Themes own icon colors via C_ICON_*.
+hud_icon() { printf '%s%s%s%s%s' "$2" "$bold" "$1" "$rst" "$BG"; }
+
 # ── Gradient ────────────────────────────────────────────────────
 grad_fg() {
   local pos=$1 max=$2
@@ -157,13 +161,13 @@ _metric_finish() {
   if [ -n "$reset" ]; then
     local reset_str="${ICON_RESET} ${reset}"
     # " │ reset_str" → sp(1) + sep(1) + sp(1) + reset_str
-    content+=" ${FD}│${rst}${BG} ${LB}${bold}${reset_str}${rst}${BG}"
+    content+=" ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_RESET" "$C_ICON_RESET") ${LB}${bold}${reset}${rst}${BG}"
     vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
   fi
   if [ -n "$sess" ]; then
     local sess_str="${ICON_SESS} ${sess}"
     # " │ sess_str" → sp(1) + sep(1) + sp(1) + sess_str
-    content+=" ${FD}│${rst}${BG} ${LB}${bold}${sess_str}${rst}${BG}"
+    content+=" ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_SESS" "$C_ICON_SESS") ${LB}${bold}${sess}${rst}${BG}"
     vw=$(( vw + 1 + 1 + 1 + ${#sess_str} ))
   fi
   row "$content" "$vw"
@@ -269,13 +273,13 @@ render_workspace() {
   local upstream_block=""
   case "$git_upstream_state" in
     synced)
-      upstream_block=" ${LB}${bold}${ICON_GIT_SYNCED}${rst}${BG}"
+      upstream_block=" $(hud_icon "$ICON_GIT_SYNCED" "$C_ICON_UPSTREAM")"
       ;;
     none)
-      upstream_block=" ${LB}${bold}${ICON_GIT_NOUPSTREAM}${rst}${BG}"
+      upstream_block=" $(hud_icon "$ICON_GIT_NOUPSTREAM" "$C_ICON_UPSTREAM")"
       ;;
     diverged)
-      upstream_block=" ${LB}${bold}${ICON_GIT_DIVERGED}${rst}${BG}"
+      upstream_block=" $(hud_icon "$ICON_GIT_DIVERGED" "$C_ICON_UPSTREAM")"
       [ "$git_ahead" -gt 0 ] && upstream_block+=" ${HI2}${ICON_GIT_AHEAD}${git_ahead}${rst}${BG}"
       [ "$git_behind" -gt 0 ] && upstream_block+=" ${HI2}${ICON_GIT_BEHIND}${git_behind}${rst}${BG}"
       ;;
@@ -283,9 +287,9 @@ render_workspace() {
 
   local ws_content
   if [ -n "$git_branch" ]; then
-    ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_GIT} ${rst}${BG}${HI2}${git_branch}${rst}${BG}${upstream_block}"
+    ws_content="$(hud_icon "$ICON_DIR" "$C_ICON_DIR") ${HI2}${cwd}${rst}${BG}  ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_GIT" "$C_ICON_GIT") ${HI2}${git_branch}${rst}${BG}${upstream_block}"
   else
-    ws_content="${LB}${bold}${ICON_DIR} ${rst}${BG}${HI2}${cwd}${rst}${BG}"
+    ws_content="$(hud_icon "$ICON_DIR" "$C_ICON_DIR") ${HI2}${cwd}${rst}${BG}"
   fi
   sep_line "workspace"
   row "$ws_content" "$ws_vw"
@@ -299,7 +303,7 @@ _effort_seg() {
   _effort_seg=""
   _effort_vw=0
   [ -z "$effort" ] && return
-  _effort_seg="  ${FD}│${rst}${BG} ${LB}${bold}${ICON_EFFORT} ${effort}${rst}${BG}"
+  _effort_seg="  ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_EFFORT" "$C_ICON_EFFORT") ${LB}${bold}${effort}${rst}${BG}"
   _effort_vw=$(( 2 + 1 + 1 + 1 + 1 + ${#effort} ))
 }
 
@@ -318,7 +322,7 @@ render_claude() {
     model="${model:0:$avail}…"
   fi
 
-  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
+  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${C_SEP:-$FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
   local cl_vw=$(( ${#LBL_MDL} + 1 + ${#model} + _effort_vw + cache_vw ))
   sep_line "claude"
   row "$cl_content" "$cl_vw"
@@ -330,7 +334,7 @@ render_claude() {
 render_codex() {
   local model="$1" reset="$2" left="$3" effort="${4:-}"
   _effort_seg "$effort"
-  local cx_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${FD}│${rst}${BG} ${LB}${bold}${ICON_RESET} ${rst}${BG}${HI2}${reset}${rst}${BG}"
+  local cx_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_RESET" "$C_ICON_RESET") ${HI2}${reset}${rst}${BG}"
   # "MDL sp model [effort] sp(2) sep sp icon sp reset"
   local cx_vw=$(( ${#LBL_MDL} + 1 + ${#model} + _effort_vw + 2 + 1 + 1 + 2 + ${#reset} ))
   sep_line "codex"

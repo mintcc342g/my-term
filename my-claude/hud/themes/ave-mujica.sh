@@ -25,6 +25,16 @@ C_WARN="$(fg 150 80 95)"
 C_CRIT="$(fg 170 35 50)"
 C_BAR="$(fg 138 55 68)"
 
+# Per-icon colors — each theme owns these (currently LB; customize per icon as desired)
+C_ICON_DIR="$LB"
+C_ICON_GIT="$LB"
+C_ICON_EFFORT="$LB"
+C_ICON_RESET="$LB"
+C_ICON_SESS="$LB"
+C_ICON_UPSTREAM="$LB"
+
+C_SEP="$FD"
+
 # Compact powerline segment colors (bg R G B, fg R G B)
 COMPACT_FG="$(fg 236 239 244)"  # bright white
 COMPACT_SEP="$(fg 200 195 195)"  # muted warm white separator
