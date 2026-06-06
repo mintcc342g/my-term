@@ -21,9 +21,9 @@ HI2="$(fg 155 176 202)"
 LB="$(fg 155 176 202)"
 FD="$(fg 76 86 106)"
 BOFF="$(fg 59 66 82)"
-C_WARN="$(fg 140 170 210)"
-C_CRIT="$(fg 216 222 233)"
-C_BAR="$(fg 94 129 172)"
+C_WARN="$(fg 94 129 172)"
+C_CRIT="$(fg 66 126 200)"
+C_BAR="$(fg 155 176 202)"
 
 # Compact powerline segment colors (bg R G B, fg R G B)
 COMPACT_FG="$(fg 236 239 244)"  # Nord6 — bright
