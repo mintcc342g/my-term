@@ -93,7 +93,9 @@
       "Bash(**/.docker/config.json)",
       "Bash(**/.config/gh/hosts.yml)",
       "Bash(**/.git-credentials)",
-      "Bash(**/.gnupg/**)"
+      "Bash(**/.gnupg/**)",
+      "Bash(aws:*)",
+      "Bash(kubectl:*)"
     ]
   },
   "statusLine": {

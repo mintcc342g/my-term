@@ -133,9 +133,10 @@ ssh -T git@github.com
 3. 테마 변경: Theme → 원하는 테마 → Save & Exit
 4. 섹션 on/off: Workspace, Claude, Codex 를 각각 토글
 
-### 민감 파일 접근 차단
+### 민감 파일·명령어 접근 차단
 
 - 기본적으로 `.env`, `.ssh`, `.pem`, `.key` 등 주요 민감 파일의 읽기·수정이 차단돼 있습니다.
+- 클라우드/인프라 조작 명령어인 `aws`, `kubectl` 의 실행도 차단돼 있습니다.
 - 패턴을 더 추가하려면 `my-claude/settings/settings.json` 의 `permissions.deny` 에 넣으세요.
 
 ## 각 프로그램 설정값
@@ -296,9 +297,10 @@ Syncs the config in `my-claude/` into `~/.claude`.
 3. Change theme: Theme → pick a theme → Save & Exit
 4. Toggle sections: Workspace, Claude, Codex individually
 
-### Sensitive-file access blocking
+### Sensitive-file and command access blocking
 
 - By default, reading/editing of major sensitive files (`.env`, `.ssh`, `.pem`, `.key`, etc.) is blocked.
+- Running the cloud/infra commands `aws` and `kubectl` is also blocked.
 - To add more patterns, put them in `permissions.deny` in `my-claude/settings/settings.json`.
 
 ## Per-app settings
