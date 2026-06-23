@@ -50,7 +50,7 @@ bar() {
   local empty=$(( w - filled ))
   local color
   if [ "$pct" -ge 80 ]; then color="$C_CRIT"
-  elif [ "$pct" -ge 50 ]; then color="$C_WARN"
+  elif [ "$pct" -ge 40 ]; then color="$C_WARN"
   else color="$C_BAR"
   fi
   printf '%s' "$color"
@@ -63,7 +63,7 @@ bar() {
 sev_color() {
   local pct=$1
   if [ "$pct" -ge 80 ]; then printf '%s' "$C_CRIT"
-  elif [ "$pct" -ge 50 ]; then printf '%s' "$C_WARN"
+  elif [ "$pct" -ge 40 ]; then printf '%s' "$C_WARN"
   else printf '%s' "$HI"
   fi
 }
@@ -189,7 +189,7 @@ metric_row_inv() {
   pct_str=$(printf "%3d%%" "$pct")
   if [ "$pct" -le 20 ]; then
     sc="$C_CRIT"; bar_color="$C_CRIT"
-  elif [ "$pct" -le 50 ]; then
+  elif [ "$pct" -le 40 ]; then
     sc="$C_WARN"; bar_color="$C_WARN"
   else
     sc="$HI"; bar_color="$C_BAR"
