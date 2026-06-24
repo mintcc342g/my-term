@@ -28,7 +28,7 @@ cd my-term
 
 프로젝트 코드가 바뀌었을 때만 돌리면 됩니다. 업데이트는 brew 설치나 alias 설정 같은 인스톨 단계를 전부 건너뛰고 `~/.claude/` 로 파일을 sync 하는 일만 합니다. 현재 sync 대상은 AI 어시스턴트 설정과 HUD 입니다.
 
-> ⚠️ `~/.claude/` 안의 `my-hooks/`, `my-collab/`, `CLAUDE.md` 는 `cp -f` 로 덮어쓰기 때문에 직접 고친 내용은 사라집니다. (HUD `config.json` 과 Claude `settings.json` 은 사용자 변경분을 병합·보존합니다.)
+> ⚠️ `~/.claude/` 안의 `my-hooks/`, `my-collab/` 는 `cp -f` 로 덮어쓰기 때문에 직접 고친 내용은 사라집니다. `CLAUDE.md` 는 인스톨러가 관리하는 블록(`MYTERM:OPTIONAL:...`)만 갱신하고, 그 밖에 직접 쓴 내용은 보존합니다. (HUD `config.json` 과 Claude `settings.json` 은 사용자 변경분을 병합·보존합니다.)
 
 **하는 법**
 
@@ -109,6 +109,7 @@ ssh -T git@github.com
 
 ### 주요 기능
 
+- **답변·코드 스타일 지시문 (`CLAUDE.md`)**: `~/.claude/CLAUDE.md` 에 답변 스타일·코드 스타일 지시문 블록(`MYTERM:OPTIONAL:...`)을 넣습니다. 답변 스타일은 설치 언어에 맞는 버전(한국어판 / 영어판)으로, 코드 스타일은 공용으로 들어갑니다. 원하지 않으면 해당 블록을 지우세요 — 업데이트해도 다시 추가되지 않습니다.
 - **멀티 에이전트 협업 (`@co`)**: 프롬프트에 `@co` 를 붙이면 Codex 를 MCP 도구로 병렬 호출한 뒤 답변을 종합합니다(토론 루프 지원). 에이전트는 `~/.claude/my-collab/co-agents.json` 에서 추가합니다.
   ```json
   [
@@ -192,7 +193,7 @@ The first thing the installer asks is your **display language (한국어 / Engli
 
 Run this only when the project code has changed. Update skips all install steps (brew installs, alias setup, and so on) and only syncs files into `~/.claude/`. The current sync targets are the AI assistant config and the HUD.
 
-> ⚠️ Inside `~/.claude/`, the `my-hooks/`, `my-collab/`, and `CLAUDE.md` are overwritten with `cp -f`, so any manual edits are lost. (The HUD `config.json` and Claude `settings.json` merge and preserve your changes.)
+> ⚠️ Inside `~/.claude/`, `my-hooks/` and `my-collab/` are overwritten with `cp -f`, so any manual edits there are lost. For `CLAUDE.md`, only the installer-managed blocks (`MYTERM:OPTIONAL:...`) are refreshed — anything you wrote outside them is preserved. (The HUD `config.json` and Claude `settings.json` merge and preserve your changes.)
 
 **How to**
 
@@ -273,6 +274,7 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 ### Key features
 
+- **Response & code style instructions (`CLAUDE.md`)**: adds response-style and code-style instruction blocks (`MYTERM:OPTIONAL:...`) to `~/.claude/CLAUDE.md`. The response style matches your install language (Korean / English); the code style is shared across languages. Don't want them? Delete the block — Update won't re-add it.
 - **Multi-agent collaboration (`@co`)**: prefix a prompt with `@co` to call Codex in parallel as an MCP tool, then synthesize the answers (discussion loop supported). Add agents in `~/.claude/my-collab/co-agents.json`:
   ```json
   [

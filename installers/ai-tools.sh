@@ -194,10 +194,11 @@ _sync_claude_files() {
   fi
 
   # CLAUDE.md managed blocks: refresh existing ones from repo source, then
-  # auto-install the Korean-default blocks (response style + 한국어/존댓말).
-  # Both are no-ops when nothing applies, so this is safe on install + Update.
+  # auto-install the default blocks (response style per install language +
+  # shared code style). Both are no-ops when nothing applies, so this is safe
+  # on install + Update.
   _sync_claude_md_block
-  _install_ko_default_instructions "$_claude_md"
+  _install_default_instructions "$_claude_md"
 
   # hooks
   mkdir -p "$HOME/.claude/my-hooks"
@@ -306,37 +307,48 @@ _sync_claude_files() {
 
 # Refresh managed OPTIONAL blocks in user's CLAUDE.md from repo source — so
 # repo edits to those files (e.g. response style) propagate on Update. Only
-# rebuilds blocks already present; initial install is _install_ko_default_instructions.
+# rebuilds blocks already present; initial install is _install_default_instructions.
 _sync_claude_md_block() {
   md_refresh_optional_blocks "$HOME/.claude/CLAUDE.md"
 }
 
-# Auto-install the managed instruction blocks from $SCRIPT_DIR/my-claude/optional/*.md
-# into the destination CLAUDE.md. These blocks (response style + Korean/존댓말
-# tone) are Korean-install only — skipped entirely for other languages, where
-# the Korean-templated features (@co, @wk) carry their own conventions.
+# Auto-install the managed instruction blocks from $SCRIPT_DIR/my-claude/optional/
+# into the destination CLAUDE.md. File naming decides language handling:
+#   <name>.md         — shared block, installed for every language (e.g. code-style)
+#   <name>.<lang>.md  — language variant; only the one matching the install
+#                       language is installed (e.g. response-style.ko.md)
+# Either way the destination block is named <name> (suffix stripped), so the
+# marker stays stable across languages and matches already-deployed blocks.
 #
-# Each file becomes a MYTERM:OPTIONAL:<name>:BEGIN/END block so that Update
-# (md_refresh_optional_blocks) keeps it in sync with the repo source. The
-# OPTIONAL marker name is kept for backward compatibility with already-deployed
-# blocks. Opt-out is manual — user removes the block from the destination file
-# (already-present blocks are skipped here, so a manual removal sticks).
-_install_ko_default_instructions() {
+# Each block becomes a MYTERM:OPTIONAL:<name>:BEGIN/END pair so that Update
+# (md_refresh_optional_blocks) keeps it in sync with the repo source. Opt-out is
+# manual — user removes the block from the destination file (already-present
+# blocks are skipped here, so a manual removal sticks).
+_install_default_instructions() {
   local dst="$1"
   local src_dir="$SCRIPT_DIR/my-claude/optional"
   [ -d "$src_dir" ] || return 0
 
-  # Korean install only. Other languages skip — features fall back to their own
-  # output conventions, and the user's CLAUDE.md stays free of Korean rules.
-  [ "${MYTERM_LANG:-en}" = "ko" ] || return 0
-
+  local lang="${MYTERM_LANG:-en}"
   local f
   for f in "$src_dir"/*.md; do
     [ -f "$f" ] || continue
-    local base begin end
+    local base suffix name begin end
     base=$(basename "$f" .md)
-    begin="<!-- MYTERM:OPTIONAL:${base}:BEGIN -->"
-    end="<!-- MYTERM:OPTIONAL:${base}:END -->"
+    # A trailing .en/.ko marks a language variant; install only the matching one.
+    # Anything else is a shared block installed for every language.
+    suffix="${base##*.}"
+    case "$suffix" in
+      en|ko)
+        [ "$suffix" = "$lang" ] || continue
+        name="${base%.*}"
+        ;;
+      *)
+        name="$base"
+        ;;
+    esac
+    begin="<!-- MYTERM:OPTIONAL:${name}:BEGIN -->"
+    end="<!-- MYTERM:OPTIONAL:${name}:END -->"
 
     # Already present (or user re-added manually) — skip. A manual removal of
     # the block therefore persists across Update.
@@ -352,7 +364,7 @@ _install_ko_default_instructions() {
       cat "$f"
       printf '%s\n' "$end"
     } >> "$dst"
-    log_done "added instruction: ${base}"
+    log_done "added instruction: ${name}"
   done
 }
 
