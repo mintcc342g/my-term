@@ -96,6 +96,19 @@ ui_menu() {
   local count=${#items[@]}
   local sel=0
 
+  # Optional per-item detail (dimmed italic, right of the focused row). Caller
+  # sets UI_MENU_DESC=(...) parallel to items; captured + cleared so it never
+  # leaks into the next menu. Desc column is fixed to the widest label.
+  local -a _descs=()
+  if [ "${UI_MENU_DESC+set}" = set ]; then _descs=("${UI_MENU_DESC[@]}"); unset UI_MENU_DESC; fi
+  local _maxw=0 _it _l
+  if [ "${#_descs[@]}" -gt 0 ]; then
+    for _it in "${items[@]}"; do
+      case "$_it" in '✗'*|'✓'*|'←'*|'→'*) _l=${#_it} ;; *) _l=$(( ${#_it} + 3 )) ;; esac
+      [ "$_l" -gt "$_maxw" ] && _maxw=$_l
+    done
+  fi
+
   # Hide cursor
   printf '\033[?25l' > /dev/tty
 
@@ -127,7 +140,13 @@ ui_menu() {
         *)                    label="${num}) $item" ;;
       esac
       if [ "$i" -eq "$sel" ]; then
-        echo "  ${UI_CYAN}❯ ${label}${UI_RESET}" > /dev/tty
+        if [ -n "${_descs[$sel]:-}" ]; then
+          local _pad=$(( _maxw - ${#label} )); [ "$_pad" -lt 0 ] && _pad=0
+          printf '  %s❯ %s%s%*s   %s\033[3m%s%s\n' \
+            "$UI_CYAN" "$label" "$UI_RESET" "$_pad" "" "$UI_DIM" "${_descs[$sel]}" "$UI_RESET" > /dev/tty
+        else
+          echo "  ${UI_CYAN}❯ ${label}${UI_RESET}" > /dev/tty
+        fi
       else
         echo "  ${UI_DIM}  ${label}${UI_RESET}" > /dev/tty
       fi

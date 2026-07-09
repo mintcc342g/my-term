@@ -157,29 +157,30 @@ build_bottom() {
 _metric_vw() { echo $(( 1 + ${#1} + 1 + BW + 2 + ${#2} )); }
 
 _metric_finish() {
-  local content="$1" vw=$2 reset="$3" sess="${4:-}"
+  local content="$1" vw=$2 reset="$3" sess="${4:-}" reset_color="${5:-$C_ICON_RESET}" sep_color="${6:-}"
+  local sepc="${sep_color:-${C_SEP:-$FD}}"
   if [ -n "$reset" ]; then
     local reset_str="${ICON_RESET} ${reset}"
     # " │ reset_str" → sp(1) + sep(1) + sp(1) + reset_str
-    content+=" ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_RESET" "$C_ICON_RESET") ${LB}${bold}${reset}${rst}${BG}"
+    content+=" ${sepc}│${rst}${BG} $(hud_icon "$ICON_RESET" "$reset_color") ${LB}${bold}${reset}${rst}${BG}"
     vw=$(( vw + 1 + 1 + 1 + ${#reset_str} ))
   fi
   if [ -n "$sess" ]; then
     local sess_str="${ICON_SESS} ${sess}"
     # " │ sess_str" → sp(1) + sep(1) + sp(1) + sess_str
-    content+=" ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_SESS" "$C_ICON_SESS") ${LB}${bold}${sess}${rst}${BG}"
+    content+=" ${sepc}│${rst}${BG} $(hud_icon "$ICON_SESS" "$C_ICON_SESS") ${LB}${bold}${sess}${rst}${BG}"
     vw=$(( vw + 1 + 1 + 1 + ${#sess_str} ))
   fi
   row "$content" "$vw"
 }
 
 metric_row() {
-  local label="$1" pct=$2 reset="${3:-}" sess="${4:-}"
+  local label="$1" pct=$2 reset="${3:-}" sess="${4:-}" reset_color="${5:-}" sep_color="${6:-}"
   local pct_str sc
   pct_str=$(printf "%3d%%" "$pct")
   sc=$(sev_color "$pct")
   local content=" ${LB}${bold}${label}${rst}${BG} $(bar "$pct" "$BW")${rst}${BG}  ${sc}${pct_str}${rst}${BG}"
-  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$sess"
+  _metric_finish "$content" "$(_metric_vw "$label" "$pct_str")" "$reset" "$sess" "$reset_color" "$sep_color"
 }
 
 metric_row_inv() {
@@ -287,7 +288,7 @@ render_workspace() {
 
   local ws_content
   if [ -n "$git_branch" ]; then
-    ws_content="$(hud_icon "$ICON_DIR" "$C_ICON_DIR") ${HI2}${cwd}${rst}${BG}  ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_GIT" "$C_ICON_GIT") ${HI2}${git_branch}${rst}${BG}${upstream_block}"
+    ws_content="$(hud_icon "$ICON_DIR" "$C_ICON_DIR") ${HI2}${cwd}${rst}${BG}  ${C_SEP_WS:-${C_SEP:-$FD}}│${rst}${BG} $(hud_icon "$ICON_GIT" "$C_ICON_GIT") ${HI2}${git_branch}${rst}${BG}${upstream_block}"
   else
     ws_content="$(hud_icon "$ICON_DIR" "$C_ICON_DIR") ${HI2}${cwd}${rst}${BG}"
   fi
@@ -299,18 +300,19 @@ render_workspace() {
 # Sets globals _effort_seg (rendered string) and _effort_vw (visual width, 0 if empty).
 # Not a subshell/command-sub so the width assignment reaches the caller.
 _effort_seg() {
-  local effort="$1"
+  local effort="$1" sep_color="${2:-}"
   _effort_seg=""
   _effort_vw=0
   [ -z "$effort" ] && return
-  _effort_seg="  ${C_SEP:-$FD}│${rst}${BG} $(hud_icon "$ICON_EFFORT" "$C_ICON_EFFORT") ${LB}${bold}${effort}${rst}${BG}"
+  local sepc="${sep_color:-${C_SEP:-$FD}}"
+  _effort_seg="  ${sepc}│${rst}${BG} $(hud_icon "$ICON_EFFORT" "$C_ICON_EFFORT") ${LB}${bold}${effort}${rst}${BG}"
   _effort_vw=$(( 2 + 1 + 1 + 1 + 1 + ${#effort} ))
 }
 
 render_claude() {
   local model="$1" sess="$2" cache="$3" rl_5h="$4" rl_5h_reset="$5" rl_wk="$6" rl_wk_reset="$7" ctx="$8" effort="${9:-}"
   local cache_str="${cache}%"
-  _effort_seg "$effort"
+  _effort_seg "$effort" "${C_SEP_CL_EFFORT:-}"
 
   # Row layout: "MDL <model> [effort]  │ CACHE <cache>"  (session moved to CTX row)
   # Everything except <model> is fixed; truncate model when the row overflows.
@@ -322,13 +324,13 @@ render_claude() {
     model="${model:0:$avail}…"
   fi
 
-  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${C_SEP:-$FD}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
+  local cl_content="${LB}${bold}${LBL_MDL} ${rst}${BG}${HI2}${model}${rst}${BG}${_effort_seg}  ${C_SEP_CL_CACHE:-${C_SEP:-$FD}}│${rst}${BG} ${LB}${bold}CACHE ${rst}${BG}${HI2}${cache_str}${rst}${BG}"
   local cl_vw=$(( ${#LBL_MDL} + 1 + ${#model} + _effort_vw + cache_vw ))
   sep_line "claude"
   row "$cl_content" "$cl_vw"
-  metric_row "5H  " "$rl_5h" "$rl_5h_reset"
-  metric_row "WK  " "$rl_wk" "$rl_wk_reset"
-  metric_row "CTX " "$ctx" "" "$sess"
+  metric_row "5H  " "$rl_5h" "$rl_5h_reset" "" "${C_ICON_RESET_5H:-}" "${C_SEP_CL_5H:-}"
+  metric_row "WK  " "$rl_wk" "$rl_wk_reset" "" "${C_ICON_RESET_WK:-}" "${C_SEP_CL_WK:-}"
+  metric_row "CTX " "$ctx" "" "$sess" "" "${C_SEP_CL_CTX:-}"
 }
 
 render_codex() {

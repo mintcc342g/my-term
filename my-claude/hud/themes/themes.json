@@ -1,0 +1,40 @@
+{
+  "themes": [
+    {
+      "id": "aemeath",
+      "name": "Aemeath",
+      "desc": {
+        "ja": "良い旅を。",
+        "en": "May your path be clear.",
+        "ko": "좋은 여행 되세요."
+      }
+    },
+    {
+      "id": "mygo",
+      "name": "MyGO",
+      "desc": {
+        "ja": "迷子でもいい、前へ進め！",
+        "en": "It's okay to be lost, just keep moving forward!",
+        "ko": "미아라도 괜찮아, 앞으로 나아가자!"
+      }
+    },
+    {
+      "id": "ave-mujica",
+      "name": "Ave Mujica",
+      "desc": {
+        "ja": "…ようこそ。Ave Mujicaの世界へ。",
+        "en": "…Welcome to the world of Ave Mujica.",
+        "ko": "…어서오세요, 아베무지카의 세계에."
+      }
+    },
+    {
+      "id": "millsage",
+      "name": "Millsage",
+      "desc": {
+        "ja": "両手いっぱいの幸せを、あなたに。",
+        "en": "A handful of happiness, just for you.",
+        "ko": "양손 가득한 행복을, 당신에게."
+      }
+    }
+  ]
+}

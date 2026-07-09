@@ -96,7 +96,7 @@ while true; do
     delete)       delete_my_claude ; last_action="${DELETE_LAST_ACTION:-delete}" ; break ;;
     hud-config)
       last_action="hud-config"
-      bash "$SCRIPT_DIR/my-claude/hud/configure.sh"
+      MYTERM_LANG="${MYTERM_LANG:-en}" bash "$SCRIPT_DIR/my-claude/hud/configure.sh"
       break ;;
     exit)         break ;;
   esac

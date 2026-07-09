@@ -442,6 +442,8 @@ _sync_hud_files() {
   cp -f "$SCRIPT_DIR/my-claude/hud/"*.sh "$HOME/.claude/my-hud/"
   chmod +x "$HOME/.claude/my-hud/"*.sh
   _mirror_sh "$SCRIPT_DIR/my-claude/hud/themes" "$HOME/.claude/my-hud/themes"
+  # theme manifest is JSON (not .sh) → _mirror_sh skips it; copy explicitly
+  cp -f "$SCRIPT_DIR/my-claude/hud/themes/themes.json" "$HOME/.claude/my-hud/themes/" 2>/dev/null || true
   cp -f "$SCRIPT_DIR/lib/ui.sh" "$HOME/.claude/my-hud/lib/"
   # lang catalog — ui.sh bootstraps i18n from lib/lang next to it, so the
   # deployed copy needs it too (keeps HUD configure.sh working standalone).
@@ -451,6 +453,18 @@ _sync_hud_files() {
   # config.json — only copy if not exists (preserve user settings)
   if [ ! -f "$HOME/.claude/my-hud/config.json" ]; then
     cp -f "$SCRIPT_DIR/my-claude/hud/config.json" "$HOME/.claude/my-hud/config.json"
+  fi
+
+  # Persist install language (MYTERM_LANG, set by ui_select_language upfront)
+  # into config.json so standalone configure.sh localizes the theme menu desc.
+  local lcfg="$HOME/.claude/my-hud/config.json"
+  if [ -f "$lcfg" ]; then
+    local ltmp; ltmp=$(mktemp)
+    if jq --arg l "${MYTERM_LANG:-en}" '.lang = $l' "$lcfg" > "$ltmp"; then
+      mv "$ltmp" "$lcfg"
+    else
+      rm -f "$ltmp"
+    fi
   fi
 
   # Heal a stale theme: if config.theme points at a theme the repo no longer
@@ -494,7 +508,7 @@ _install_hud() {
   _migrate_legacy_hud
   _sync_hud_files
   log_step "configure HUD…"
-  bash "$HOME/.claude/my-hud/configure.sh"
+  MYTERM_LANG="${MYTERM_LANG:-en}" bash "$HOME/.claude/my-hud/configure.sh"
 }
 
 # Pull latest Claude/HUD config from this repo into ~/.claude. No brew/alias

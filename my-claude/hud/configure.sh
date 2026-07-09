@@ -7,6 +7,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# install.sh 가 넘긴 언어를 ui.sh(MYTERM_LANG 덮어씀)보다 먼저 캡처.
+# 비어있으면 단독 실행 → 설치본 config.json .lang 으로 폴백.
+_ENV_LANG="${MYTERM_LANG:-}"
+
 # Config location: use installed config if exists, else project
 if [ -f "$HOME/.claude/my-hud/config.json" ]; then
   CONFIG="$HOME/.claude/my-hud/config.json"
@@ -56,23 +60,51 @@ on_off() {
 
 # ── Theme submenu ───────────────────────────────────────────────
 select_theme() {
-  local current_marker_0="" current_marker_1="" current_marker_2=""
-  [ "$theme" = "mygo" ] && current_marker_0=" (current)"
-  [ "$theme" = "aemeath" ] && current_marker_1=" (current)"
-  [ "$theme" = "ave-mujica" ] && current_marker_2=" (current)"
+  # themes/themes.json manifest 우선(id·name·언어별 desc), 없으면 themes/*.sh glob 폴백
+  local themes_dir="$SCRIPT_DIR/themes"
+  local manifest="$themes_dir/themes.json"
+  local -a themes=() opts=() descs=()
+  local id name d f
+
+  # 언어: install.sh가 넘긴 값 우선(프로젝트/설치 맥락) → 없으면 설치본 config.json .lang → en
+  local lang="${_ENV_LANG:-}"
+  [ -z "$lang" ] && lang=$(jq -r '.lang // ""' "$CONFIG" 2>/dev/null)
+  [ -z "$lang" ] && lang="en"
+  case "$lang" in en|ko|ja) ;; *) lang="en" ;; esac
+
+  if [ -f "$manifest" ] && jq -e '.themes' "$manifest" >/dev/null 2>&1; then
+    # desc 는 요청 언어 우선, 없으면 en→ja→ko 중 첫 비어있지 않은 값
+    while IFS=$'\t' read -r id name d; do
+      [ -z "$id" ] && continue
+      [ -f "$themes_dir/${id}.sh" ] || continue   # .sh 없는 항목은 건너뜀
+      themes+=("$id")
+      if [ "$id" = "$theme" ]; then opts+=("${name:-$id} (current)"); else opts+=("${name:-$id}"); fi
+      if [ -n "$d" ]; then descs+=("“${d}”"); else descs+=(""); fi
+    done < <(jq -r --arg lang "$lang" '
+      .themes[] | [
+        .id,
+        (.name // .id),
+        ([.desc[$lang], .desc.en, .desc.ja, .desc.ko] | map(select(. != null and . != "")) | (.[0] // ""))
+      ] | @tsv' "$manifest")
+  else
+    for f in "$themes_dir"/*.sh; do
+      [ -e "$f" ] || continue
+      id=$(basename "$f" .sh)
+      themes+=("$id")
+      if [ "$id" = "$theme" ]; then opts+=("$id (current)"); else opts+=("$id"); fi
+      descs+=("")
+    done
+  fi
+  opts+=("← Back"); descs+=("")
 
   local choice
-  ui_menu "Select Theme" choice \
-    "mygo${current_marker_0}" \
-    "aemeath${current_marker_1}" \
-    "ave-mujica${current_marker_2}" \
-    "← Back"
+  UI_MENU_DESC=("${descs[@]}")
+  ui_menu "Select Theme" choice "${opts[@]}"
 
-  case "$choice" in
-    0) theme="mygo" ;;
-    1) theme="aemeath" ;;
-    2) theme="ave-mujica" ;;
-  esac
+  # choice가 테마 인덱스 범위면 선택, 마지막(← Back)·취소(255)는 무시
+  if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -lt "${#themes[@]}" ]; then
+    theme="${themes[$choice]}"
+  fi
 }
 
 # ── Main loop ───────────────────────────────────────────────────
