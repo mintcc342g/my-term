@@ -48,14 +48,19 @@ run_install_interactive() {
   # Required tools first — declines exit the script entirely.
   install_required
 
+  # oh-my-zsh + newro theme before every other step: oh-my-zsh only writes its
+  # .zshrc template (which supplies `source oh-my-zsh.sh`, compinit, and the
+  # default theme the newro step rewrites) when no .zshrc exists yet — so it has
+  # to run before anything else creates one. newro depends on that template.
+  ui_confirm_if_command brew "$L_STEP_OMZ" install_oh_my_zsh "Homebrew"
+  ui_confirm_if_dir "$HOME/.oh-my-zsh" "$L_STEP_THEME" install_shell_theme "oh-my-zsh"
+
   ui_confirm_run "$L_STEP_CONVENIENCE" install_convenience
 
   ui_confirm_run "$L_STEP_GIT_SSH" install_git_ssh
 
-  install_ides "$L_STEP_OMZ"
+  install_ides "$L_STEP_ASDF"
 
-  ui_confirm_if_command brew "$L_STEP_OMZ" install_oh_my_zsh "Homebrew"
-  ui_confirm_if_dir "$HOME/.oh-my-zsh" "$L_STEP_THEME" install_shell_theme "oh-my-zsh"
   ui_confirm_if_command brew "$L_STEP_ASDF" install_asdf_langs "Homebrew"
   ui_confirm_if_command brew "$L_STEP_PYENV" install_pyenv "Homebrew"
   ui_confirm_if_command brew "$L_STEP_AI" install_ai_tools "Homebrew"
