@@ -10,7 +10,7 @@ L_NO="아니요"
 L_NO_SKIP="아니요 (건너뛰기)"
 L_NO_EXIT="아니요 (종료)"
 L_NO_DONE="아니요 (완료)"
-L_DONE_ITEM="✓ 완료"
+L_DONE_ITEM="✓ 완료 (다음 단계로)"
 L_UI_HINT="↑↓ 이동 │ Enter 선택"
 L_EXIT_ABORTED="설치를 중단하고 종료합니다."
 
@@ -228,7 +228,7 @@ lang_obs_wikipath_help() {
 }
 
 # ── AI 도구 (ai-tools.sh) ───────────────────────────────────────
-L_AI_MENU_TITLE="AI 도구 — 설치할 항목 선택 (계속하려면 Done)"
+L_AI_MENU_TITLE="AI 도구 — 설치할 항목 선택"
 L_AI_METHOD_TITLE="Claude Code 설치 방식"
 L_AI_METHOD_STABLE="Stable (brew cask, 안정 버전)"
 L_AI_METHOD_LATEST="Latest (brew cask, 안정화 버전이 아닌 최신 버전)"

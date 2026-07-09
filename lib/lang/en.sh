@@ -9,7 +9,7 @@ L_NO="No"
 L_NO_SKIP="No (Skip)"
 L_NO_EXIT="No (Exit)"
 L_NO_DONE="No (Done)"
-L_DONE_ITEM="✓ Done"
+L_DONE_ITEM="✓ Done (next step)"
 L_UI_HINT="↑↓ move │ Enter select"
 L_EXIT_ABORTED="Aborted — exiting installer."
 
@@ -227,7 +227,7 @@ lang_obs_wikipath_help() {
 }
 
 # ── AI tools (ai-tools.sh) ──────────────────────────────────────
-L_AI_MENU_TITLE="AI tools — select to install (or Done to continue)"
+L_AI_MENU_TITLE="AI tools — select to install"
 L_AI_METHOD_TITLE="Claude Code install method"
 L_AI_METHOD_STABLE="Stable (brew cask, stable version)"
 L_AI_METHOD_LATEST="Latest (brew cask, newest version, not the stabilized one)"
