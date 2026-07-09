@@ -29,9 +29,15 @@ install_convenience() {
   log_start "brew install package managers…"
   brew install oven-sh/bun/bun
 
-  # television shell integration
+  # television shell integration. `tv init zsh` calls compdef, so load the
+  # completion system first — otherwise new shells print "command not found:
+  # compdef" when compinit hasn't run yet (e.g. oh-my-zsh installed with
+  # KEEP_ZSHRC doesn't wire it in). `-i` skips insecure dirs without prompting.
   local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-  rc_upsert_block "$ZSHRC" "television" 'eval "$(tv init zsh)"'
+  rc_upsert_block "$ZSHRC" "television" 'if (( ! $+functions[compdef] )); then
+  autoload -Uz compinit && compinit -i
+fi
+eval "$(tv init zsh)"'
   export ZSHRC_MODIFIED=true
 
   log_done "convenience tools installed."
