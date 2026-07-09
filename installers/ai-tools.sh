@@ -129,10 +129,8 @@ _install_claude_code() {
   fi
 
   local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-  if ! grep -q "^alias ${alias_name}=" "$ZSHRC" 2>/dev/null; then
-    echo "alias ${alias_name}=\"claude\"" >> "$ZSHRC"
-    export ZSHRC_MODIFIED=true
-  fi
+  rc_upsert_block "$ZSHRC" "claude-alias" "alias ${alias_name}=\"claude\""
+  export ZSHRC_MODIFIED=true
   log_done "alias '${alias_name}=claude' added."
 
   # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab).
@@ -615,7 +613,7 @@ _delete_owned_dirs() {
 # SSH key files referenced by the git-ssh block are left in place.
 _delete_rc_blocks() {
   local f t
-  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television git-ssh"
+  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television claude-alias git-ssh"
   for f in "$HOME/.zshrc" "$HOME/.zprofile"; do
     [ -f "$f" ] || continue
     for t in $tags; do
