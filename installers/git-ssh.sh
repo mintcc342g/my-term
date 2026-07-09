@@ -233,10 +233,7 @@ _git_ssh_prompt_directory() {
   bind '"\e[Z": menu-complete-backward' 2>/dev/null || true
   bind 'set completion-ignore-case on' 2>/dev/null || true
   bind 'set match-hidden-files off' 2>/dev/null || true
-  # Dim example precedes the yellow label; \001..\002 wrap the color escapes so
-  # readline counts prompt width correctly. bash 3.2 has no `read -i` prefill, so
-  # this is a hint, not an editable default.
-  local prompt=$'\001\033[2m\002'" (~/Documents/works)"$'\001\033[0m\002'$'\001\033[33;1m\002'" ${L_GITSSH_DIR_LABEL}"$'\001\033[0m\002'
+  local prompt=$'\001\033[33;1m\002'" ${L_GITSSH_DIR_LABEL}"$'\001\033[0m\002'
 
   local dir_path
   while true; do

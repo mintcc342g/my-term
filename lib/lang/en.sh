@@ -188,6 +188,7 @@ lang_gitssh_dir_help() {
   echo -e "${UI_BLUE_BOLD} SSH key — directory${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
   echo -e " ${UI_DIM}Directory where the '${nickname}' key applies (Tab to autocomplete).${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}   e.g. ~/Documents/works${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}git in this path (and below) picks the '${nickname}' key automatically.${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}The path is created if it doesn't exist.${UI_RESET}\n" > /dev/tty
 }
