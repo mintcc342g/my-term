@@ -230,8 +230,8 @@ lang_obs_wikipath_help() {
 # ── AI 도구 (ai-tools.sh) ───────────────────────────────────────
 L_AI_MENU_TITLE="AI 도구 — 설치할 항목 선택 (계속하려면 Done)"
 L_AI_METHOD_TITLE="Claude Code 설치 방식"
-L_AI_METHOD_STABLE="Stable (brew cask — 수동 업그레이드)"
-L_AI_METHOD_LATEST="Latest (brew cask @latest — 항상 최신)"
+L_AI_METHOD_STABLE="Stable (brew cask, 안정 버전)"
+L_AI_METHOD_LATEST="Latest (brew cask, 안정화 버전이 아닌 최신 버전)"
 L_AI_ALIAS_HEADER="Claude alias 설정"
 L_AI_ALIAS_PROMPT="claude 명령어의 alias 를 입력하세요 (기본값: c)"
 L_AI_ALIAS_LABEL="alias: "
