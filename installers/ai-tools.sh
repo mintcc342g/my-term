@@ -209,7 +209,7 @@ _sync_claude_files() {
   # the @co flow runs end to end in that language (no translation round-trip).
   mkdir -p "$HOME/.claude/my-collab"
   chmod 700 "$HOME/.claude/my-collab"
-  local _lang_name="English"; [ "${MYTERM_LANG:-en}" = "ko" ] && _lang_name="Korean"
+  local _lang_name; _lang_name="$(lang_response_name)"
   cp -f "$SCRIPT_DIR/my-claude/collab/co-agents.json" \
         "$SCRIPT_DIR/my-claude/collab/codex-collab.sh" "$HOME/.claude/my-collab/"
   sed "s|{{RESPONSE_LANG}}|${_lang_name}|g" "$SCRIPT_DIR/my-claude/collab/co-directive.md" \
@@ -333,11 +333,11 @@ _install_default_instructions() {
     [ -f "$f" ] || continue
     local base suffix name begin end
     base=$(basename "$f" .md)
-    # A trailing .en/.ko marks a language variant; install only the matching one.
-    # Anything else is a shared block installed for every language.
+    # A trailing .en/.ko/.ja marks a language variant; install only the matching
+    # one. Anything else is a shared block installed for every language.
     suffix="${base##*.}"
     case "$suffix" in
-      en|ko)
+      en|ko|ja)
         [ "$suffix" = "$lang" ] || continue
         name="${base%.*}"
         ;;

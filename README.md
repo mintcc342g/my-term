@@ -1,4 +1,4 @@
-**[한국어](#korean) | [English](#english)**
+**[한국어](#korean) | [English](#english) | [日本語](#japanese)**
 
 <a id="korean"></a>
 
@@ -22,7 +22,7 @@ cd my-term
 ./install.sh
 ```
 
-인스톨러를 실행하면 가장 먼저 **표시 언어(한국어 / English)** 를 고릅니다. 이후 모든 메뉴와 안내가 그 언어로 나옵니다. 메뉴는 화살표(↑↓)로 움직이고 Enter 로 선택하며, 단계마다 건너뛰기와 종료가 따로 있어 원하는 항목만 설치할 수 있습니다.
+인스톨러를 실행하면 가장 먼저 **표시 언어(한국어 / English / 日本語)** 를 고릅니다. 이후 모든 메뉴와 안내가 그 언어로 나옵니다. 메뉴는 화살표(↑↓)로 움직이고 Enter 로 선택하며, 단계마다 건너뛰기와 종료가 따로 있어 원하는 항목만 설치할 수 있습니다.
 
 ## 업데이트
 
@@ -165,7 +165,7 @@ ssh -T git@github.com
 
 <a id="english"></a>
 
-**[한국어](#korean) | [English](#english)**
+**[한국어](#korean) | [English](#english) | [日本語](#japanese)**
 
 # my-term
 
@@ -187,7 +187,7 @@ cd my-term
 ./install.sh
 ```
 
-The first thing the installer asks is your **display language (한국어 / English)**. Every menu and prompt afterward appears in that language. Navigate menus with the arrow keys (↑↓) and select with Enter; each step has its own Skip and Exit, so you can install only the items you want.
+The first thing the installer asks is your **display language (한국어 / English / 日本語)**. Every menu and prompt afterward appears in that language. Navigate menus with the arrow keys (↑↓) and select with Enter; each step has its own Skip and Exit, so you can install only the items you want.
 
 ## Update
 
@@ -323,3 +323,172 @@ Syncs the config in `my-claude/` into `~/.claude`.
 ### rectangle
 
 - Uses the `RectangleConfig.json` file.
+
+<br>
+
+---
+
+<a id="japanese"></a>
+
+**[한국어](#korean) | [English](#english) | [日本語](#japanese)**
+
+# my-term
+
+Apple Silicon の Mac で、ターミナルと開発環境をまとめてセットアップするインストーラーです。Homebrew パッケージ、zsh テーマ、複数アカウントの Git SSH、Claude Code・Codex の設定まで、メニューをたどりながら必要なものだけ選んで入れられます。
+
+⚠️ 作者が自分ひとりで使うために作った、こだわり全開の個人設定です。😅
+
+## 事前準備
+
+- **macOS Command Line Tools**（`curl`、`git`）: 入っている必要があります。無ければインストーラーが `xcode-select --install` を案内して終了します。
+- **Nerd Fonts v3.0.0 以上**: HUD が Material Design Icons のコードポイント（`U+F062C` など）を使うので、v3 のマッピングが要ります。古いフォントだとアイコンが化けます。
+- **iTerm2**: インストールしたらプロファイルを合わせてください。おすすめの値は末尾の [各プログラムの設定値](#ja-per-app-settings) にまとめてあります。
+
+## インストール
+
+```bash
+git clone https://github.com/mintcc342g/my-term.git
+cd my-term
+./install.sh
+```
+
+インストーラーを起動すると、まず **表示言語（한국어 / English / 日本語）** を選びます。以降のメニューと案内はすべてその言語で出ます。メニューは矢印キー（↑↓）で動かして Enter で選びます。ステップごとにスキップと終了が別々にあるので、欲しい項目だけ入れられます。
+
+## アップデート
+
+プロジェクトのコードが変わったときだけ実行すれば大丈夫です。アップデートは brew のインストールや alias 設定といったインストール手順をすべて飛ばして、`~/.claude/` へファイルを sync するだけです。今の sync 対象は AI アシスタントの設定と HUD です。
+
+> ⚠️ `~/.claude/` の中の `my-hooks/`、`my-collab/` は `cp -f` で上書きするので、自分で直した内容は消えます。`CLAUDE.md` はインストーラーが管理するブロック（`MYTERM:OPTIONAL:...`）だけを更新し、それ以外に自分で書いた内容はそのまま残します。（HUD の `config.json` と Claude の `settings.json` はユーザーの変更分をマージして残します。）
+
+**やり方**
+
+1. `git pull origin main` で最新のコードを取得します。
+2. `./install.sh` を実行して **Update** を選びます。
+3. 変更は **次の Claude Code セッションから** 反映されます。開いているセッションは再起動が要ります。
+
+## インストール項目
+
+### 必須
+
+必須ツールのインストールを断ると、インストーラーはその場で終了します。
+
+- Homebrew、jq
+
+### 任意
+
+各ステップは、必要な依存ツールが無ければインストールせずに自動でスキップします。
+
+- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun など
+- **Git SSH keys (multi-account)** — ディレクトリごとに GitHub アカウントのキーを自動で振り分け（[詳しく](#ja-git-ssh-keys)）
+- **IDE** — Antigravity IDE をインストールして、短い起動コマンド（symlink）を登録
+- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
+- **newro theme**
+- **asdf + 言語プラグイン** — Golang, Java
+- **pyenv + pyenv-virtualenv**
+- **AI tools** — Claude Code, OpenCode, Codex
+- **Obsidian + wiki tooling** — AI の記憶管理
+
+<a id="ja-git-ssh-keys"></a>
+
+## Git SSH キー（複数アカウント）
+
+GitHub アカウントを複数使うとき、アカウントごとのキーをディレクトリ単位で自動的に振り分ける設定です。リモート URL は標準の `git@github.com:...` のままにして、`~/.ssh/config` に `Match exec` ブロックを入れ、今の作業ディレクトリに合ったキーを選ばせます。SourceTree のように `~/.ssh/config` に従う git クライアントでも同じように動きます。
+
+### 仕組み
+
+- **最初に作ったキーが default キーになります。** ディレクトリのマッチングなしに fallback として動き、どのマッチング規則にも当たらないパスではこのキーが使われます。
+- **2 つめ以降はディレクトリを指定します。** 入力したパス（とその配下）で作業するときだけ、そのキーが自動的に選ばれます。指定したディレクトリが無ければ一緒に作ります。
+- キーのファイル名は入力した nickname で決まります（`~/.ssh/id_<nickname>`）。同じ名前のキーがすでにあると断られるので、別の nickname で入力し直してください。nickname を空のまま Enter を押すと、キーの作成をやめて次のステップに進みます。
+- キーを作ると public key が自動でクリップボードにコピーされます。[GitHub Settings → SSH keys](https://github.com/settings/ssh/new) にそのまま貼り付ければ大丈夫です。
+- GitHub への登録を終えて Enter を押すと、「キーをもう 1 つ作るか」を聞かれます。必要なだけ繰り返してください。
+
+### キーの追加
+
+キーをもっと作りたいときは、**インストーラーをもう一度実行** して Git SSH のステップで Yes を選んでください。`~/.ssh/config` に default キーがあれば自動で検出し、最初の登録ステップを飛ばしてディレクトリマッチのキー登録へそのまま進みます（既存の default キーは上書きしません）。
+
+自動検出は次のどちらの場合でも動きます。
+
+- 以前インストーラーで登録した default キー（管理ブロック内の `Host github.com`）
+- ユーザーが `~/.ssh/config` に直接書いた `Host github.com`
+
+後者の場合は、新しく追加するディレクトリマッチのキーが既存の設定に隠れないよう、インストーラーの管理ブロックを `~/.ssh/config` の一番上へ移します。移す前に案内画面で確認を取ります。
+
+管理ブロックの内と外に `Host github.com` が両方ある競合状態を検出すると、インストーラーは整理の案内だけして終了します。ssh の first-match 規則のせいで片方が隠れている状態なので、手作業での整理が要ります。
+
+### 検証
+
+```bash
+cd <登録したディレクトリ>
+ssh -T git@github.com
+```
+
+`Hi <github-username>!` が出れば、そのディレクトリにマッチしたキーで認証できています。
+
+### 制約
+
+- ディレクトリマッチは、キーを作るときに入力したパス（とその配下）でだけ動きます。それ以外のパスでは default キーにフォールバックします。
+- 同じディレクトリを 2 回登録すると、あとから登録したキーが優先されます。前の登録は `~/.ssh/config` に残りますが無視されるので、整理は自分でしてください。
+
+## AI アシスタント（Claude Code & Codex）
+
+`my-claude/` の設定を `~/.claude` に同期して使います。
+
+### インストール時に自動でやること
+
+- hooks・collab スクリプトの配置（`~/.claude/my-hooks/`、`~/.claude/my-collab/`）
+- `settings.json` の hooks・permissions のマージ
+- Codex がすでに入っていれば MCP サーバーを自動設定（必要なら AI tools のステップで Codex を選んでください）
+
+### 主な機能
+
+- **応答・コードスタイルの指示文（`CLAUDE.md`）**: `~/.claude/CLAUDE.md` に応答スタイル・コードスタイルの指示ブロック（`MYTERM:OPTIONAL:...`）を入れます。応答スタイルはインストール言語に合わせた版（韓国語版 / 英語版）、コードスタイルは共通のものが入ります。要らなければそのブロックを消してください — アップデートしても再追加されません。
+- **マルチエージェント協調（`@co`）**: プロンプトに `@co` を付けると、Codex を MCP ツールとして並列に呼び出したうえで回答をまとめます（議論ループに対応）。エージェントは `~/.claude/my-collab/co-agents.json` で追加します。
+  ```json
+  [
+    { "name": "Codex", "command": "codex exec --skip-git-repo-check" },
+    { "name": "AnotherAgent", "command": "another-cli exec" }
+  ]
+  ```
+- **SessionStart フック**: asdf の言語環境変数（GOROOT、JAVA_HOME など）を Claude Code のセッションに自動で注入します。
+- **言語別の自動フォーマットフック（PostToolUse）**: Claude がファイルを直すと、その言語の標準フォーマッターが自動で走ります。今は Go（`gofmt`）だけ対応していて、他の言語も追加できます。
+- ステータスラインの保護フックと、キャッシュの自動整理スクリプトが含まれています。
+- **Obsidian wiki（`@wk`）**: `@wk` プロンプトを検出すると、UserPromptSubmit フックが wiki 活用の指示文を注入します。運用ルールは wiki の `schema.md` にあり、wiki のパスはインストール時に入力した値を使います。
+
+### HUD ステータスライン
+
+- テーマ 4 種（mygo, ave-mujica, aemeath, millsage）から選択
+- ターミナルの幅に応じて full / compact を自動で切り替え
+
+**HUD 設定の変更**
+
+1. `./install.sh` を実行
+2. **HUD configure** を選択（HUD が入っているときだけメニューに出ます）
+3. テーマ変更: Theme → 好きなテーマ → Save & Exit
+4. セクションの on/off: Workspace, Claude, Codex をそれぞれトグル
+
+### 機密ファイル・コマンドへのアクセス遮断
+
+- デフォルトで `.env`、`.ssh`、`.pem`、`.key` など主要な機密ファイルの読み取り・編集が遮断されています。
+- クラウド/インフラ操作コマンドの `aws`、`kubectl` の実行も遮断されています。
+- パターンを追加したいときは `my-claude/settings/settings.json` の `permissions.deny` に入れてください。
+
+<a id="ja-per-app-settings"></a>
+
+## 各プログラムの設定値
+
+### iTerm2
+
+- **ハングルの字母分離を解決**: Settings → Profiles → プロファイル選択 → Text → `Unicode normalization form` → HFS+
+- **Nerd フォント**: Settings → Profile → Text → Text Rendering → Use built-in Powerline glyphs にチェック
+- **カーソルの点滅**: Settings → Profiles → プロファイル選択 → Text → Cursor → Blink にチェック
+- **tmux split spans**: Settings → General → Magic → Python API を有効化して再起動 → Claude Code のチームモードを有効化して `c --teammate-mode tmux` で実行
+
+### maccy
+
+- General — Search: Fuzzy / Behavior: Paste without formatting / Open: Option + Command + v
+- Appearance — Popup at: Menu icon / Pin to: Top /「Show recent copy next to menu icon」だけ外して他は全部チェック
+- Advanced — 全部チェックを外す
+
+### rectangle
+
+- `RectangleConfig.json` ファイルを使います。

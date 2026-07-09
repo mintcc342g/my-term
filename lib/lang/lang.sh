@@ -16,7 +16,7 @@ _LANG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lang_load() {
   local code="${1:-en}"
   case "$code" in
-    en|ko) ;;
+    en|ko|ja) ;;
     *) code="en" ;;
   esac
   if [ -f "$_LANG_DIR/${code}.sh" ]; then
@@ -35,14 +35,25 @@ tf() {
   printf "$_fmt" "$@"
 }
 
-# ui_select_language — 의도적으로 이중언어인 단 하나의 화면. 선택값으로 카탈로그를
+# lang_response_name [code] — 응답 언어의 영어 이름. 프롬프트 치환({{RESPONSE_LANG}})용.
+# 인자 생략 시 현재 로드된 MYTERM_LANG 기준.
+lang_response_name() {
+  case "${1:-${MYTERM_LANG:-en}}" in
+    ko) echo "Korean" ;;
+    ja) echo "Japanese" ;;
+    *)  echo "English" ;;
+  esac
+}
+
+# ui_select_language — 의도적으로 다국어인 단 하나의 화면. 선택값으로 카탈로그를
 # 로드한다. 취소(q/esc)면 현재 기본값(en) 유지.
 ui_select_language() {
   local _sel=""
-  ui_menu "언어 선택 / Language" _sel "한국어" "English"
+  ui_menu "언어 선택 / Language" _sel "한국어" "English" "日本語"
   case "$_sel" in
     0) lang_load ko ;;
     1) lang_load en ;;
+    2) lang_load ja ;;
     *) : ;;
   esac
 }

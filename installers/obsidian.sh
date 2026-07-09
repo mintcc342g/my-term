@@ -118,7 +118,7 @@ _sync_obsidian_wiki_files() {
     # wk-* 만 ~/.claude/my-wiki/ 로 deploy (schema.md 는 _install_wiki_defaults 담당).
     #   - wk-trigger.sh: install 시점에 WIKI_PATH 치환
     #   - wk-directive.md: 응답 언어({{RESPONSE_LANG}}) 를 설치 언어로 치환
-    local _lang_name="English"; [ "${MYTERM_LANG:-en}" = "ko" ] && _lang_name="Korean"
+    local _lang_name; _lang_name="$(lang_response_name)"
     sed "s|{{WIKI_PATH}}|${wiki_path}|g" "$SCRIPT_DIR/my-claude/wiki/wk-trigger.sh" \
       > "$HOME/.claude/my-wiki/wk-trigger.sh"
     sed "s|{{RESPONSE_LANG}}|${_lang_name}|g" "$SCRIPT_DIR/my-claude/wiki/wk-directive.md" \
@@ -161,7 +161,7 @@ _install_wiki_defaults() {
 
   # my-claude/wiki/ 안의 wk-* 는 훅 파일 (_sync_obsidian_wiki_files 가 처리),
   # 나머지는 사용자 wiki 로 들어가는 default content (schema.md 등).
-  local _lang_name="English"; [ "${MYTERM_LANG:-en}" = "ko" ] && _lang_name="Korean"
+  local _lang_name; _lang_name="$(lang_response_name)"
   local src dst base
   for src in "$wiki_dir"/*; do
     [ -f "$src" ] || continue
