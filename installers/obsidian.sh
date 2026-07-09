@@ -10,9 +10,11 @@ install_obsidian() {
     return 1
   fi
 
-  # 1. Install Obsidian (consent implied by entering this step)
-  log_step "brew install --cask obsidian…"
-  brew list --cask obsidian &>/dev/null || brew install --cask obsidian || {
+  # 1. Install Obsidian (consent implied by entering this step). --adopt takes
+  # over an Obsidian.app already in /Applications instead of erroring with
+  # "It seems there is already an App at …" (see convenience.sh).
+  log_step "brew install --cask --adopt obsidian…"
+  brew list --cask obsidian &>/dev/null || brew install --cask --adopt obsidian || {
     log_fail "Obsidian install failed"
     return 1
   }
