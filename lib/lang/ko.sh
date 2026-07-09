@@ -185,10 +185,12 @@ lang_gitssh_nick_help() {
 
 # 디렉토리 안내 화면.
 lang_gitssh_dir_help() {
+  local nickname="${1:-}"
   echo -e "${UI_BLUE_BOLD} SSH 키 — 디렉토리${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}이 키를 사용할 디렉토리 경로 (Tab 자동완성).${UI_RESET}" > /dev/tty
-  echo -e " ${UI_DIM}해당 경로(및 하위)에서 git 작업 시 이 키가 자동 선택됩니다.${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}'${nickname}' 키를 사용할 디렉토리 경로 (Tab 자동완성).${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}   예) ~/Documents/works${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}해당 경로(및 하위)에서 git 작업 시 '${nickname}' 키가 자동 선택됩니다.${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}경로가 없으면 자동으로 생성됩니다.${UI_RESET}\n" > /dev/tty
 }
 

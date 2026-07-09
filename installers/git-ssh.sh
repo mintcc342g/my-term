@@ -186,7 +186,7 @@ _git_ssh_create_one() {
     log_done "Registered as default key in $SSH_CONFIG"
   else
     local dir_path
-    dir_path=$(_git_ssh_prompt_directory) || { log_fail "Directory prompt failed."; sleep 1; return 0; }
+    dir_path=$(_git_ssh_prompt_directory "$nickname") || { log_fail "Directory prompt failed."; sleep 1; return 0; }
     if [ ! -d "$dir_path" ]; then
       if ! mkdir -p "$dir_path"; then
         log_fail "Failed to create $dir_path"
@@ -224,8 +224,9 @@ _git_ssh_create_one() {
 # 결과는 stdout 으로 반환 — 호출부는 command substitution 으로 받음.
 # 빈 입력은 거절 (디렉토리는 필수).
 _git_ssh_prompt_directory() {
+  local nickname="${1:-}"
   ui_clear_screen
-  lang_gitssh_dir_help
+  lang_gitssh_dir_help "$nickname"
 
   set -o emacs 2>/dev/null || true
   bind '"\t": menu-complete' 2>/dev/null || true
