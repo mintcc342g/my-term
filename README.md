@@ -48,11 +48,11 @@ cd my-term
 
 각 단계는 필요한 의존성 툴이 없으면 설치하지 않고 자동으로 건너뜁니다.
 
+- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
+- **newro theme**
 - **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun 등
 - **Git SSH keys (multi-account)** — 디렉토리별로 GitHub 계정 키를 자동 분기 ([자세히](#git-ssh-키-다중-계정))
 - **IDE** — Antigravity IDE 를 설치하고 짧은 실행 명령(symlink)을 등록
-- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
-- **newro theme**
 - **asdf + 언어 플러그인** — Golang, Java
 - **pyenv + pyenv-virtualenv**
 - **AI tools** — Claude Code, OpenCode, Codex
@@ -109,7 +109,7 @@ ssh -T git@github.com
 
 ### 주요 기능
 
-- **답변·코드 스타일 지시문 (`CLAUDE.md`)**: `~/.claude/CLAUDE.md` 에 답변 스타일·코드 스타일 지시문 블록(`MYTERM:OPTIONAL:...`)을 넣습니다. 답변 스타일은 설치 언어에 맞는 버전(한국어판 / 영어판)으로, 코드 스타일은 공용으로 들어갑니다. 원하지 않으면 해당 블록을 지우세요 — 업데이트해도 다시 추가되지 않습니다.
+- **답변·코드 스타일 지시문 (`CLAUDE.md`)**: `~/.claude/CLAUDE.md` 에 답변 스타일·코드 스타일 지시문 블록(`MYTERM:OPTIONAL:...`)을 넣습니다. 답변 스타일은 설치 언어에 맞는 버전(한국어판 / 영어판 / 일본어판)으로, 코드 스타일은 공용으로 들어갑니다. 원하지 않으면 해당 블록을 지우세요 — 업데이트해도 다시 추가되지 않습니다.
 - **멀티 에이전트 협업 (`@co`)**: 프롬프트에 `@co` 를 붙이면 Codex 를 MCP 도구로 병렬 호출한 뒤 답변을 종합합니다(토론 루프 지원). 에이전트는 `~/.claude/my-collab/co-agents.json` 에서 추가합니다.
   ```json
   [
@@ -213,11 +213,11 @@ Declining the required tools exits the installer immediately.
 
 Each step auto-skips when its dependency isn't present.
 
+- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
+- **newro theme**
 - **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun, and more
 - **Git SSH keys (multi-account)** — auto-routes GitHub account keys per directory ([details](#git-ssh-keys-multi-account))
 - **IDE** — installs Antigravity IDE and registers a short launch command (symlink)
-- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
-- **newro theme**
 - **asdf + language plugins** — Golang, Java
 - **pyenv + pyenv-virtualenv**
 - **AI tools** — Claude Code, OpenCode, Codex
@@ -274,7 +274,7 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 ### Key features
 
-- **Response & code style instructions (`CLAUDE.md`)**: adds response-style and code-style instruction blocks (`MYTERM:OPTIONAL:...`) to `~/.claude/CLAUDE.md`. The response style matches your install language (Korean / English); the code style is shared across languages. Don't want them? Delete the block — Update won't re-add it.
+- **Response & code style instructions (`CLAUDE.md`)**: adds response-style and code-style instruction blocks (`MYTERM:OPTIONAL:...`) to `~/.claude/CLAUDE.md`. The response style matches your install language (Korean / English / Japanese); the code style is shared across languages. Don't want them? Delete the block — Update won't re-add it.
 - **Multi-agent collaboration (`@co`)**: prefix a prompt with `@co` to call Codex in parallel as an MCP tool, then synthesize the answers (discussion loop supported). Add agents in `~/.claude/my-collab/co-agents.json`:
   ```json
   [
@@ -378,11 +378,11 @@ cd my-term
 
 各ステップは、必要な依存ツールが無ければインストールせずに自動でスキップします。
 
+- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
+- **newro theme**
 - **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun など
 - **Git SSH keys (multi-account)** — ディレクトリごとに GitHub アカウントのキーを自動で振り分け（[詳しく](#ja-git-ssh-keys)）
 - **IDE** — Antigravity IDE をインストールして、短い起動コマンド（symlink）を登録
-- **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
-- **newro theme**
 - **asdf + 言語プラグイン** — Golang, Java
 - **pyenv + pyenv-virtualenv**
 - **AI tools** — Claude Code, OpenCode, Codex
@@ -441,7 +441,7 @@ ssh -T git@github.com
 
 ### 主な機能
 
-- **応答・コードスタイルの指示文（`CLAUDE.md`）**: `~/.claude/CLAUDE.md` に応答スタイル・コードスタイルの指示ブロック（`MYTERM:OPTIONAL:...`）を入れます。応答スタイルはインストール言語に合わせた版（韓国語版 / 英語版）、コードスタイルは共通のものが入ります。要らなければそのブロックを消してください — アップデートしても再追加されません。
+- **応答・コードスタイルの指示文（`CLAUDE.md`）**: `~/.claude/CLAUDE.md` に応答スタイル・コードスタイルの指示ブロック（`MYTERM:OPTIONAL:...`）を入れます。応答スタイルはインストール言語に合わせた版（韓国語版 / 英語版 / 日本語版）、コードスタイルは共通のものが入ります。要らなければそのブロックを消してください — アップデートしても再追加されません。
 - **マルチエージェント協調（`@co`）**: プロンプトに `@co` を付けると、Codex を MCP ツールとして並列に呼び出したうえで回答をまとめます（議論ループに対応）。エージェントは `~/.claude/my-collab/co-agents.json` で追加します。
   ```json
   [
