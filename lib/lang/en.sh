@@ -219,9 +219,9 @@ lang_obs_wikipath_help() {
       echo -e " ${UI_DIM}    ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/<vault-name>${UI_RESET}\n" > /dev/tty
       ;;
     2)
-      echo -e " ${UI_DIM}  Git — clone the repo to a local directory first, then enter${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}  that local path here (NOT a git URL). git config / ssh key may${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}  need to be configured beforehand.${UI_RESET}\n" > /dev/tty
+      echo -e " ${UI_DIM}  Git — point to the local git repository directory to use.${UI_RESET}" > /dev/tty
+      echo -e " ${UI_DIM}  No repo yet? Give a path and the directory is created for you.${UI_RESET}" > /dev/tty
+      echo -e " ${UI_DIM}     e.g. ~/Documents/my-notes${UI_RESET}\n" > /dev/tty
       ;;
   esac
 }

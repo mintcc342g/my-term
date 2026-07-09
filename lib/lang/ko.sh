@@ -220,9 +220,9 @@ lang_obs_wikipath_help() {
       echo -e " ${UI_DIM}    ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/<vault-name>${UI_RESET}\n" > /dev/tty
       ;;
     2)
-      echo -e " ${UI_DIM}  Git — 먼저 리포지토리를 로컬에 clone 한 다음, 그 로컬 경로를${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}  여기에 입력하세요 (git URL 아님). git config 나 ssh 키를${UI_RESET}" > /dev/tty
-      echo -e " ${UI_DIM}  미리 설정해야 할 수 있습니다.${UI_RESET}\n" > /dev/tty
+      echo -e " ${UI_DIM}  Git — 사용할 로컬 git 저장소 디렉토리를 지정하세요.${UI_RESET}" > /dev/tty
+      echo -e " ${UI_DIM}  아직 저장소가 없으면 경로만 지정해도 새 디렉토리를 만들어 줍니다.${UI_RESET}" > /dev/tty
+      echo -e " ${UI_DIM}     예) ~/Documents/my-notes${UI_RESET}\n" > /dev/tty
       ;;
   esac
 }
