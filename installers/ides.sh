@@ -3,6 +3,7 @@
 # source'd by install.sh
 
 install_ides() {
+  local next_step="${1:-}"   # label of the step that follows, shown on the "move on" option
   log_start "IDE setup…"
 
   if ! command -v brew &>/dev/null; then
@@ -27,14 +28,22 @@ install_ides() {
     local action="${menu_actions[$choice]:-skip}"
 
     case "$action" in
-      # `|| true`: IDE setup is optional. A non-fatal failure (e.g. the "launch
-      # the IDE once, then re-run" advisory when its bin dir doesn't exist yet)
-      # returns nonzero and would otherwise abort the whole installer under
-      # `set -e`. The failure is already logged; just keep going.
+      # `|| true`: IDE setup is optional, and its non-fatal failures (e.g. the
+      # "launch the IDE once, then re-run" advisory before its bin dir exists)
+      # return nonzero, which would otherwise abort the installer under `set -e`.
       antigravity) touched=1; _install_antigravity || true ;;
       skip)        break ;;
       quit)        ui_abort 0 ;;
     esac
+
+    # Only install actions reach here (skip/quit already left the loop). Ask
+    # whether to add another IDE or move on — naming the next step so the user
+    # knows where "continue" leads instead of landing back on this menu.
+    local cont=""
+    ui_menu "$L_IDE_MORE_TITLE" cont \
+      "$L_IDE_ANOTHER" \
+      "$(tf L_IDE_PROCEED_FMT "$next_step")"
+    [ "$cont" = "0" ] || break   # 0=another IDE → loop; anything else → move on
   done
 
   # install_ides is called directly (no ui_confirm_run wrapper), so leave

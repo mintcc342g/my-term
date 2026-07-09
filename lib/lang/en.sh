@@ -81,6 +81,9 @@ L_IDE_CMD_PROMPT="Enter short command name for antigravity (default: agy)"
 L_IDE_INVALID_NAME="Invalid name. Using default: agy"
 L_IDE_BINDIR_NOTFOUND="Antigravity bin dir not found. Launch the IDE once, then re-run this step."
 L_PROMPT_NAME="name: "
+L_IDE_MORE_TITLE="IDE installed — continue?"
+L_IDE_ANOTHER="Install another IDE"
+L_IDE_PROCEED_FMT="Continue to the next step (%s)"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
 L_ASDF_MENU_TITLE="asdf — select language to configure"
