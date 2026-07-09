@@ -3,6 +3,15 @@
 # source'd by install.sh
 
 install_required() {
+  # Both required tools already present — announce and skip the whole step
+  # (no prompt, no reinstall). brew being on PATH means its shellenv is already
+  # set up, so there's nothing left to do here.
+  if command -v brew &>/dev/null && command -v jq &>/dev/null; then
+    log_done "$L_REQ_ALREADY"
+    sleep 1
+    return 0
+  fi
+
   local choice=""
   UI_MENU_NOTE=" ${UI_RED_BOLD}${L_REQ_NOTE}${UI_RESET}" \
     ui_menu "$L_REQ_TITLE" choice \

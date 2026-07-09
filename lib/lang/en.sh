@@ -73,6 +73,7 @@ L_ERR_NO_OMZ="oh-my-zsh not found. Please install oh-my-zsh first."
 # ── Required tools (required.sh) ────────────────────────────────
 L_REQ_TITLE="Install required tools (Homebrew + jq)?"
 L_REQ_NOTE="⚠ Required — declining will exit the installer immediately."
+L_REQ_ALREADY="Required tools (Homebrew, jq) already installed — skipping this step."
 
 # ── IDEs (ides.sh) ──────────────────────────────────────────────
 L_IDE_MENU_TITLE="IDE — select to install"
