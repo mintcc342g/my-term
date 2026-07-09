@@ -124,7 +124,7 @@ ssh -T git@github.com
 
 ### HUD Statusline
 
-- 테마 3종(mygo, ave-mujica, aemeath) 중 선택
+- 테마 4종(mygo, ave-mujica, aemeath, millsage) 중 선택
 - 터미널 폭에 따라 full / compact 자동 전환
 
 **HUD 설정 변경**
@@ -289,7 +289,7 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 ### HUD statusline
 
-- Pick one of three themes (mygo, ave-mujica, aemeath)
+- Pick one of four themes (mygo, ave-mujica, aemeath, millsage)
 - Auto-switches between full / compact based on terminal width
 
 **Changing HUD settings**
