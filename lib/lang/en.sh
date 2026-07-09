@@ -174,9 +174,11 @@ lang_gitssh_nick_help() {
   echo -e " ─────────────────────" > /dev/tty
   echo -e " ${UI_DIM}This nickname is used in the key filename (~/.ssh/id_<nickname>).${UI_RESET}" > /dev/tty
   if [ "$has_default" = "false" ]; then
-    echo -e " ${UI_DIM}The first key becomes the default (no directory match, used as fallback).${UI_RESET}" > /dev/tty
+    echo -e " ${UI_DIM}This is the first key, so it's the default (used everywhere as a fallback).${UI_RESET}" > /dev/tty
+    echo -e " ${UI_DIM}No directory is set for it.${UI_RESET}" > /dev/tty
   else
-    echo -e " ${UI_DIM}Later keys are registered with directory matching.${UI_RESET}" > /dev/tty
+    echo -e " ${UI_DIM}A default key already exists, so this key is scoped to one directory.${UI_RESET}" > /dev/tty
+    echo -e " ${UI_DIM}You'll set that directory in the next step.${UI_RESET}" > /dev/tty
   fi
   echo -e " ${UI_DIM}${UI_ITALIC}Press Enter without a nickname to stop here and move to the next step.${UI_RESET}\n" > /dev/tty
 }

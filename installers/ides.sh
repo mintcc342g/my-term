@@ -66,8 +66,13 @@ _setup_antigravity_command() {
   # *inside* that dir. If the default path is missing, search for it; never
   # synthesize a directory ourselves (would land outside PATH).
   if [ ! -d "$bin_dir" ]; then
+    # Search only the IDE's own dir, never all of $HOME: a home-wide find walks
+    # into TCC-protected folders (Desktop/Documents/…) and fires a macOS consent
+    # popup for each one. `|| true` keeps a nonzero find (missing root, or SIGPIPE
+    # from head closing early) from aborting the installer under `set -e`; the
+    # empty-result case is handled just below.
     local found
-    found="$(find "$HOME" -maxdepth 4 -type d -path "*antigravity-ide*/bin" 2>/dev/null | head -n 1)"
+    found="$(find "$HOME/.antigravity-ide" -maxdepth 2 -type d -path "*antigravity-ide*/bin" 2>/dev/null | head -n 1 || true)"
     if [ -n "$found" ]; then
       bin_dir="$found"
       log_step "Found Antigravity bin dir at: $bin_dir"
