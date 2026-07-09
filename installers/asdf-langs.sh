@@ -24,7 +24,7 @@ fi'
   local choice=""
 
   while true; do
-    UI_MENU_NOTE="$(lang_asdf_note)" \
+    UI_MENU_NOTE_BELOW="$(lang_asdf_note)" \
       ui_menu "$L_ASDF_MENU_TITLE" choice \
         "Golang" \
         "Java" \

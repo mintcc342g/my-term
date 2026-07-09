@@ -124,6 +124,12 @@ ui_menu() {
     echo " ─────────────────────" > /dev/tty
     echo " ${UI_DIM}${L_UI_HINT}${UI_RESET}" > /dev/tty
     echo "" > /dev/tty
+    # Optional note rendered BELOW the nav hint (vs UI_MENU_NOTE above it). Same
+    # inline `UI_MENU_NOTE_BELOW=... ui_menu ...` auto-scoping.
+    if [ -n "${UI_MENU_NOTE_BELOW:-}" ]; then
+      echo -e "${UI_MENU_NOTE_BELOW}" > /dev/tty
+      echo "" > /dev/tty
+    fi
 
     local UI_CYAN=$'\033[36;1m'
     for i in "${!items[@]}"; do
