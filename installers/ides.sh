@@ -27,15 +27,21 @@ install_ides() {
     local action="${menu_actions[$choice]:-skip}"
 
     case "$action" in
-      antigravity) touched=1; _install_antigravity ;;
+      # `|| true`: IDE setup is optional. A non-fatal failure (e.g. the "launch
+      # the IDE once, then re-run" advisory when its bin dir doesn't exist yet)
+      # returns nonzero and would otherwise abort the whole installer under
+      # `set -e`. The failure is already logged; just keep going.
+      antigravity) touched=1; _install_antigravity || true ;;
       skip)        break ;;
       quit)        ui_abort 0 ;;
     esac
   done
 
   # install_ides is called directly (no ui_confirm_run wrapper), so leave
-  # the same kind of skip breadcrumb other installers do.
-  [ "$touched" = 0 ] && ui_log_skipped "IDE setup"
+  # the same kind of skip breadcrumb other installers do. Must be an `if`, not
+  # `[ … ] && …`: with touched=1 the test is false, and as the function's last
+  # command that nonzero status would abort the installer under `set -e`.
+  if [ "$touched" = 0 ]; then ui_log_skipped "IDE setup"; fi
 }
 
 _install_antigravity() {
