@@ -88,10 +88,9 @@ L_IDE_PROCEED_FMT="Continue to the next step (%s)"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
 L_ASDF_MENU_TITLE="asdf — select language to configure"
-# [WARNING] <name> uncomment .zprofile
-lang_asdf_warning() {
-  local name="$1"
-  echo "${UI_YELLOW_BOLD}[WARNING]${UI_RESET} ${UI_RED_BOLD}After installing ${name}${UI_RESET}, please ${UI_RED_BOLD}uncomment${UI_RESET} the ${name} environment configuration in your ${UI_RED_BOLD}.zprofile.${UI_RESET}"
+# Persistent red warning shown as the language-menu note (uncomment .zprofile).
+lang_asdf_note() {
+  printf '%s' " ${UI_YELLOW_BOLD}[WARNING]${UI_RESET} ${UI_RED_BOLD}After installing a language${UI_RESET}, please ${UI_RED_BOLD}uncomment${UI_RESET} its environment configuration in your ${UI_RED_BOLD}.zprofile.${UI_RESET}"
 }
 
 # ── Git SSH (git-ssh.sh) ────────────────────────────────────────

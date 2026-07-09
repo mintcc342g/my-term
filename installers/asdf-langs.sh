@@ -18,13 +18,17 @@ fi'
 
   log_done "asdf installed."
 
-  # Language selection
+  # Language selection. The .zprofile-uncomment warning is the persistent menu
+  # note (was flashing by after each pick), and "✓ Done" leaves the loop so the
+  # installer can move on — esc alone wasn't discoverable.
   local choice=""
 
   while true; do
-    ui_menu "$L_ASDF_MENU_TITLE" choice \
-      "Golang" \
-      "Java"
+    UI_MENU_NOTE="$(lang_asdf_note)" \
+      ui_menu "$L_ASDF_MENU_TITLE" choice \
+        "Golang" \
+        "Java" \
+        "$L_DONE_ITEM"
 
     case "$choice" in
       0)
@@ -32,22 +36,16 @@ fi'
         asdf plugin add golang https://github.com/kennyp/asdf-golang.git 2>/dev/null || true
         rc_upsert_block "$ZPROFILE" "asdf-golang" '#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.zsh'
         log_done "Golang plugin added."
-        echo
-        lang_asdf_warning "Golang"
-        echo
-        sleep 2
+        sleep 1
         ;;
       1)
         log_step "configure Java…"
         asdf plugin add java https://github.com/halcyon/asdf-java.git 2>/dev/null || true
         rc_upsert_block "$ZPROFILE" "asdf-java" '#. ${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/java/set-java-home.zsh'
         log_done "Java plugin added."
-        echo
-        lang_asdf_warning "Java"
-        echo
-        sleep 2
+        sleep 1
         ;;
-      255)
+      2|255)
         break
         ;;
     esac

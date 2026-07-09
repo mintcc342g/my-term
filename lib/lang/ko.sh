@@ -89,10 +89,9 @@ L_IDE_PROCEED_FMT="다음 단계로 (%s)"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
 L_ASDF_MENU_TITLE="asdf — 설정할 언어 선택"
-# [경고] <name> 설치 후 .zprofile 주석 해제
-lang_asdf_warning() {
-  local name="$1"
-  echo "${UI_YELLOW_BOLD}[경고]${UI_RESET} ${UI_RED_BOLD}${name} 설치 후${UI_RESET} .zprofile 에서 ${name} 환경 설정의 ${UI_RED_BOLD}주석을 해제${UI_RESET}하세요."
+# 언어 선택 메뉴에 상시 노출되는 빨간 경고 (설치 후 .zprofile 주석 해제).
+lang_asdf_note() {
+  printf '%s' " ${UI_YELLOW_BOLD}[경고]${UI_RESET} ${UI_RED_BOLD}언어 설치 후${UI_RESET} .zprofile 에서 해당 언어의 환경 설정 ${UI_RED_BOLD}주석을 해제${UI_RESET}하세요."
 }
 
 # ── Git SSH (git-ssh.sh) ────────────────────────────────────────
