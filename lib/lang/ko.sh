@@ -175,11 +175,10 @@ lang_gitssh_nick_help() {
   echo -e " ─────────────────────" > /dev/tty
   echo -e " ${UI_DIM}이 닉네임이 키 파일명에 사용됩니다 (~/.ssh/id_<nickname>).${UI_RESET}" > /dev/tty
   if [ "$has_default" = "false" ]; then
-    echo -e " ${UI_DIM}첫 키라 default 키(어디서나 쓰이는 기본 키)로 등록됩니다.${UI_RESET}" > /dev/tty
-    echo -e " ${UI_DIM}그래서 이 키에는 디렉토리를 지정하지 않습니다.${UI_RESET}" > /dev/tty
+    echo -e " ${UI_DIM}최초 입력 키는 default 키로 등록되어 디렉토리를 지정하지 않습니다.${UI_RESET}" > /dev/tty
   else
     echo -e " ${UI_DIM}이미 default 키가 있어, 이 키는 특정 디렉토리 전용으로 만듭니다.${UI_RESET}" > /dev/tty
-    echo -e " ${UI_DIM}그래서 다음 단계에서 그 디렉토리를 지정하게 됩니다.${UI_RESET}" > /dev/tty
+    echo -e " ${UI_DIM}이 단계에서 키를 생성한 후 다음 단계에서 디렉토리를 지정하게 됩니다.${UI_RESET}" > /dev/tty
   fi
   echo -e " ${UI_DIM}${UI_ITALIC}닉네임을 입력하지 않고 Enter 를 누르면 키 생성을 종료하고 다음 단계로 넘어갑니다.${UI_RESET}\n" > /dev/tty
 }
