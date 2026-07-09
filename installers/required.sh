@@ -37,11 +37,25 @@ install_required() {
     log_step "Homebrew found."
   fi
 
-  local BREW_PREFIX
-  BREW_PREFIX=$(brew --prefix)
+  # A fresh install doesn't add brew to the current shell's PATH, so `brew` here
+  # would be "command not found" and abort under `set -e`. Locate the binary at
+  # its known prefix (Apple Silicon: /opt/homebrew, Intel: /usr/local) and eval
+  # shellenv ourselves before any brew call.
+  local BREW_BIN=""
+  if command -v brew &>/dev/null; then
+    BREW_BIN=$(command -v brew)
+  elif [ -x /opt/homebrew/bin/brew ]; then
+    BREW_BIN=/opt/homebrew/bin/brew
+  elif [ -x /usr/local/bin/brew ]; then
+    BREW_BIN=/usr/local/bin/brew
+  else
+    log_fail "Homebrew install failed — brew binary not found."
+    exit 1
+  fi
+
   local ZPROFILE="${ZDOTDIR:-$HOME}/.zprofile"
-  rc_upsert_block "$ZPROFILE" "brew-shellenv" "eval \"\$($BREW_PREFIX/bin/brew shellenv)\""
-  eval "$($BREW_PREFIX/bin/brew shellenv)"
+  rc_upsert_block "$ZPROFILE" "brew-shellenv" "eval \"\$($BREW_BIN shellenv)\""
+  eval "$($BREW_BIN shellenv)"
 
   # ── jq ───────────────────────────────────────────────────────
   if ! command -v jq &>/dev/null; then
