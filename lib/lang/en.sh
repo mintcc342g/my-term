@@ -229,8 +229,8 @@ lang_obs_wikipath_help() {
 # ── AI tools (ai-tools.sh) ──────────────────────────────────────
 L_AI_MENU_TITLE="AI tools — select to install"
 L_AI_METHOD_TITLE="Claude Code install method"
-L_AI_METHOD_STABLE="Stable (brew cask, stable version)"
-L_AI_METHOD_LATEST="Latest (brew cask, newest version, not the stabilized one)"
+L_AI_METHOD_STABLE="Stable (stable version)"
+L_AI_METHOD_LATEST="Latest (newest version, not the stabilized one)"
 L_AI_ALIAS_HEADER="Claude alias setup"
 L_AI_ALIAS_PROMPT="Enter alias for claude command (default: c)"
 L_AI_ALIAS_LABEL="alias: "
