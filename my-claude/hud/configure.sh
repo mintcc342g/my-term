@@ -70,7 +70,7 @@ select_theme() {
   local lang="${_ENV_LANG:-}"
   [ -z "$lang" ] && lang=$(jq -r '.lang // ""' "$CONFIG" 2>/dev/null)
   [ -z "$lang" ] && lang="en"
-  case "$lang" in en|ko|ja) ;; *) lang="en" ;; esac
+  lang_is_known "$lang" || lang="en"
 
   if [ -f "$manifest" ] && jq -e '.themes' "$manifest" >/dev/null 2>&1; then
     # desc 는 요청 언어 우선, 없으면 en→ja→ko 중 첫 비어있지 않은 값

@@ -336,15 +336,12 @@ _install_default_instructions() {
     # A trailing .en/.ko/.ja marks a language variant; install only the matching
     # one. Anything else is a shared block installed for every language.
     suffix="${base##*.}"
-    case "$suffix" in
-      en|ko|ja)
-        [ "$suffix" = "$lang" ] || continue
-        name="${base%.*}"
-        ;;
-      *)
-        name="$base"
-        ;;
-    esac
+    if lang_is_known "$suffix"; then
+      [ "$suffix" = "$lang" ] || continue
+      name="${base%.*}"
+    else
+      name="$base"
+    fi
     begin="<!-- MYTERM:OPTIONAL:${name}:BEGIN -->"
     end="<!-- MYTERM:OPTIONAL:${name}:END -->"
 
