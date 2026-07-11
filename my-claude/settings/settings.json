@@ -98,6 +98,7 @@
       "Bash(kubectl:*)"
     ]
   },
+  "respondToBashCommands": false,
   "statusLine": {
     "type": "command",
     "command": "bash $HOME/.claude/my-hud/statusline.sh"

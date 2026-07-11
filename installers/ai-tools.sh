@@ -295,6 +295,14 @@ _sync_claude_files() {
     fi
   fi
 
+  # respondToBashCommands: pull default from source; add-only so a user-set value wins.
+  if jq -e 'has("respondToBashCommands")' "$proj_settings" >/dev/null 2>&1; then
+    local rtb_tmp
+    rtb_tmp=$(mktemp)
+    jq --slurpfile p "$proj_settings" '.respondToBashCommands //= $p[0].respondToBashCommands' \
+      "$tmp" > "$rtb_tmp" && mv "$rtb_tmp" "$tmp"
+  fi
+
   # statusLine: skip (handled by HUD installer separately)
 
   mv "$tmp" "$SETTINGS"
@@ -482,12 +490,15 @@ _sync_hud_files() {
     fi
   fi
 
-  # Ensure statusLine points at the (possibly updated) statusline.sh
+  # Ensure statusLine points at the (possibly updated) statusline.sh — value
+  # pulled from the source settings so it lives in one place.
   local SETTINGS="$HOME/.claude/settings.json"
+  local proj_settings="$SCRIPT_DIR/my-claude/settings/settings.json"
   if [ -f "$SETTINGS" ]; then
     local sl_tmp
     sl_tmp=$(mktemp)
-    if jq '.statusLine = {"type": "command", "command": "bash $HOME/.claude/my-hud/statusline.sh"}' \
+    if jq --slurpfile p "$proj_settings" \
+      'if ($p[0].statusLine // null) != null then .statusLine = $p[0].statusLine else . end' \
       "$SETTINGS" > "$sl_tmp"; then
       mv "$sl_tmp" "$SETTINGS"
     else
