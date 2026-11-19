@@ -63,7 +63,7 @@ run_install_interactive() {
   install_ides
 
   install_language_tools
-  ui_confirm_if_command brew "$L_STEP_AI" install_ai_tools "Homebrew"
+  install_ai_tools
 }
 
 # ── Main menu ───────────────────────────────────────────────────

@@ -24,7 +24,7 @@ cd my-term
 
 인스톨러를 실행하면 가장 먼저 **표시 언어(한국어 / English / 日本語)** 를 고릅니다. 이후 모든 메뉴와 안내가 그 언어로 나옵니다. 메뉴는 화살표(↑↓)로 움직이고 Enter 로 선택하며, 단계마다 건너뛰기와 종료가 따로 있어 원하는 항목만 설치할 수 있습니다.
 
-편의 도구 단계에서는 CLI 도구·macOS 앱·DevOps 도구·패키지 매니저를 카테고리별 체크박스로 고릅니다. 처음에는 모두 미선택이며, ↑↓로 이동하고 Enter로 체크합니다. 각 카테고리의 `전부 설치`로 전체 선택·해제할 수 있습니다(`[-]`는 일부 선택). 목록 아래의 **설치 / 건너뛰기 / 종료** 행에서는 ←→로 이동하고 Enter로 실행합니다. 선택한 도구만 설치하며, television 셸 연동도 television을 선택했을 때만 설정합니다.
+각종 도구 단계에서는 CLI 도구·macOS 앱·DevOps 도구·패키지 매니저를 카테고리별 체크박스로 고릅니다. 처음에는 모두 미선택이며, ↑↓로 이동하고 Enter로 체크합니다. 각 카테고리의 `전부 설치`로 전체 선택·해제할 수 있습니다(`[-]`는 일부 선택). 목록 아래의 **설치 / 건너뛰기 / 종료** 행에서는 ←→로 이동하고 Enter로 실행합니다. 선택한 도구만 설치하며, television 셸 연동도 television을 선택했을 때만 설정합니다.
 
 ## 업데이트
 
@@ -52,12 +52,11 @@ cd my-term
 
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
-- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun 등
+- **각종 도구** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun 등
 - **Git SSH keys (multi-account)** — 디렉토리별로 GitHub 계정 키를 자동 분기 ([자세히](#git-ssh-키-다중-계정))
 - **IDE** — Antigravity와 LazyVim을 체크박스로 선택. Antigravity는 짧은 실행 명령(symlink)을 등록하고, LazyVim은 공식 스타터를 기본 Neovim 설정 경로에 설치합니다. 실행 명령은 `nvim`입니다.
 - **언어 관리 도구** — asdf의 Golang·Java 플러그인과 pyenv + pyenv-virtualenv를 체크박스로 선택합니다. asdf로 언어를 설치한 뒤에는 해당 언어의 `.zprofile` 환경 설정 주석을 해제하세요.
-- **AI tools** — Claude Code, OpenCode, Codex
-- **Obsidian + wiki tooling** — AI 기억 관리
+- **AI tools** — AI 코딩 에이전트(Claude Code, Codex, OpenCode), 터미널 멀티플렉서(Herdr), 지식 관리(Obsidian + 위키 도구)를 체크박스로 선택합니다.
 
 ## Git SSH 키 (다중 계정)
 
@@ -190,7 +189,7 @@ cd my-term
 
 The first thing the installer asks is your **display language (한국어 / English / 日本語)**. Every menu and prompt afterward appears in that language. Navigate menus with the arrow keys (↑↓) and select with Enter; each step has its own Skip and Exit, so you can install only the items you want.
 
-The convenience-tools step groups checkboxes into CLI tools, macOS apps, DevOps tools, and package managers. Everything starts unchecked: move with ↑↓ and toggle with Enter. Each category's `Install all` selects or clears its tools (`[-]` means partially selected). Below the list, use ←→ to choose **Install / Skip / Exit**, then press Enter. Only selected tools are installed, and television shell integration is configured only when television is selected.
+The Utilities step groups checkboxes into CLI tools, macOS apps, DevOps tools, and package managers. Everything starts unchecked: move with ↑↓ and toggle with Enter. Each category's `Install all` selects or clears its tools (`[-]` means partially selected). Below the list, use ←→ to choose **Install / Skip / Exit**, then press Enter. Only selected tools are installed, and television shell integration is configured only when television is selected.
 
 ## Update
 
@@ -218,12 +217,11 @@ Each step auto-skips when its dependency isn't present.
 
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
-- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun, and more
+- **Utilities** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun, and more
 - **Git SSH keys (multi-account)** — auto-routes GitHub account keys per directory ([details](#git-ssh-keys-multi-account))
 - **IDE** — choose Antigravity or LazyVim with checkboxes. Antigravity registers a short launch command (symlink). LazyVim installs the official starter in Neovim’s default config directory and starts with `nvim`.
 - **Language version managers** — select asdf’s Golang and Java plugins and pyenv + pyenv-virtualenv with checkboxes. After installing a language with asdf, uncomment its environment setup in `.zprofile`.
-- **AI tools** — Claude Code, OpenCode, Codex
-- **Obsidian + wiki tooling** — AI memory management
+- **AI tools** — choose AI coding agents (Claude Code, Codex, OpenCode), a terminal multiplexer (Herdr), and knowledge management tools (Obsidian + wiki tooling) with checkboxes.
 
 ## Git SSH keys (multi-account)
 
@@ -356,7 +354,7 @@ cd my-term
 
 インストーラーを起動すると、まず **表示言語（한국어 / English / 日本語）** を選びます。以降のメニューと案内はすべてその言語で出ます。メニューは矢印キー（↑↓）で動かして Enter で選びます。ステップごとにスキップと終了が別々にあるので、欲しい項目だけ入れられます。
 
-便利ツールのステップでは、CLI ツール・macOS アプリ・DevOps ツール・パッケージマネージャーをカテゴリ別のチェックボックスで選びます。最初はすべて未選択です。↑↓で移動し、Enter でチェックを切り替えます。各カテゴリの `すべてインストール` で全選択・解除できます（`[-]` は一部選択）。一覧の下にある **インストール / スキップ / 終了** の行では、←→で移動して Enter で実行します。選んだツールだけをインストールし、television のシェル連携も television を選んだ場合にのみ設定します。
+各種ツールのステップでは、CLI ツール・macOS アプリ・DevOps ツール・パッケージマネージャーをカテゴリ別のチェックボックスで選びます。最初はすべて未選択です。↑↓で移動し、Enter でチェックを切り替えます。各カテゴリの `すべてインストール` で全選択・解除できます（`[-]` は一部選択）。一覧の下にある **インストール / スキップ / 終了** の行では、←→で移動して Enter で実行します。選んだツールだけをインストールし、television のシェル連携も television を選んだ場合にのみ設定します。
 
 ## アップデート
 
@@ -384,12 +382,11 @@ cd my-term
 
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
-- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun など
+- **各種ツール** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun など
 - **Git SSH keys (multi-account)** — ディレクトリごとに GitHub アカウントのキーを自動で振り分け（[詳しく](#ja-git-ssh-keys)）
 - **IDE** — Antigravity と LazyVim をチェックボックスで選択できます。Antigravity は短い起動コマンド（symlink）を登録します。LazyVim は公式スターターを Neovim の既定の設定ディレクトリにインストールし、`nvim` で起動します。
 - **言語バージョン管理ツール** — asdf の Golang・Java プラグインと pyenv + pyenv-virtualenv をチェックボックスで選択します。asdf で言語をインストールしたあと、`.zprofile` でその言語の環境設定のコメントを外してください。
-- **AI tools** — Claude Code, OpenCode, Codex
-- **Obsidian + wiki tooling** — AI の記憶管理
+- **AI tools** — AI コーディングエージェント（Claude Code、Codex、OpenCode）、ターミナルマルチプレクサ（Herdr）、ナレッジ管理（Obsidian と Wiki ツール）をチェックボックスで選択できます。
 
 <a id="ja-git-ssh-keys"></a>
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # installers/obsidian.sh — Obsidian app + wiki tooling (@wk hook, wiki path)
-# source'd by install.sh; called from install_ai_tools after the AI menu exits.
+# source'd by install.sh; called when Obsidian is selected in the AI tools checklist.
 
 install_obsidian() {
   log_start "Obsidian + wiki tooling setup…"

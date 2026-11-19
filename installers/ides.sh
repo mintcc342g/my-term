@@ -33,7 +33,7 @@ install_ides() {
 _install_lazyvim() {
   local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
   log_step "Installing LazyVim…"
-  if ! brew install --formula neovim tree-sitter-cli ripgrep fd lazygit; then
+  if ! brew install --formula neovim tree-sitter-cli ripgrep fd lazygit node; then
     log_fail "LazyVim dependencies could not be installed."
     return 1
   fi

@@ -10,7 +10,6 @@ L_NO="아니요"
 L_NO_SKIP="아니요 (건너뛰기)"
 L_NO_EXIT="아니요 (종료)"
 L_NO_DONE="아니요 (완료)"
-L_DONE_ITEM="✓ 완료 (다음 단계로)"
 L_UI_HINT="↑↓ 이동 │ Enter 선택"
 L_EXIT_ABORTED="설치를 중단하고 종료합니다."
 
@@ -23,13 +22,11 @@ L_MENU_DELETE="삭제 (my-term 설정 제거)"
 L_MENU_EXIT="✗ 종료"
 
 # ── 단계 라벨 (install.sh ui_confirm_run / ai-tools) ────────────
-L_STEP_CONVENIENCE="편의 도구 (CLI, macOS 앱, DevOps)"
+L_STEP_CONVENIENCE="각종 도구"
 L_STEP_GIT_SSH="Git SSH 키 (멀티 계정)"
 L_STEP_OMZ="Oh-my-zsh + zsh 플러그인"
 L_STEP_THEME="셸 테마 (newro)"
 L_STEP_LANGUAGE_TOOLS="언어 관리 도구"
-L_STEP_AI="AI 도구 (Claude, OpenCode, Codex)"
-L_STEP_OBSIDIAN="Obsidian + vault 도구"
 
 # ── 편의 도구 체크박스 ───────────────────────────────────────────
 L_CONVENIENCE_CLI="CLI 도구"
@@ -77,7 +74,7 @@ lang_delete_plan() {
 }
 
 # ── 공용 오류 안내 ──────────────────────────────────────────────
-L_ERR_NO_BREW="Homebrew 를 찾지 못했습니다. 먼저 편의 도구를 설치하세요."
+L_ERR_NO_BREW="Homebrew를 찾지 못했습니다. 먼저 Homebrew를 설치하세요."
 L_ERR_NO_OMZ="oh-my-zsh 를 찾지 못했습니다. 먼저 oh-my-zsh 를 설치하세요."
 
 # ── 필수 도구 (required.sh) ─────────────────────────────────────
@@ -233,7 +230,10 @@ lang_obs_wikipath_help() {
 }
 
 # ── AI 도구 (ai-tools.sh) ───────────────────────────────────────
-L_AI_MENU_TITLE="AI 도구 — 설치할 항목 선택"
+L_AI_MENU_TITLE="AI 도구"
+L_AI_AGENTS_CATEGORY="AI 코딩 에이전트"
+L_AI_MULTIPLEXERS_CATEGORY="터미널 멀티플렉서"
+L_AI_KNOWLEDGE_CATEGORY="지식 관리"
 L_AI_METHOD_TITLE="Claude Code 설치 방식"
 L_AI_METHOD_STABLE="Stable (안정 버전)"
 L_AI_METHOD_LATEST="Latest (안정화 버전이 아닌 최신 버전)"

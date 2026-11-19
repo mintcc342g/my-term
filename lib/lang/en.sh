@@ -9,7 +9,6 @@ L_NO="No"
 L_NO_SKIP="No (Skip)"
 L_NO_EXIT="No (Exit)"
 L_NO_DONE="No (Done)"
-L_DONE_ITEM="✓ Done (next step)"
 L_UI_HINT="↑↓ move │ Enter select"
 L_EXIT_ABORTED="Aborted — exiting installer."
 
@@ -22,13 +21,11 @@ L_MENU_DELETE="Delete (remove my-term config)"
 L_MENU_EXIT="✗ Exit"
 
 # ── Step labels (install.sh ui_confirm_run / ai-tools) ──────────
-L_STEP_CONVENIENCE="Convenience tools (CLI, macOS apps, DevOps)"
+L_STEP_CONVENIENCE="Utilities"
 L_STEP_GIT_SSH="Git SSH keys (multi-account)"
 L_STEP_OMZ="Oh-my-zsh + zsh plugins"
 L_STEP_THEME="Shell theme (newro)"
 L_STEP_LANGUAGE_TOOLS="Language version managers"
-L_STEP_AI="AI tools (Claude, OpenCode, Codex)"
-L_STEP_OBSIDIAN="Obsidian + vault tooling"
 
 # ── Convenience tool checklist ──────────────────────────────────
 L_CONVENIENCE_CLI="CLI tools"
@@ -76,7 +73,7 @@ lang_delete_plan() {
 }
 
 # ── Shared error guidance ───────────────────────────────────────
-L_ERR_NO_BREW="Homebrew not found. Please install convenience tools first."
+L_ERR_NO_BREW="Homebrew not found. Install Homebrew first."
 L_ERR_NO_OMZ="oh-my-zsh not found. Please install oh-my-zsh first."
 
 # ── Required tools (required.sh) ────────────────────────────────
@@ -232,7 +229,10 @@ lang_obs_wikipath_help() {
 }
 
 # ── AI tools (ai-tools.sh) ──────────────────────────────────────
-L_AI_MENU_TITLE="AI tools — select to install"
+L_AI_MENU_TITLE="AI tools"
+L_AI_AGENTS_CATEGORY="AI coding agents"
+L_AI_MULTIPLEXERS_CATEGORY="Terminal multiplexers"
+L_AI_KNOWLEDGE_CATEGORY="Knowledge management"
 L_AI_METHOD_TITLE="Claude Code install method"
 L_AI_METHOD_STABLE="Stable (stable version)"
 L_AI_METHOD_LATEST="Latest (newest version, not the stabilized one)"

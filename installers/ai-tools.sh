@@ -1,5 +1,5 @@
 #!/bin/bash
-# installers/ai-tools.sh — AI tools (claude-code, opencode, codex)
+# installers/ai-tools.sh — AI coding agents, Herdr, and Obsidian
 # source'd by install.sh
 
 _setup_codex_mcp() {
@@ -46,48 +46,47 @@ _setup_codex_mcp() {
 }
 
 install_ai_tools() {
-  log_start "AI tools setup…"
-
   if ! command -v brew &>/dev/null; then
-    log_fail "$L_ERR_NO_BREW"
-    return 1
+    ui_log_skipping_dep "$L_AI_MENU_TITLE" Homebrew
+    return 0
   fi
 
   local choice=""
+  local -a UI_CHECKLIST_CATEGORIES=(
+    "$L_AI_AGENTS_CATEGORY" "$L_AI_MULTIPLEXERS_CATEGORY" "$L_AI_KNOWLEDGE_CATEGORY"
+  )
+  local -a UI_CHECKLIST_LABELS=("Claude Code" "Codex" "OpenCode" "Herdr" "Obsidian")
+  local -a UI_CHECKLIST_GROUPS=(0 0 0 1 2) UI_CHECKLIST_SELECTED=()
 
-  # 루프는 여러 AI 도구를 순차 설치할 수 있도록 유지. 다음 단계로 가려면
-  # "✓ Done" 선택 (또는 q/esc).
-  # oh-my-opencode: 버전 미고정 시 공급망 위험이 있으므로 수동 설치 권장
-  #   최신 버전 확인: npm view oh-my-opencode version
-  #   설치: bunx oh-my-opencode@<version> install
-  while true; do
-    ui_menu "$L_AI_MENU_TITLE" choice \
-      "Claude Code" \
-      "OpenCode" \
-      "Codex" \
-      "$L_DONE_ITEM"
-
-    case "$choice" in
-      0) _install_claude_code ;;
-      1)
-        log_step "brew install opencode…"
-        brew install opencode
-        log_done "opencode installed."
-        sleep 1
-        ;;
-      2)
-        log_step "brew install codex…"
-        brew install codex
-        log_done "codex installed."
-        _setup_codex_mcp
-        sleep 1
-        ;;
-      3|255) break ;;
-    esac
-  done
-
-  # Obsidian + vault tooling — Claude/AI 연계 용도라 AI tools 단계 끝에서 묻습니다.
-  ui_confirm_run "$L_STEP_OBSIDIAN" install_obsidian
+  ui_checklist "$L_AI_MENU_TITLE" choice
+  echo
+  if [ "$choice" = install ]; then
+    if [ "${UI_CHECKLIST_SELECTED[0]}" -eq 1 ]; then
+      _install_claude_code
+    fi
+    if [ "${UI_CHECKLIST_SELECTED[1]}" -eq 1 ]; then
+      log_step "brew install codex…"
+      brew install codex
+      log_done "codex installed."
+      _setup_codex_mcp
+    fi
+    if [ "${UI_CHECKLIST_SELECTED[2]}" -eq 1 ]; then
+      log_step "brew install opencode…"
+      brew install opencode
+      log_done "opencode installed."
+    fi
+    if [ "${UI_CHECKLIST_SELECTED[3]}" -eq 1 ]; then
+      log_step "brew install herdr…"
+      brew install herdr
+      log_done "herdr installed."
+    fi
+    if [ "${UI_CHECKLIST_SELECTED[4]}" -eq 1 ]; then
+      install_obsidian
+    fi
+    sleep "$UI_SKIP_PAUSE"
+  else
+    ui_log_skipped "$L_AI_MENU_TITLE"
+  fi
 }
 
 _install_claude_code() {
