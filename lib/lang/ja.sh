@@ -33,6 +33,7 @@ L_CONVENIENCE_CLI="CLI ツール"
 L_CONVENIENCE_APPS="macOS アプリ"
 L_CONVENIENCE_DEVOPS="DevOps ツール"
 L_CONVENIENCE_MANAGERS="パッケージマネージャー"
+L_CONVENIENCE_EDITORS="IDE・エディター"
 L_CHECKLIST_HINT="↑↓ 移動 │ ←→ 下部メニュー │ Enter チェック / 実行"
 L_CHECKLIST_SKIP="スキップ"
 L_CHECKLIST_ALL="すべてインストール"
@@ -83,13 +84,11 @@ L_REQ_NOTE="⚠ 必須項目です — 断るとインストーラーがすぐ�
 L_REQ_ALREADY="必須ツール(Homebrew・jq)はすでに入っているので、このステップは飛ばします。"
 
 # ── IDE (ides.sh) ───────────────────────────────────────────────
-L_IDE_MENU_TITLE="IDE — インストールする項目を選択"
 L_IDE_CMD_HEADER="Antigravity コマンドの設定"
 L_IDE_CMD_PROMPT="antigravity の短い起動コマンド名を入力してください (デフォルト: agy)"
 L_IDE_INVALID_NAME="名前が正しくありません。デフォルトの agy を使います。"
 L_IDE_BINDIR_NOTFOUND="Antigravity の bin ディレクトリが見つかりません。IDE を一度起動してから、このステップをやり直してください。"
 L_PROMPT_NAME="名前: "
-L_IDE_CATEGORY="エディター"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
 lang_asdf_note() {

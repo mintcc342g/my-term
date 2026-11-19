@@ -2,34 +2,6 @@
 # installers/ides.sh — IDE installers (Antigravity, LazyVim)
 # source'd by install.sh
 
-install_ides() {
-  if ! command -v brew &>/dev/null; then
-    ui_log_skipping_dep "$L_IDE_MENU_TITLE" Homebrew
-    return 0
-  fi
-
-  local choice=""
-  local -a UI_CHECKLIST_CATEGORIES=("$L_IDE_CATEGORY")
-  local -a UI_CHECKLIST_LABELS=("Antigravity" "LazyVim")
-  local -a UI_CHECKLIST_GROUPS=(0 0) UI_CHECKLIST_SELECTED=()
-
-  ui_checklist "$L_IDE_MENU_TITLE" choice
-  echo
-  if [ "$choice" != install ]; then
-    ui_log_skipped "$L_IDE_CATEGORY"
-    return 0
-  fi
-
-  # A failed optional install should not prevent trying the other selection.
-  if [ "${UI_CHECKLIST_SELECTED[0]}" -eq 1 ]; then
-    _install_antigravity || true
-  fi
-  if [ "${UI_CHECKLIST_SELECTED[1]}" -eq 1 ]; then
-    _install_lazyvim || true
-  fi
-  sleep "$UI_SKIP_PAUSE"
-}
-
 _install_lazyvim() {
   local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
   log_step "Installing LazyVim…"

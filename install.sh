@@ -60,8 +60,6 @@ run_install_interactive() {
 
   ui_confirm_run "$L_STEP_GIT_SSH" install_git_ssh
 
-  install_ides
-
   install_language_tools
   install_ai_tools
 }

@@ -1,13 +1,13 @@
 #!/bin/bash
-# installers/convenience.sh — CLI tools, macOS apps, DevOps tools
+# installers/convenience.sh — CLI tools, macOS apps, DevOps, and editors
 # source'd by install.sh
 
 install_convenience() {
   local -a UI_CHECKLIST_CATEGORIES=(
     "$L_CONVENIENCE_CLI" "$L_CONVENIENCE_APPS"
-    "$L_CONVENIENCE_DEVOPS" "$L_CONVENIENCE_MANAGERS"
+    "$L_CONVENIENCE_DEVOPS" "$L_CONVENIENCE_MANAGERS" "$L_CONVENIENCE_EDITORS"
   )
-  # category index | Homebrew package type | package name
+  # category index | installer type | package name or editor label
   local -a tools=(
     '0|formula|ripgrep' '0|formula|fd' '0|formula|bat'
     '0|formula|television' '0|formula|tree' '0|formula|tmux' '0|formula|telnet'
@@ -16,6 +16,7 @@ install_convenience() {
     '2|formula|awscli' '2|formula|helm' '2|formula|argocd'
     '2|formula|istioctl' '2|formula|k9s'
     '3|formula|oven-sh/bun/bun'
+    '4|editor|Antigravity' '4|editor|LazyVim'
   )
   local -a UI_CHECKLIST_LABELS=() UI_CHECKLIST_GROUPS=() UI_CHECKLIST_SELECTED=()
   local tool rest choice="" index package
@@ -35,7 +36,7 @@ install_convenience() {
   log_start "brew update…"
   brew update
 
-  local -a formulae=() casks=()
+  local -a formulae=() casks=() editors=()
   local television_selected=0
   for ((index=0; index<${#tools[@]}; index++)); do
     [ "${UI_CHECKLIST_SELECTED[$index]}" -eq 1 ] || continue
@@ -43,6 +44,7 @@ install_convenience() {
     case "${rest%%|*}" in
       formula) formulae+=("$package") ;;
       cask) casks+=("$package") ;;
+      editor) editors+=("$package") ;;
     esac
     [ "$package" = television ] && television_selected=1
   done
@@ -73,6 +75,21 @@ eval "$(tv init zsh)"'
     export ZSHRC_MODIFIED=true
   fi
 
-  log_done "convenience tools installed."
+  # Editor setup can require a first launch. Continue with the other selection
+  # if an editor cannot complete setup in this run.
+  local editor_setup_incomplete=0
+  if [ "${#editors[@]}" -gt 0 ]; then
+    local editor
+    for editor in "${editors[@]}"; do
+      case "$editor" in
+        Antigravity) _install_antigravity || editor_setup_incomplete=1 ;;
+        LazyVim)     _install_lazyvim || editor_setup_incomplete=1 ;;
+      esac
+    done
+  fi
+
+  if [ "$editor_setup_incomplete" -eq 0 ]; then
+    log_done "convenience tools installed."
+  fi
   sleep "$UI_SKIP_PAUSE"
 }
