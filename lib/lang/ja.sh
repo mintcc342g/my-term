@@ -27,8 +27,7 @@ L_STEP_CONVENIENCE="便利ツール (CLI, macOS アプリ, DevOps)"
 L_STEP_GIT_SSH="Git SSH キー (マルチアカウント)"
 L_STEP_OMZ="Oh-my-zsh + zsh プラグイン"
 L_STEP_THEME="シェルテーマ (newro)"
-L_STEP_ASDF="asdf + 言語"
-L_STEP_PYENV="pyenv"
+L_STEP_LANGUAGE_TOOLS="言語バージョン管理ツール"
 L_STEP_AI="AI ツール (Claude, OpenCode, Codex)"
 L_STEP_OBSIDIAN="Obsidian + vault ツール"
 
@@ -39,6 +38,7 @@ L_CONVENIENCE_DEVOPS="DevOps ツール"
 L_CONVENIENCE_MANAGERS="パッケージマネージャー"
 L_CHECKLIST_HINT="↑↓ 移動 │ ←→ 下部メニュー │ Enter チェック / 実行"
 L_CHECKLIST_SKIP="スキップ"
+L_CHECKLIST_ALL="すべてインストール"
 L_CHECKLIST_EMPTY="ツールを1つ以上選ぶか、スキップを選んでください。"
 
 # ── 完了バナー (ui.sh ui_print_completion) ──────────────────────
@@ -95,8 +95,6 @@ L_PROMPT_NAME="名前: "
 L_IDE_CATEGORY="エディター"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
-L_ASDF_MENU_TITLE="asdf — 設定する言語を選択"
-# 言語選択メニューに常時表示される赤い警告 (インストール後 .zprofile のコメント解除).
 lang_asdf_note() {
   printf '%s' " ${UI_YELLOW_BOLD}[警告]${UI_RESET} ${UI_RED_BOLD}言語をインストールしたあと${UI_RESET}、.zprofile でその言語の環境設定の${UI_RED_BOLD}コメントを外して${UI_RESET}ください。"
 }

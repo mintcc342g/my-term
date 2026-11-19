@@ -24,6 +24,7 @@ source "$SCRIPT_DIR/installers/oh-my-zsh.sh"
 source "$SCRIPT_DIR/installers/shell-theme.sh"
 source "$SCRIPT_DIR/installers/asdf-langs.sh"
 source "$SCRIPT_DIR/installers/pyenv.sh"
+source "$SCRIPT_DIR/installers/language-tools.sh"
 source "$SCRIPT_DIR/installers/ai-tools.sh"
 source "$SCRIPT_DIR/installers/obsidian.sh"
 
@@ -61,8 +62,7 @@ run_install_interactive() {
 
   install_ides
 
-  ui_confirm_if_command brew "$L_STEP_ASDF" install_asdf_langs "Homebrew"
-  ui_confirm_if_command brew "$L_STEP_PYENV" install_pyenv "Homebrew"
+  install_language_tools
   ui_confirm_if_command brew "$L_STEP_AI" install_ai_tools "Homebrew"
 }
 

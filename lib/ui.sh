@@ -191,28 +191,41 @@ ui_menu() {
 # ── Categorized checkbox menu ──────────────────────────────────
 # Usage: ui_checklist "Title" result_var
 # Caller supplies UI_CHECKLIST_CATEGORIES, UI_CHECKLIST_LABELS and parallel
-# UI_CHECKLIST_GROUPS (0-based category indexes). Returns install/skip in
-# result_var and 0/1 flags in UI_CHECKLIST_SELECTED. Starts unchecked.
+# UI_CHECKLIST_GROUPS (0-based category indexes). Set UI_CHECKLIST_NO_ALL[group]
+# to 1 for a category that needs individual checkboxes only. Returns install/skip
+# in result_var and 0/1 flags in UI_CHECKLIST_SELECTED. Starts unchecked.
 # Uses indexed arrays only, for the macOS system Bash 3.2.
 ui_checklist() {
   local title="$1" __result_var="$2"
-  local -a row_groups=() row_items=()
-  local group item row count selected total mark label style prefix key
-  local focus=0 action=0 offset=0 height lines size end frame message=""
+  local -a row_groups=() row_items=() focus_rows=()
+  local group item row count row_count selected total mark label style prefix key
+  local focus=0 focused_row action=0 offset=0 height lines size end frame message=""
+  # Turn off dimming before applying bold and italic, retaining the row color.
+  local all_label_style=$'\033[22;1;3m'
   local -a actions=("$L_MENU_INSTALL" "$L_CHECKLIST_SKIP" "$L_MENU_EXIT")
   UI_CHECKLIST_SELECTED=()
   for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
     UI_CHECKLIST_SELECTED[$item]=0
   done
   for ((group=0; group<${#UI_CHECKLIST_CATEGORIES[@]}; group++)); do
-    row_groups+=("$group"); row_items+=("-1")
+    # Negative item indexes represent headings, blank lines, and All rows.
+    if [ "$group" -gt 0 ]; then
+      row_groups+=("$group"); row_items+=("-2")
+    fi
+    row_groups+=("$group"); row_items+=("-3")
+    if [ "${UI_CHECKLIST_NO_ALL[$group]:-0}" -ne 1 ]; then
+      focus_rows+=("${#row_items[@]}")
+      row_groups+=("$group"); row_items+=("-1")
+    fi
     for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
       if [ "${UI_CHECKLIST_GROUPS[$item]}" -eq "$group" ]; then
+        focus_rows+=("${#row_items[@]}")
         row_groups+=("$group"); row_items+=("$item")
       fi
     done
   done
-  count=${#row_items[@]}
+  count=${#focus_rows[@]}
+  row_count=${#row_items[@]}
   printf '\033[?25l' > /dev/tty
   while true; do
     # Keep the footer visible even in a short terminal. Leave one spare line
@@ -222,12 +235,13 @@ ui_checklist() {
     [[ "$lines" =~ ^[0-9]+$ ]] || lines=24
     height=$((lines - 9))
     [ "$height" -lt 1 ] && height=1
-    [ "$height" -gt "$count" ] && height=$count
-    if [ "$focus" -lt "$count" ]; then
-      [ "$focus" -lt "$offset" ] && offset=$focus
-      [ "$focus" -ge "$((offset + height))" ] && offset=$((focus - height + 1))
+    [ "$height" -gt "$row_count" ] && height=$row_count
+    focused_row=${focus_rows[$focus]:--1}
+    if [ "$focused_row" -ge 0 ]; then
+      [ "$focused_row" -lt "$offset" ] && offset=$focused_row
+      [ "$focused_row" -ge "$((offset + height))" ] && offset=$((focused_row - height + 1))
     fi
-    [ "$offset" -gt "$((count - height))" ] && offset=$((count - height))
+    [ "$offset" -gt "$((row_count - height))" ] && offset=$((row_count - height))
     end=$((offset + height))
 
     frame=$(
@@ -240,6 +254,10 @@ ui_checklist() {
       fi
       for ((row=offset; row<end; row++)); do
         group=${row_groups[$row]}; item=${row_items[$row]}
+        case "$item" in
+          (-3) printf ' %s%s%s\n' "$UI_BOLD" "${UI_CHECKLIST_CATEGORIES[$group]}" "$UI_RESET"; continue ;;
+          (-2) printf '\n'; continue ;;
+        esac
         mark=' '
         if [ "$item" -lt 0 ]; then
           selected=0; total=0
@@ -251,18 +269,17 @@ ui_checklist() {
           done
           if [ "$selected" -eq "$total" ]; then mark=x
           elif [ "$selected" -gt 0 ]; then mark='-'; fi
-          label="${UI_CHECKLIST_CATEGORIES[$group]} — [$mark] All"
-          style=$UI_BOLD
+          label="[$mark] ${all_label_style}${L_CHECKLIST_ALL}"
         else
           [ "${UI_CHECKLIST_SELECTED[$item]}" -eq 1 ] && mark=x
-          label="  [$mark] ${UI_CHECKLIST_LABELS[$item]}"
-          style=$UI_DIM
+          label="[$mark] ${UI_CHECKLIST_LABELS[$item]}"
         fi
+        style=$UI_DIM
         prefix='  '
-        if [ "$row" -eq "$focus" ]; then prefix='❯ '; style=$UI_BLUE_BOLD; fi
+        if [ "$row" -eq "$focused_row" ]; then prefix='❯ '; style=$UI_BLUE_BOLD; fi
         printf ' %s%s%s%s\n' "$style" "$prefix" "$label" "$UI_RESET"
       done
-      if [ "$end" -lt "$count" ]; then
+      if [ "$end" -lt "$row_count" ]; then
         printf ' %s↓%s\n' "$UI_DIM" "$UI_RESET"
       else
         printf '\n'
@@ -298,7 +315,7 @@ ui_checklist() {
           printf '\033[?25h' > /dev/tty
           return 0
         fi
-        group=${row_groups[$focus]}; item=${row_items[$focus]}
+        group=${row_groups[$focused_row]}; item=${row_items[$focused_row]}
         if [ "$item" -ge 0 ]; then
           UI_CHECKLIST_SELECTED[$item]=$((1 - UI_CHECKLIST_SELECTED[item]))
         else

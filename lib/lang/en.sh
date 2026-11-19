@@ -26,8 +26,7 @@ L_STEP_CONVENIENCE="Convenience tools (CLI, macOS apps, DevOps)"
 L_STEP_GIT_SSH="Git SSH keys (multi-account)"
 L_STEP_OMZ="Oh-my-zsh + zsh plugins"
 L_STEP_THEME="Shell theme (newro)"
-L_STEP_ASDF="asdf + languages"
-L_STEP_PYENV="pyenv"
+L_STEP_LANGUAGE_TOOLS="Language version managers"
 L_STEP_AI="AI tools (Claude, OpenCode, Codex)"
 L_STEP_OBSIDIAN="Obsidian + vault tooling"
 
@@ -38,6 +37,7 @@ L_CONVENIENCE_DEVOPS="DevOps tools"
 L_CONVENIENCE_MANAGERS="Package managers"
 L_CHECKLIST_HINT="↑↓ move │ ←→ actions │ Enter toggle / run"
 L_CHECKLIST_SKIP="Skip"
+L_CHECKLIST_ALL="Install all"
 L_CHECKLIST_EMPTY="Select at least one tool, or choose Skip."
 
 # ── Completion banner (ui.sh ui_print_completion) ───────────────
@@ -94,8 +94,6 @@ L_PROMPT_NAME="name: "
 L_IDE_CATEGORY="Editors"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
-L_ASDF_MENU_TITLE="asdf — select language to configure"
-# Persistent red warning shown as the language-menu note (uncomment .zprofile).
 lang_asdf_note() {
   printf '%s' " ${UI_YELLOW_BOLD}[WARNING]${UI_RESET} ${UI_RED_BOLD}After installing a language${UI_RESET}, please ${UI_RED_BOLD}uncomment${UI_RESET} its environment configuration in your ${UI_RED_BOLD}.zprofile.${UI_RESET}"
 }

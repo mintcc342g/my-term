@@ -27,8 +27,7 @@ L_STEP_CONVENIENCE="편의 도구 (CLI, macOS 앱, DevOps)"
 L_STEP_GIT_SSH="Git SSH 키 (멀티 계정)"
 L_STEP_OMZ="Oh-my-zsh + zsh 플러그인"
 L_STEP_THEME="셸 테마 (newro)"
-L_STEP_ASDF="asdf + 언어"
-L_STEP_PYENV="pyenv"
+L_STEP_LANGUAGE_TOOLS="언어 관리 도구"
 L_STEP_AI="AI 도구 (Claude, OpenCode, Codex)"
 L_STEP_OBSIDIAN="Obsidian + vault 도구"
 
@@ -39,6 +38,7 @@ L_CONVENIENCE_DEVOPS="DevOps 도구"
 L_CONVENIENCE_MANAGERS="패키지 매니저"
 L_CHECKLIST_HINT="↑↓ 이동 │ ←→ 하단 메뉴 │ Enter 체크 / 실행"
 L_CHECKLIST_SKIP="건너뛰기"
+L_CHECKLIST_ALL="전부 설치"
 L_CHECKLIST_EMPTY="도구를 하나 이상 선택하거나 건너뛰기를 선택하세요."
 
 # ── 완료 배너 (ui.sh ui_print_completion) ───────────────────────
@@ -95,8 +95,6 @@ L_PROMPT_NAME="이름: "
 L_IDE_CATEGORY="편집기"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
-L_ASDF_MENU_TITLE="asdf — 설정할 언어 선택"
-# 언어 선택 메뉴에 상시 노출되는 빨간 경고 (설치 후 .zprofile 주석 해제).
 lang_asdf_note() {
   printf '%s' " ${UI_YELLOW_BOLD}[경고]${UI_RESET} ${UI_RED_BOLD}언어 설치 후${UI_RESET} .zprofile 에서 해당 언어의 환경 설정 ${UI_RED_BOLD}주석을 해제${UI_RESET}하세요."
 }
