@@ -2,32 +2,71 @@
 # installers/ides.sh — IDE installers (Antigravity, LazyVim)
 # source'd by install.sh
 
-_install_lazyvim() {
-  local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+_install_lazyvim() (
+  local app_name="${NVIM_APPNAME:-nvim}"
+  local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/$app_name"
+  local -a existing_paths=(
+    "$config_dir"
+    "${XDG_DATA_HOME:-$HOME/.local/share}/$app_name"
+    "${XDG_STATE_HOME:-$HOME/.local/state}/$app_name"
+    "${XDG_CACHE_HOME:-$HOME/.cache}/$app_name"
+  )
   log_step "Installing LazyVim…"
   if ! brew install --formula neovim tree-sitter-cli ripgrep fd lazygit node; then
     log_fail "LazyVim dependencies could not be installed."
     return 1
   fi
 
-  if [ -e "$config_dir" ] || [ -L "$config_dir" ]; then
-    log_step "Neovim config already exists at $config_dir. Skipping the LazyVim starter."
+  local staging_dir
+  if ! mkdir -p "${config_dir%/*}" ||
+     ! staging_dir="$(mktemp -d "${config_dir%/*}/.lazyvim.XXXXXXXX")"; then
+    log_fail "Could not prepare a staging directory for $config_dir"
+    return 1
+  fi
+  trap 'rm -rf -- "$staging_dir"' EXIT
+  local starter_dir="$staging_dir/starter"
+  if ! git clone --depth 1 https://github.com/LazyVim/starter.git "$starter_dir" ||
+     ! rm -rf -- "$starter_dir/.git"; then
+    log_fail "Could not prepare the LazyVim starter."
+    return 1
+  fi
+
+  local timestamp path backup index failed=0
+  local -a moved_paths=() backups=()
+  timestamp="$(date +%Y%m%d-%H%M%S)" || return 1
+  for path in "${existing_paths[@]}"; do
+    [[ -e "$path" || -L "$path" ]] || continue
+    backup="$path.bak.$timestamp.${staging_dir##*.}"
+    if [[ -e "$backup" || -L "$backup" ]] ||
+       ! mv -n -- "$path" "$backup" || [[ -e "$path" || -L "$path" ]]; then
+      log_fail "Could not back up $path"
+      failed=1
+      break
+    fi
+    moved_paths+=("$path")
+    backups+=("$backup")
+    log_step "Backed up $path to $backup"
+  done
+
+  if [ "$failed" -eq 0 ] &&
+     [[ ! -e "$config_dir" && ! -L "$config_dir" ]] &&
+     mv -n -- "$starter_dir" "$config_dir" &&
+     [ ! -d "$starter_dir" ]; then
+    log_done "LazyVim installed. Run nvim to start."
     return 0
   fi
 
-  if ! mkdir -p "${config_dir%/*}" ||
-     ! git clone --depth 1 https://github.com/LazyVim/starter.git "$config_dir"; then
-    log_fail "LazyVim starter could not be installed at $config_dir"
-    return 1
-  fi
-  # Detach the freshly cloned starter so it can be customized independently.
-  if ! rm -rf -- "$config_dir/.git"; then
-    log_fail "Could not remove the LazyVim starter's Git metadata at $config_dir"
-    return 1
-  fi
-
-  log_done "LazyVim installed. Run nvim to start."
-}
+  log_fail "Could not install the LazyVim starter at $config_dir"
+  for ((index=${#backups[@]}-1; index>=0; index--)); do
+    path="${moved_paths[$index]}"
+    backup="${backups[$index]}"
+    if [[ -e "$path" || -L "$path" ]] ||
+       ! mv -n -- "$backup" "$path" || [[ -e "$backup" || -L "$backup" ]]; then
+      log_fail "Could not restore $path. Backup remains at $backup"
+    fi
+  done
+  return 1
+)
 
 _install_antigravity() {
   log_step "brew install --cask antigravity-ide…"

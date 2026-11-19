@@ -53,7 +53,7 @@ cd my-term
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
 - **각종 도구** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun 등
-  Antigravity와 LazyVim을 체크박스로 선택. Antigravity는 짧은 실행 명령(symlink)을 등록하고, LazyVim은 공식 스타터를 기본 Neovim 설정 경로에 설치합니다. 실행 명령은 `nvim`입니다.
+  Antigravity와 LazyVim을 체크박스로 선택. Antigravity는 짧은 실행 명령(symlink)을 등록합니다. LazyVim은 기존 Neovim 설정, 데이터, 상태, 캐시를 고유한 `.bak.*` 경로에 백업하고 공식 스타터를 설치합니다. 실행 명령은 `nvim`입니다.
 - **Git SSH keys (multi-account)** — 디렉토리별로 GitHub 계정 키를 자동 분기 ([자세히](#git-ssh-키-다중-계정))
 - **언어 관리 도구** — asdf의 Golang·Java 플러그인과 pyenv + pyenv-virtualenv를 체크박스로 선택합니다. asdf로 언어를 설치한 뒤에는 해당 언어의 `.zprofile` 환경 설정 주석을 해제하세요.
 - **AI tools** — AI 코딩 에이전트(Claude Code, Codex, OpenCode), 터미널 멀티플렉서(Herdr), 지식 관리(Obsidian + 위키 도구)를 체크박스로 선택합니다.
@@ -218,7 +218,7 @@ Each step auto-skips when its dependency isn't present.
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
 - **Utilities** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun, and more
-  choose Antigravity or LazyVim with checkboxes. Antigravity registers a short launch command (symlink). LazyVim installs the official starter in Neovim’s default config directory and starts with `nvim`.
+  choose Antigravity or LazyVim with checkboxes. Antigravity registers a short launch command (symlink). LazyVim backs up existing Neovim config, data, state, and cache to unique `.bak.*` paths and installs the official starter. Launch it with `nvim`.
 - **Git SSH keys (multi-account)** — auto-routes GitHub account keys per directory ([details](#git-ssh-keys-multi-account))
 - **Language version managers** — select asdf’s Golang and Java plugins and pyenv + pyenv-virtualenv with checkboxes. After installing a language with asdf, uncomment its environment setup in `.zprofile`.
 - **AI tools** — choose AI coding agents (Claude Code, Codex, OpenCode), a terminal multiplexer (Herdr), and knowledge management tools (Obsidian + wiki tooling) with checkboxes.
@@ -383,7 +383,7 @@ cd my-term
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
 - **各種ツール** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun など
-  Antigravity と LazyVim をチェックボックスで選択できます。Antigravity は短い起動コマンド（symlink）を登録します。LazyVim は公式スターターを Neovim の既定の設定ディレクトリにインストールし、`nvim` で起動します。
+  Antigravity と LazyVim をチェックボックスで選択できます。Antigravity は短い起動コマンド（symlink）を登録します。LazyVim は既存の Neovim の設定、データ、状態、キャッシュをそれぞれ固有の `.bak.*` パスにバックアップしてから公式スターターをインストールします。`nvim` で起動します。
 - **Git SSH keys (multi-account)** — ディレクトリごとに GitHub アカウントのキーを自動で振り分け（[詳しく](#ja-git-ssh-keys)）
 - **言語バージョン管理ツール** — asdf の Golang・Java プラグインと pyenv + pyenv-virtualenv をチェックボックスで選択します。asdf で言語をインストールしたあと、`.zprofile` でその言語の環境設定のコメントを外してください。
 - **AI tools** — AI コーディングエージェント（Claude Code、Codex、OpenCode）、ターミナルマルチプレクサ（Herdr）、ナレッジ管理（Obsidian と Wiki ツール）をチェックボックスで選択できます。
