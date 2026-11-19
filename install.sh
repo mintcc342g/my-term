@@ -55,7 +55,7 @@ run_install_interactive() {
   ui_confirm_if_command brew "$L_STEP_OMZ" install_oh_my_zsh "Homebrew"
   ui_confirm_if_dir "$HOME/.oh-my-zsh" "$L_STEP_THEME" install_shell_theme "oh-my-zsh"
 
-  ui_confirm_run "$L_STEP_CONVENIENCE" install_convenience
+  install_convenience
 
   ui_confirm_run "$L_STEP_GIT_SSH" install_git_ssh
 

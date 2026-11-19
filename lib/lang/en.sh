@@ -31,6 +31,15 @@ L_STEP_PYENV="pyenv"
 L_STEP_AI="AI tools (Claude, OpenCode, Codex)"
 L_STEP_OBSIDIAN="Obsidian + vault tooling"
 
+# ── Convenience tool checklist ──────────────────────────────────
+L_CONVENIENCE_CLI="CLI tools"
+L_CONVENIENCE_APPS="macOS apps"
+L_CONVENIENCE_DEVOPS="DevOps tools"
+L_CONVENIENCE_MANAGERS="Package managers"
+L_CHECKLIST_HINT="↑↓ move │ ←→ actions │ Enter toggle / run"
+L_CHECKLIST_SKIP="Skip"
+L_CHECKLIST_EMPTY="Select at least one tool, or choose Skip."
+
 # ── Completion banner (ui.sh ui_print_completion) ───────────────
 L_DONE_INSTALL="Installation complete!"
 L_DONE_UPDATE="Update complete!"

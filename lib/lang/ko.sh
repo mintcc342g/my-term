@@ -32,6 +32,15 @@ L_STEP_PYENV="pyenv"
 L_STEP_AI="AI 도구 (Claude, OpenCode, Codex)"
 L_STEP_OBSIDIAN="Obsidian + vault 도구"
 
+# ── 편의 도구 체크박스 ───────────────────────────────────────────
+L_CONVENIENCE_CLI="CLI 도구"
+L_CONVENIENCE_APPS="macOS 앱"
+L_CONVENIENCE_DEVOPS="DevOps 도구"
+L_CONVENIENCE_MANAGERS="패키지 매니저"
+L_CHECKLIST_HINT="↑↓ 이동 │ ←→ 하단 메뉴 │ Enter 체크 / 실행"
+L_CHECKLIST_SKIP="건너뛰기"
+L_CHECKLIST_EMPTY="도구를 하나 이상 선택하거나 건너뛰기를 선택하세요."
+
 # ── 완료 배너 (ui.sh ui_print_completion) ───────────────────────
 L_DONE_INSTALL="설치 완료!"
 L_DONE_UPDATE="업데이트 완료!"

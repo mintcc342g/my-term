@@ -24,6 +24,8 @@ cd my-term
 
 인스톨러를 실행하면 가장 먼저 **표시 언어(한국어 / English / 日本語)** 를 고릅니다. 이후 모든 메뉴와 안내가 그 언어로 나옵니다. 메뉴는 화살표(↑↓)로 움직이고 Enter 로 선택하며, 단계마다 건너뛰기와 종료가 따로 있어 원하는 항목만 설치할 수 있습니다.
 
+편의 도구 단계에서는 CLI 도구·macOS 앱·DevOps 도구·패키지 매니저를 카테고리별 체크박스로 고릅니다. 처음에는 모두 미선택이며, ↑↓로 이동하고 Enter로 체크합니다. 각 카테고리의 `All`로 전체 선택·해제할 수 있습니다(`[-]`는 일부 선택). 목록 아래의 **설치 / 건너뛰기 / 종료** 행에서는 ←→로 이동하고 Enter로 실행합니다. 선택한 도구만 설치하며, television 셸 연동도 television을 선택했을 때만 설정합니다.
+
 ## 업데이트
 
 프로젝트 코드가 바뀌었을 때만 돌리면 됩니다. 업데이트는 brew 설치나 alias 설정 같은 인스톨 단계를 전부 건너뛰고 `~/.claude/` 로 파일을 sync 하는 일만 합니다. 현재 sync 대상은 AI 어시스턴트 설정과 HUD 입니다.
@@ -50,7 +52,7 @@ cd my-term
 
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
-- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun 등
+- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun 등
 - **Git SSH keys (multi-account)** — 디렉토리별로 GitHub 계정 키를 자동 분기 ([자세히](#git-ssh-키-다중-계정))
 - **IDE** — Antigravity IDE 를 설치하고 짧은 실행 명령(symlink)을 등록
 - **asdf + 언어 플러그인** — Golang, Java
@@ -189,6 +191,8 @@ cd my-term
 
 The first thing the installer asks is your **display language (한국어 / English / 日本語)**. Every menu and prompt afterward appears in that language. Navigate menus with the arrow keys (↑↓) and select with Enter; each step has its own Skip and Exit, so you can install only the items you want.
 
+The convenience-tools step groups checkboxes into CLI tools, macOS apps, DevOps tools, and package managers. Everything starts unchecked: move with ↑↓ and toggle with Enter. Each category's `All` selects or clears its tools (`[-]` means partially selected). Below the list, use ←→ to choose **Install / Skip / Exit**, then press Enter. Only selected tools are installed, and television shell integration is configured only when television is selected.
+
 ## Update
 
 Run this only when the project code has changed. Update skips all install steps (brew installs, alias setup, and so on) and only syncs files into `~/.claude/`. The current sync targets are the AI assistant config and the HUD.
@@ -215,7 +219,7 @@ Each step auto-skips when its dependency isn't present.
 
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
-- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun, and more
+- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun, and more
 - **Git SSH keys (multi-account)** — auto-routes GitHub account keys per directory ([details](#git-ssh-keys-multi-account))
 - **IDE** — installs Antigravity IDE and registers a short launch command (symlink)
 - **asdf + language plugins** — Golang, Java
@@ -354,6 +358,8 @@ cd my-term
 
 インストーラーを起動すると、まず **表示言語（한국어 / English / 日本語）** を選びます。以降のメニューと案内はすべてその言語で出ます。メニューは矢印キー（↑↓）で動かして Enter で選びます。ステップごとにスキップと終了が別々にあるので、欲しい項目だけ入れられます。
 
+便利ツールのステップでは、CLI ツール・macOS アプリ・DevOps ツール・パッケージマネージャーをカテゴリ別のチェックボックスで選びます。最初はすべて未選択です。↑↓で移動し、Enter でチェックを切り替えます。各カテゴリの `All` で全選択・解除できます（`[-]` は一部選択）。一覧の下にある **インストール / スキップ / 終了** の行では、←→で移動して Enter で実行します。選んだツールだけをインストールし、television のシェル連携も television を選んだ場合にのみ設定します。
+
 ## アップデート
 
 プロジェクトのコードが変わったときだけ実行すれば大丈夫です。アップデートは brew のインストールや alias 設定といったインストール手順をすべて飛ばして、`~/.claude/` へファイルを sync するだけです。今の sync 対象は AI アシスタントの設定と HUD です。
@@ -380,7 +386,7 @@ cd my-term
 
 - **oh-my-zsh + zsh plugins** — syntax-highlighting, autosuggestions
 - **newro theme**
-- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, k9s, bun など
+- **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun など
 - **Git SSH keys (multi-account)** — ディレクトリごとに GitHub アカウントのキーを自動で振り分け（[詳しく](#ja-git-ssh-keys)）
 - **IDE** — Antigravity IDE をインストールして、短い起動コマンド（symlink）を登録
 - **asdf + 言語プラグイン** — Golang, Java

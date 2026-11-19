@@ -36,6 +36,13 @@ ui_clear_screen() {
   printf '\033[2J\033[H' > /dev/tty
 }
 
+# Overwrite the menu in place. Erase only the unused end of each line and
+# the area below the frame so navigation never shows a blank screen.
+ui_draw_menu() {
+  local frame="$1"
+  printf '\033[H%s\033[K\n\033[J' "${frame//$'\n'/$'\033[K\n'}" > /dev/tty
+}
+
 # ── Read single keypress (arrow keys, enter, q) ────────────────
 ui_read_key() {
   local key old_stty
@@ -55,7 +62,8 @@ ui_read_key() {
     case "$seq" in
       '[A') echo "up" ;;
       '[B') echo "down" ;;
-      '[C'|'[D') echo "ignore" ;;
+      '[C') echo "right" ;;
+      '[D') echo "left" ;;
       *)    echo "esc" ;;
     esac
   elif [[ "$key" == $'\x03' || "$key" == $'\x04' ]]; then
@@ -94,7 +102,7 @@ ui_menu() {
   shift 2
   local items=("$@")
   local count=${#items[@]}
-  local sel=0
+  local sel=0 frame
 
   # Optional per-item detail (dimmed italic, right of the focused row). Caller
   # sets UI_MENU_DESC=(...) parallel to items; captured + cleared so it never
@@ -113,50 +121,51 @@ ui_menu() {
   printf '\033[?25l' > /dev/tty
 
   while true; do
-    # Clear screen and draw
-    ui_clear_screen
-    echo "${UI_BLUE_BOLD} ${title}${UI_RESET}" > /dev/tty
-    # Optional note set by caller via env var (e.g. red warning). 호출자가
-    # `UI_MENU_NOTE=... ui_menu ...` 형태로 inline 설정 시 자동 unset.
-    if [ -n "${UI_MENU_NOTE:-}" ]; then
-      echo -e "${UI_MENU_NOTE}" > /dev/tty
-    fi
-    echo " ─────────────────────" > /dev/tty
-    echo " ${UI_DIM}${L_UI_HINT}${UI_RESET}" > /dev/tty
-    echo "" > /dev/tty
-    # Optional note rendered BELOW the nav hint (vs UI_MENU_NOTE above it). Same
-    # inline `UI_MENU_NOTE_BELOW=... ui_menu ...` auto-scoping.
-    if [ -n "${UI_MENU_NOTE_BELOW:-}" ]; then
-      echo -e "${UI_MENU_NOTE_BELOW}" > /dev/tty
-      echo "" > /dev/tty
-    fi
-
-    local UI_CYAN=$'\033[36;1m'
-    for i in "${!items[@]}"; do
-      local num=$((i + 1))
-      local item="${items[$i]}"
-      # Items beginning with a UI nav symbol (✗ ✓ ← →) are navigation actions
-      # (e.g. "← Back", "✓ Save & Exit", "✗ Exit") and render without a numeric
-      # prefix. Everything else — including non-ASCII text such as Korean — is a
-      # selectable option and gets numbered. (Matching the symbol prefix rather
-      # than "first char is non-alnum" keeps Korean items numbered.)
-      local label
-      case "$item" in
-        '✗'*|'✓'*|'←'*|'→'*) label="$item" ;;
-        *)                    label="${num}) $item" ;;
-      esac
-      if [ "$i" -eq "$sel" ]; then
-        if [ -n "${_descs[$sel]:-}" ]; then
-          local _pad=$(( _maxw - ${#label} )); [ "$_pad" -lt 0 ] && _pad=0
-          printf '  %s❯ %s%s%*s   %s\033[3m%s%s\n' \
-            "$UI_CYAN" "$label" "$UI_RESET" "$_pad" "" "$UI_DIM" "${_descs[$sel]}" "$UI_RESET" > /dev/tty
-        else
-          echo "  ${UI_CYAN}❯ ${label}${UI_RESET}" > /dev/tty
-        fi
-      else
-        echo "  ${UI_DIM}  ${label}${UI_RESET}" > /dev/tty
+    frame=$(
+      echo "${UI_BLUE_BOLD} ${title}${UI_RESET}"
+      # Optional note set by caller via env var (e.g. red warning). 호출자가
+      # `UI_MENU_NOTE=... ui_menu ...` 형태로 inline 설정 시 자동 unset.
+      if [ -n "${UI_MENU_NOTE:-}" ]; then
+        echo -e "${UI_MENU_NOTE}"
       fi
-    done
+      echo " ─────────────────────"
+      echo " ${UI_DIM}${L_UI_HINT}${UI_RESET}"
+      echo ""
+      # Optional note rendered BELOW the nav hint (vs UI_MENU_NOTE above it). Same
+      # inline `UI_MENU_NOTE_BELOW=... ui_menu ...` auto-scoping.
+      if [ -n "${UI_MENU_NOTE_BELOW:-}" ]; then
+        echo -e "${UI_MENU_NOTE_BELOW}"
+        echo ""
+      fi
+
+      local UI_CYAN=$'\033[36;1m'
+      for i in "${!items[@]}"; do
+        local num=$((i + 1))
+        local item="${items[$i]}"
+        # Items beginning with a UI nav symbol (✗ ✓ ← →) are navigation actions
+        # (e.g. "← Back", "✓ Save & Exit", "✗ Exit") and render without a numeric
+        # prefix. Everything else — including non-ASCII text such as Korean — is a
+        # selectable option and gets numbered. (Matching the symbol prefix rather
+        # than "first char is non-alnum" keeps Korean items numbered.)
+        local label
+        case "$item" in
+          ('✗'*|'✓'*|'←'*|'→'*) label="$item" ;;
+          (*)                    label="${num}) $item" ;;
+        esac
+        if [ "$i" -eq "$sel" ]; then
+          if [ -n "${_descs[$sel]:-}" ]; then
+            local _pad=$(( _maxw - ${#label} )); [ "$_pad" -lt 0 ] && _pad=0
+            printf '  %s❯ %s%s%*s   %s\033[3m%s%s\n' \
+              "$UI_CYAN" "$label" "$UI_RESET" "$_pad" "" "$UI_DIM" "${_descs[$sel]}" "$UI_RESET"
+          else
+            echo "  ${UI_CYAN}❯ ${label}${UI_RESET}"
+          fi
+        else
+          echo "  ${UI_DIM}  ${label}${UI_RESET}"
+        fi
+      done
+    )
+    ui_draw_menu "$frame"
 
     local key
     key=$(ui_read_key)
@@ -173,6 +182,145 @@ ui_menu() {
       q|esc)
         printf '\033[?25h' > /dev/tty
         printf -v "$__result_var" '%s' "255"
+        return 0
+        ;;
+    esac
+  done
+}
+
+# ── Categorized checkbox menu ──────────────────────────────────
+# Usage: ui_checklist "Title" result_var
+# Caller supplies UI_CHECKLIST_CATEGORIES, UI_CHECKLIST_LABELS and parallel
+# UI_CHECKLIST_GROUPS (0-based category indexes). Returns install/skip in
+# result_var and 0/1 flags in UI_CHECKLIST_SELECTED. Starts unchecked.
+# Uses indexed arrays only, for the macOS system Bash 3.2.
+ui_checklist() {
+  local title="$1" __result_var="$2"
+  local -a row_groups=() row_items=()
+  local group item row count selected total mark label style prefix key
+  local focus=0 action=0 offset=0 height lines size end frame message=""
+  local -a actions=("$L_MENU_INSTALL" "$L_CHECKLIST_SKIP" "$L_MENU_EXIT")
+  UI_CHECKLIST_SELECTED=()
+  for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
+    UI_CHECKLIST_SELECTED[$item]=0
+  done
+  for ((group=0; group<${#UI_CHECKLIST_CATEGORIES[@]}; group++)); do
+    row_groups+=("$group"); row_items+=("-1")
+    for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
+      if [ "${UI_CHECKLIST_GROUPS[$item]}" -eq "$group" ]; then
+        row_groups+=("$group"); row_items+=("$item")
+      fi
+    done
+  done
+  count=${#row_items[@]}
+  printf '\033[?25l' > /dev/tty
+  while true; do
+    # Keep the footer visible even in a short terminal. Leave one spare line
+    # to avoid scrolling the entire screen when printing the last newline.
+    size=$(stty size < /dev/tty 2>/dev/null) || size="24 80"
+    lines=${size%% *}
+    [[ "$lines" =~ ^[0-9]+$ ]] || lines=24
+    height=$((lines - 9))
+    [ "$height" -lt 1 ] && height=1
+    [ "$height" -gt "$count" ] && height=$count
+    if [ "$focus" -lt "$count" ]; then
+      [ "$focus" -lt "$offset" ] && offset=$focus
+      [ "$focus" -ge "$((offset + height))" ] && offset=$((focus - height + 1))
+    fi
+    [ "$offset" -gt "$((count - height))" ] && offset=$((count - height))
+    end=$((offset + height))
+
+    frame=$(
+      printf ' %s%s%s\n %s%s%s\n\n' "$UI_BLUE_BOLD" "$title" "$UI_RESET" \
+        "$UI_DIM" "$L_CHECKLIST_HINT" "$UI_RESET"
+      if [ "$offset" -gt 0 ]; then
+        printf ' %s↑%s\n' "$UI_DIM" "$UI_RESET"
+      else
+        printf '\n'
+      fi
+      for ((row=offset; row<end; row++)); do
+        group=${row_groups[$row]}; item=${row_items[$row]}
+        mark=' '
+        if [ "$item" -lt 0 ]; then
+          selected=0; total=0
+          for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
+            if [ "${UI_CHECKLIST_GROUPS[$item]}" -eq "$group" ]; then
+              total=$((total + 1))
+              selected=$((selected + UI_CHECKLIST_SELECTED[item]))
+            fi
+          done
+          if [ "$selected" -eq "$total" ]; then mark=x
+          elif [ "$selected" -gt 0 ]; then mark='-'; fi
+          label="${UI_CHECKLIST_CATEGORIES[$group]} — [$mark] All"
+          style=$UI_BOLD
+        else
+          [ "${UI_CHECKLIST_SELECTED[$item]}" -eq 1 ] && mark=x
+          label="  [$mark] ${UI_CHECKLIST_LABELS[$item]}"
+          style=$UI_DIM
+        fi
+        prefix='  '
+        if [ "$row" -eq "$focus" ]; then prefix='❯ '; style=$UI_BLUE_BOLD; fi
+        printf ' %s%s%s%s\n' "$style" "$prefix" "$label" "$UI_RESET"
+      done
+      if [ "$end" -lt "$count" ]; then
+        printf ' %s↓%s\n' "$UI_DIM" "$UI_RESET"
+      else
+        printf '\n'
+      fi
+      printf '\n '
+      for ((item=0; item<3; item++)); do
+        style=$UI_DIM
+        if [ "$focus" -eq "$count" ] && [ "$action" -eq "$item" ]; then style=$UI_REVERSE; fi
+        printf ' %s %s %s  ' "$style" "${actions[$item]}" "$UI_RESET"
+      done
+      printf '\n %s%s%s\n' "$UI_YELLOW_BOLD" "$message" "$UI_RESET"
+    )
+    ui_draw_menu "$frame"
+
+    key=$(ui_read_key)
+    case "$key" in
+      up) focus=$(( (focus - 1 + count + 1) % (count + 1) )) ;;
+      down) focus=$(( (focus + 1) % (count + 1) )) ;;
+      left) if [ "$focus" -eq "$count" ]; then action=$(( (action + 2) % 3 )); fi ;;
+      right) if [ "$focus" -eq "$count" ]; then action=$(( (action + 1) % 3 )); fi ;;
+      enter|' ')
+        if [ "$focus" -eq "$count" ]; then
+          case "$action" in
+            0)
+              selected=0
+              for item in "${UI_CHECKLIST_SELECTED[@]}"; do selected=$((selected + item)); done
+              if [ "$selected" -eq 0 ]; then message=$L_CHECKLIST_EMPTY; continue; fi
+              printf -v "$__result_var" '%s' install
+              ;;
+            1) printf -v "$__result_var" '%s' skip ;;
+            2) ui_abort 0 ;;
+          esac
+          printf '\033[?25h' > /dev/tty
+          return 0
+        fi
+        group=${row_groups[$focus]}; item=${row_items[$focus]}
+        if [ "$item" -ge 0 ]; then
+          UI_CHECKLIST_SELECTED[$item]=$((1 - UI_CHECKLIST_SELECTED[item]))
+        else
+          # Partial selection becomes All; an already checked All clears it.
+          selected=1
+          for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
+            if [ "${UI_CHECKLIST_GROUPS[$item]}" -eq "$group" ] && [ "${UI_CHECKLIST_SELECTED[$item]}" -eq 0 ]; then
+              selected=0
+            fi
+          done
+          for ((item=0; item<${#UI_CHECKLIST_LABELS[@]}; item++)); do
+            if [ "${UI_CHECKLIST_GROUPS[$item]}" -eq "$group" ]; then
+              UI_CHECKLIST_SELECTED[$item]=$((1 - selected))
+            fi
+          done
+        fi
+        message=""
+        ;;
+      interrupt) ui_abort 130 ;;
+      q|esc)
+        printf '\033[?25h' > /dev/tty
+        printf -v "$__result_var" '%s' skip
         return 0
         ;;
     esac

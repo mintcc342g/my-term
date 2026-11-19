@@ -32,6 +32,15 @@ L_STEP_PYENV="pyenv"
 L_STEP_AI="AI ツール (Claude, OpenCode, Codex)"
 L_STEP_OBSIDIAN="Obsidian + vault ツール"
 
+# ── 便利ツールのチェックボックス ─────────────────────────────────
+L_CONVENIENCE_CLI="CLI ツール"
+L_CONVENIENCE_APPS="macOS アプリ"
+L_CONVENIENCE_DEVOPS="DevOps ツール"
+L_CONVENIENCE_MANAGERS="パッケージマネージャー"
+L_CHECKLIST_HINT="↑↓ 移動 │ ←→ 下部メニュー │ Enter チェック / 実行"
+L_CHECKLIST_SKIP="スキップ"
+L_CHECKLIST_EMPTY="ツールを1つ以上選ぶか、スキップを選んでください。"
+
 # ── 完了バナー (ui.sh ui_print_completion) ──────────────────────
 L_DONE_INSTALL="インストール完了！"
 L_DONE_UPDATE="アップデート完了！"
