@@ -59,7 +59,7 @@ run_install_interactive() {
 
   ui_confirm_run "$L_STEP_GIT_SSH" install_git_ssh
 
-  install_ides "$L_STEP_ASDF"
+  install_ides
 
   ui_confirm_if_command brew "$L_STEP_ASDF" install_asdf_langs "Homebrew"
   ui_confirm_if_command brew "$L_STEP_PYENV" install_pyenv "Homebrew"

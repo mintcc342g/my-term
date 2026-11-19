@@ -1,56 +1,60 @@
 #!/bin/bash
-# installers/ides.sh — IDE installers (Antigravity, ...)
+# installers/ides.sh — IDE installers (Antigravity, LazyVim)
 # source'd by install.sh
 
 install_ides() {
-  local next_step="${1:-}"   # label of the step that follows, shown on the "move on" option
-  log_start "IDE setup…"
-
   if ! command -v brew &>/dev/null; then
-    log_fail "$L_ERR_NO_BREW"
+    ui_log_skipping_dep "$L_IDE_MENU_TITLE" Homebrew
+    return 0
+  fi
+
+  local choice=""
+  local -a UI_CHECKLIST_CATEGORIES=("$L_IDE_CATEGORY")
+  local -a UI_CHECKLIST_LABELS=("Antigravity" "LazyVim")
+  local -a UI_CHECKLIST_GROUPS=(0 0) UI_CHECKLIST_SELECTED=()
+
+  ui_checklist "$L_IDE_MENU_TITLE" choice
+  echo
+  if [ "$choice" != install ]; then
+    ui_log_skipped "$L_IDE_CATEGORY"
+    return 0
+  fi
+
+  # A failed optional install should not prevent trying the other selection.
+  if [ "${UI_CHECKLIST_SELECTED[0]}" -eq 1 ]; then
+    _install_antigravity || true
+  fi
+  if [ "${UI_CHECKLIST_SELECTED[1]}" -eq 1 ]; then
+    _install_lazyvim || true
+  fi
+  sleep "$UI_SKIP_PAUSE"
+}
+
+_install_lazyvim() {
+  local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+  log_step "Installing LazyVim…"
+  if ! brew install --formula neovim tree-sitter-cli ripgrep fd lazygit; then
+    log_fail "LazyVim dependencies could not be installed."
     return 1
   fi
 
-  local touched=0
-  while true; do
-    local choice=""
-    local menu_items=()
-    local menu_actions=()
+  if [ -e "$config_dir" ] || [ -L "$config_dir" ]; then
+    log_step "Neovim config already exists at $config_dir. Skipping the LazyVim starter."
+    return 0
+  fi
 
-    menu_items+=("Antigravity"); menu_actions+=("antigravity")
-    # Add more IDEs here (VSCode, GoLand, …) as needed.
-    menu_items+=("$L_NO_SKIP");   menu_actions+=("skip")
-    menu_items+=("$L_MENU_EXIT"); menu_actions+=("quit")
+  if ! mkdir -p "${config_dir%/*}" ||
+     ! git clone --depth 1 https://github.com/LazyVim/starter.git "$config_dir"; then
+    log_fail "LazyVim starter could not be installed at $config_dir"
+    return 1
+  fi
+  # Detach the freshly cloned starter so it can be customized independently.
+  if ! rm -rf -- "$config_dir/.git"; then
+    log_fail "Could not remove the LazyVim starter's Git metadata at $config_dir"
+    return 1
+  fi
 
-    ui_menu "$L_IDE_MENU_TITLE" choice "${menu_items[@]}"
-
-    [ "$choice" = "255" ] && break
-    local action="${menu_actions[$choice]:-skip}"
-
-    case "$action" in
-      # `|| true`: IDE setup is optional, and its non-fatal failures (e.g. the
-      # "launch the IDE once, then re-run" advisory before its bin dir exists)
-      # return nonzero, which would otherwise abort the installer under `set -e`.
-      antigravity) touched=1; _install_antigravity || true ;;
-      skip)        break ;;
-      quit)        ui_abort 0 ;;
-    esac
-
-    # Only install actions reach here (skip/quit already left the loop). Ask
-    # whether to add another IDE or move on — naming the next step so the user
-    # knows where "continue" leads instead of landing back on this menu.
-    local cont=""
-    ui_menu "$L_IDE_MORE_TITLE" cont \
-      "$L_IDE_ANOTHER" \
-      "$(tf L_IDE_PROCEED_FMT "$next_step")"
-    [ "$cont" = "0" ] || break   # 0=another IDE → loop; anything else → move on
-  done
-
-  # install_ides is called directly (no ui_confirm_run wrapper), so leave
-  # the same kind of skip breadcrumb other installers do. Must be an `if`, not
-  # `[ … ] && …`: with touched=1 the test is false, and as the function's last
-  # command that nonzero status would abort the installer under `set -e`.
-  if [ "$touched" = 0 ]; then ui_log_skipped "IDE setup"; fi
+  log_done "LazyVim installed. Run nvim to start."
 }
 
 _install_antigravity() {

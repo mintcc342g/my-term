@@ -92,9 +92,7 @@ L_IDE_CMD_PROMPT="antigravity 의 짧은 명령어 이름을 입력하세요 (�
 L_IDE_INVALID_NAME="이름이 올바르지 않습니다. 기본값 agy 를 사용합니다."
 L_IDE_BINDIR_NOTFOUND="Antigravity bin 디렉토리를 찾지 못했습니다. IDE 를 한 번 실행한 뒤 이 단계를 다시 진행하세요."
 L_PROMPT_NAME="이름: "
-L_IDE_MORE_TITLE="IDE 설치 완료 — 계속할까요?"
-L_IDE_ANOTHER="다른 IDE 설치"
-L_IDE_PROCEED_FMT="다음 단계로 (%s)"
+L_IDE_CATEGORY="편집기"
 
 # ── asdf (asdf-langs.sh) ────────────────────────────────────────
 L_ASDF_MENU_TITLE="asdf — 설정할 언어 선택"

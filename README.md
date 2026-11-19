@@ -54,7 +54,7 @@ cd my-term
 - **newro theme**
 - **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun 등
 - **Git SSH keys (multi-account)** — 디렉토리별로 GitHub 계정 키를 자동 분기 ([자세히](#git-ssh-키-다중-계정))
-- **IDE** — Antigravity IDE 를 설치하고 짧은 실행 명령(symlink)을 등록
+- **IDE** — Antigravity와 LazyVim을 체크박스로 선택. Antigravity는 짧은 실행 명령(symlink)을 등록하고, LazyVim은 공식 스타터를 기본 Neovim 설정 경로에 설치합니다. 실행 명령은 `nvim`입니다.
 - **asdf + 언어 플러그인** — Golang, Java
 - **pyenv + pyenv-virtualenv**
 - **AI tools** — Claude Code, OpenCode, Codex
@@ -221,7 +221,7 @@ Each step auto-skips when its dependency isn't present.
 - **newro theme**
 - **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun, and more
 - **Git SSH keys (multi-account)** — auto-routes GitHub account keys per directory ([details](#git-ssh-keys-multi-account))
-- **IDE** — installs Antigravity IDE and registers a short launch command (symlink)
+- **IDE** — choose Antigravity or LazyVim with checkboxes. Antigravity registers a short launch command (symlink). LazyVim installs the official starter in Neovim’s default config directory and starts with `nvim`.
 - **asdf + language plugins** — Golang, Java
 - **pyenv + pyenv-virtualenv**
 - **AI tools** — Claude Code, OpenCode, Codex
@@ -388,7 +388,7 @@ cd my-term
 - **newro theme**
 - **Convenience tools** — ripgrep, fd, bat, television, tmux, maccy, rectangle, postman, stats, fork, k9s, bun など
 - **Git SSH keys (multi-account)** — ディレクトリごとに GitHub アカウントのキーを自動で振り分け（[詳しく](#ja-git-ssh-keys)）
-- **IDE** — Antigravity IDE をインストールして、短い起動コマンド（symlink）を登録
+- **IDE** — Antigravity と LazyVim をチェックボックスで選択できます。Antigravity は短い起動コマンド（symlink）を登録します。LazyVim は公式スターターを Neovim の既定の設定ディレクトリにインストールし、`nvim` で起動します。
 - **asdf + 言語プラグイン** — Golang, Java
 - **pyenv + pyenv-virtualenv**
 - **AI tools** — Claude Code, OpenCode, Codex
