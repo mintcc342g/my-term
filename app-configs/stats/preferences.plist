@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Battery_state</key>
+	<false/>
+	<key>Bluetooth_icon_position</key>
+	<integer>1</integer>
+	<key>Bluetooth_label_position</key>
+	<integer>2</integer>
+	<key>Bluetooth_oneView</key>
+	<false/>
+	<key>Bluetooth_stack_position</key>
+	<integer>0</integer>
+	<key>Bluetooth_state</key>
+	<false/>
+	<key>Bluetooth_widget</key>
+	<string>sensors,icon</string>
+	<key>CPU_state</key>
+	<true/>
+	<key>CPU_widget</key>
+	<string>mini</string>
+	<key>Clock_state</key>
+	<false/>
+	<key>Disk_state</key>
+	<false/>
+	<key>Disk_widget</key>
+	<string>bar_chart</string>
+	<key>GPU_state</key>
+	<true/>
+	<key>NSSplitView Subview Frames NSColorPanelSplitView</key>
+	<array>
+		<string>0.000000, 0.000000, 266.000000, 300.000000, NO, NO</string>
+		<string>0.000000, 320.000000, 266.000000, 77.000000, NO, NO</string>
+	</array>
+	<key>NSToolbar Configuration com.apple.NSColorPanel</key>
+	<dict>
+		<key>TB Is Shown</key>
+		<true/>
+	</dict>
+	<key>NSToolbar Configuration eu.exelban.Stats.Settings.Toolbar</key>
+	<dict>
+		<key>TB Display Mode</key>
+		<integer>1</integer>
+		<key>TB Icon Size Mode</key>
+		<integer>1</integer>
+		<key>TB Is Shown</key>
+		<true/>
+		<key>TB Size Mode</key>
+		<integer>1</integer>
+	</dict>
+	<key>NSWindow Frame NSColorPanel</key>
+	<string>1973 180 266 366 1512 -98 1920 1050 </string>
+	<key>NSWindow Frame eu.exelban.Stats.Settings.WindowFrame</key>
+	<string>2484 216 720 480 1512 -98 1920 1050 </string>
+	<key>Network_icon_position</key>
+	<integer>4</integer>
+	<key>Network_label_position</key>
+	<integer>1</integer>
+	<key>Network_networkChart_position</key>
+	<integer>0</integer>
+	<key>Network_network_chart_downloadColor</key>
+	<string>custom:#E8E8EFFF</string>
+	<key>Network_network_chart_uploadColor</key>
+	<string>custom:#99999DFF</string>
+	<key>Network_speed_position</key>
+	<integer>3</integer>
+	<key>Network_state</key>
+	<true/>
+	<key>Network_state_position</key>
+	<integer>2</integer>
+	<key>Network_text_position</key>
+	<integer>5</integer>
+	<key>Network_widget</key>
+	<string>network_chart</string>
+	<key>RAM_barChart_position</key>
+	<integer>6</integer>
+	<key>RAM_icon_position</key>
+	<integer>3</integer>
+	<key>RAM_label_position</key>
+	<integer>2</integer>
+	<key>RAM_lineChart_position</key>
+	<integer>1</integer>
+	<key>RAM_line_chart_box</key>
+	<false/>
+	<key>RAM_line_chart_frame</key>
+	<true/>
+	<key>RAM_line_chart_scale</key>
+	<string>none</string>
+	<key>RAM_line_chart_valueColor</key>
+	<false/>
+	<key>RAM_memory_position</key>
+	<integer>7</integer>
+	<key>RAM_mini_position</key>
+	<integer>0</integer>
+	<key>RAM_pieChart_position</key>
+	<integer>4</integer>
+	<key>RAM_state</key>
+	<true/>
+	<key>RAM_state_position</key>
+	<integer>9</integer>
+	<key>RAM_tachometer_position</key>
+	<integer>5</integer>
+	<key>RAM_text_position</key>
+	<integer>8</integer>
+	<key>RAM_widget</key>
+	<string>mini</string>
+	<key>Sensors_barChart_position</key>
+	<integer>1</integer>
+	<key>Sensors_fanControl</key>
+	<true/>
+	<key>Sensors_fanValue</key>
+	<string>percentage</string>
+	<key>Sensors_icon_position</key>
+	<integer>4</integer>
+	<key>Sensors_label_position</key>
+	<integer>3</integer>
+	<key>Sensors_mini_position</key>
+	<integer>2</integer>
+	<key>Sensors_oneView</key>
+	<false/>
+	<key>Sensors_sensors_alignment</key>
+	<string>left</string>
+	<key>Sensors_sensors_monospacedFont</key>
+	<false/>
+	<key>Sensors_sensors_size</key>
+	<false/>
+	<key>Sensors_stack_position</key>
+	<integer>0</integer>
+	<key>Sensors_state</key>
+	<true/>
+	<key>Sensors_widget</key>
+	<string>sensors</string>
+	<key>remote_tokens_migrated_to_keychain</key>
+	<true/>
+	<key>runAtLoginInitialized</key>
+	<true/>
+	<key>sensor_Fastest fan</key>
+	<true/>
+	<key>sensor_Hottest CPU</key>
+	<true/>
+	<key>sensor_Hottest GPU</key>
+	<true/>
+	<key>setupProcess</key>
+	<true/>
+	<key>support_ts</key>
+	<integer>1794886764</integer>
+	<key>update-interval</key>
+	<string>At start</string>
+	<key>updater_check_ts</key>
+	<integer>1794886764</integer>
+	<key>version</key>
+	<string>3.1.0</string>
+</dict>
+</plist>

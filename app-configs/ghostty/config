@@ -1,0 +1,58 @@
+# Colors (NewroTheme - sRGB calibrated)
+background = 2f3440
+foreground = d8dee9
+cursor-color = d8dee9
+cursor-text = 3b4152
+selection-background = 4c566a
+selection-foreground = d8dee9
+bold-color = eceff4
+palette = 0=3b4152
+palette = 1=cf737f
+palette = 2=a4c08c
+palette = 3=eacc8c
+palette = 4=82a0c1
+palette = 5=b38cad
+palette = 6=8ac0d0
+palette = 7=e5e9f0
+palette = 8=4c566a
+palette = 9=cf737f
+palette = 10=a4c08c
+palette = 11=eacc8c
+palette = 12=82a0c1
+palette = 13=b38cad
+palette = 14=91bdbb
+palette = 15=eceff4
+
+# Font
+# Use Ghostty's bundled JetBrains Mono and Nerd Font symbols.
+font-family =
+# font-family = "BitstromWeraNewro Nerd Font Mono" # personal
+font-size = 15
+
+# Cursor & Shell Integration
+cursor-style = block
+cursor-style-blink = true
+shell-integration-features = no-cursor,no-title
+
+# Mouse & Clipboard
+copy-on-select = clipboard
+
+# Scrollback (500 MB limit). For unlimited scrollback, uncomment the second setting and comment out the first.
+scrollback-limit-bytes = 500000000
+# scrollback-limit-bytes = unlimited
+
+# Window & Behavior
+window-colorspace = display-p3
+window-width = 80
+window-height = 25
+window-theme = dark
+working-directory = home
+bell-features = system,attention,title
+confirm-close-surface = false
+macos-option-as-alt = true
+unfocused-split-fill = ffffff
+unfocused-split-opacity = 0.85
+
+# Tab Navigation
+keybind = super+left=previous_tab
+keybind = super+right=next_tab

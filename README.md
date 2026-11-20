@@ -6,13 +6,10 @@
 
 애플 실리콘 맥에서 터미널과 개발 환경을 한 번에 세팅하는 인스톨러입니다. Homebrew 패키지, zsh 테마, 다중 계정 Git SSH, Claude Code·Codex 설정까지 메뉴를 따라가며 필요한 것만 골라 설치할 수 있습니다.
 
-⚠️ 만든 사람 혼자 쓰려고 만든, 취향 가득한 개인 설정입니다. 😅
-
 ## 사전 작업
 
 - **macOS Command Line Tools** (`curl`, `git`): 설치돼 있어야 합니다. 없으면 인스톨러가 `xcode-select --install` 을 안내하고 종료합니다.
 - **Nerd Fonts v3.0.0 이상**: HUD 가 Material Design Icons codepoint(`U+F062C` 등)를 쓰기 때문에 v3 매핑이 필요합니다. 구버전 폰트는 아이콘이 깨집니다.
-- **iTerm2**: 설치 후 프로필을 맞춰주세요. 권장 값은 맨 아래 [각 프로그램 설정값](#각-프로그램-설정값) 에 정리해뒀습니다.
 
 ## 설치
 
@@ -142,22 +139,33 @@ ssh -T git@github.com
 
 ## 각 프로그램 설정값
 
-### iTerm2
+### iTerm2 사용시
 
 - **한글 자소분리 해결**: Settings → Profiles → 프로필 선택 → Text → `Unicode normalization form` → HFS+
 - **Nerd 폰트**: Settings → Profile → Text → Text Rendering → Use built-in Powerline glyphs 체크
 - **커서 깜박임**: Settings → Profiles → 프로필 선택 → Text → Cursor → Blink 체크
 - **tmux split spans**: Settings → General → Magic → Python API 활성화 후 재시작 → Claude Code 팀 모드 활성화 후 `c --teammate-mode tmux` 로 실행
 
-### maccy
+### Ghostty 사용시
 
-- General — Search: Fuzzy / Behavior: Paste without formatting / Open: Option + Command + v
-- Appearance — Popup at: Menu icon / Pin to: Top / "Show recent copy next to menu icon" 만 빼고 전부 체크
-- Advanced — 전부 체크 해제
+- 설정값은 자동으로 `~/.config/ghostty/config`에 셋팅되므로, 원하는 설정값으로 바꿔주세요.
 
-### rectangle
+### 앱 설정
 
-- `RectangleConfig.json` 파일을 사용합니다.
+Rectangle, AltTab, Stats는 설치 후 각 앱의 설정에서 아래 파일을 직접 가져와 주세요.
+
+- [Rectangle](app-configs/rectangle/RectangleConfig.json)은 Settings → App Settings → Import에서 가져올 수 있습니다.
+- [AltTab](app-configs/alt-tab/preferences.plist)은 Settings → General → Import…에서 가져올 수 있습니다.
+- [Stats](app-configs/stats/preferences.plist)는 Settings → General → Import settings에서 가져올 수 있습니다.
+
+### Maccy
+
+설치 메뉴에서 Maccy를 선택하면 [저장된 설정](app-configs/maccy/preferences.json)을 `defaults write org.p0deje.Maccy`로 항목별로 적용합니다. Maccy를 다시 실행한 뒤 설정이 반영되지 않으면 아래대로 수동 설정해 주세요.
+
+- **General** — Launch at login 켜기, 자동 업데이트 확인 끄기. Open `⌥⌘V`, Pin `⌥P`, Delete `⌥⌫`, Preview `⌃Space`. Fuzzy 검색과 Paste automatically를 켜고 Paste without formatting은 끕니다.
+- **Storage** — Files, Images, Text 모두 켜기. Size 200, Time of last copy.
+- **Appearance** — Menu icon, Top, 이미지 높이 40, 자동 미리보기 켜기, 지연 1500, Bold. Maccy 아이콘, 특수 기호, 검색창(Always), 제목, 색상 견본, 푸터를 켜고 최근 복사와 앱 아이콘 표시를 끕니다.
+- **Advanced** — Turn off는 끄고, Clear history on quit과 Clear the system clipboard too를 켭니다.
 
 <br>
 
@@ -171,13 +179,10 @@ ssh -T git@github.com
 
 A one-shot installer for setting up your terminal and dev environment on Apple Silicon Macs. From Homebrew packages and a zsh theme to multi-account Git SSH and Claude Code / Codex configuration — follow the menu and install only what you need.
 
-⚠️ A personal, taste-packed setup the author built just for themselves. 😅
-
 ## Prerequisites
 
 - **macOS Command Line Tools** (`curl`, `git`): must be installed. If missing, the installer points you to `xcode-select --install` and exits.
 - **Nerd Fonts v3.0.0+**: the HUD uses Material Design Icons codepoints (e.g. `U+F062C`), which require the v3 mapping. Older fonts render broken glyphs.
-- **iTerm2**: install it and configure the profile. Recommended values are in [Per-app settings](#per-app-settings) at the bottom.
 
 ## Install
 
@@ -307,22 +312,33 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 ## Per-app settings
 
-### iTerm2
+### When using iTerm2
 
 - **Fix Korean jamo decomposition**: Settings → Profiles → select profile → Text → `Unicode normalization form` → HFS+
 - **Nerd font**: Settings → Profile → Text → Text Rendering → check Use built-in Powerline glyphs
 - **Cursor blink**: Settings → Profiles → select profile → Text → Cursor → check Blink
 - **tmux split spans**: Settings → General → Magic → enable Python API and restart → enable Claude Code team mode, then run `c --teammate-mode tmux`
 
-### maccy
+### When using Ghostty
 
-- General — Search: Fuzzy / Behavior: Paste without formatting / Open: Option + Command + v
-- Appearance — Popup at: Menu icon / Pin to: Top / check everything except "Show recent copy next to menu icon"
-- Advanced — uncheck everything
+- Settings are installed automatically at `~/.config/ghostty/config`. Change them as needed.
 
-### rectangle
+### App settings
 
-- Uses the `RectangleConfig.json` file.
+After installing Rectangle, AltTab, or Stats, import the corresponding file below from the app’s settings.
+
+- Import [Rectangle settings](app-configs/rectangle/RectangleConfig.json) via Settings → App Settings → Import.
+- Import [AltTab settings](app-configs/alt-tab/preferences.plist) via Settings → General → Import….
+- Import [Stats settings](app-configs/stats/preferences.plist) via Settings → General → Import settings.
+
+### Maccy
+
+Selecting Maccy in the installer applies the [saved settings](app-configs/maccy/preferences.json) one key at a time using `defaults write org.p0deje.Maccy`. If the settings do not appear after restarting Maccy, apply them below.
+
+- **General** — Enable Launch at login and disable automatic update checks. Open `⌥⌘V`, Pin `⌥P`, Delete `⌥⌫`, Preview `⌃Space`. Use Fuzzy search, enable Paste automatically, and disable Paste without formatting.
+- **Storage** — Save Files, Images, and Text. Set Size to 200 and sort by Time of last copy.
+- **Appearance** — Menu icon, Top, image height 40, automatic preview with a 1500 delay, and Bold matches. Show the Maccy icon, special symbols, search field (Always), title, color swatch, and footer. Hide recent copy and application icons.
+- **Advanced** — Leave Turn off unchecked. Enable Clear history on quit and Clear the system clipboard too.
 
 <br>
 
@@ -336,13 +352,10 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 Apple Silicon の Mac で、ターミナルと開発環境をまとめてセットアップするインストーラーです。Homebrew パッケージ、zsh テーマ、複数アカウントの Git SSH、Claude Code・Codex の設定まで、メニューをたどりながら必要なものだけ選んで入れられます。
 
-⚠️ 作者が自分ひとりで使うために作った、こだわり全開の個人設定です。😅
-
 ## 事前準備
 
 - **macOS Command Line Tools**（`curl`、`git`）: 入っている必要があります。無ければインストーラーが `xcode-select --install` を案内して終了します。
 - **Nerd Fonts v3.0.0 以上**: HUD が Material Design Icons のコードポイント（`U+F062C` など）を使うので、v3 のマッピングが要ります。古いフォントだとアイコンが化けます。
-- **iTerm2**: インストールしたらプロファイルを合わせてください。おすすめの値は末尾の [各プログラムの設定値](#ja-per-app-settings) にまとめてあります。
 
 ## インストール
 
@@ -476,19 +489,30 @@ ssh -T git@github.com
 
 ## 各プログラムの設定値
 
-### iTerm2
+### iTerm2 を使う場合
 
 - **ハングルの字母分離を解決**: Settings → Profiles → プロファイル選択 → Text → `Unicode normalization form` → HFS+
 - **Nerd フォント**: Settings → Profile → Text → Text Rendering → Use built-in Powerline glyphs にチェック
 - **カーソルの点滅**: Settings → Profiles → プロファイル選択 → Text → Cursor → Blink にチェック
 - **tmux split spans**: Settings → General → Magic → Python API を有効化して再起動 → Claude Code のチームモードを有効化して `c --teammate-mode tmux` で実行
 
-### maccy
+### Ghostty を使う場合
 
-- General — Search: Fuzzy / Behavior: Paste without formatting / Open: Option + Command + v
-- Appearance — Popup at: Menu icon / Pin to: Top /「Show recent copy next to menu icon」だけ外して他は全部チェック
-- Advanced — 全部チェックを外す
+- 設定は `~/.config/ghostty/config` に自動で配置されます。必要に応じて変更してください。
 
-### rectangle
+### アプリ設定
 
-- `RectangleConfig.json` ファイルを使います。
+Rectangle、AltTab、Stats は、インストール後に各アプリの設定から以下のファイルを読み込んでください。
+
+- [Rectangle の設定](app-configs/rectangle/RectangleConfig.json)は Settings → App Settings → Import から読み込めます。
+- [AltTab の設定](app-configs/alt-tab/preferences.plist)は Settings → General → Import… から読み込めます。
+- [Stats の設定](app-configs/stats/preferences.plist)は Settings → General → Import settings から読み込めます。
+
+### Maccy
+
+インストーラーで Maccy を選ぶと、[保存済みの設定](app-configs/maccy/preferences.json)を `defaults write org.p0deje.Maccy` で項目ごとに設定します。Maccy を再起動しても反映されない場合は、以下の項目を手動で設定してください。
+
+- **General** — ログイン時の起動をオン、自動更新チェックをオフ。Open `⌥⌘V`、Pin `⌥P`、Delete `⌥⌫`、Preview `⌃Space`。検索は Fuzzy、自動ペーストをオン、書式なしペーストをオフ。
+- **Storage** — Files、Images、Text をすべて保存。Size は 200、並び順は Time of last copy。
+- **Appearance** — Menu icon、Top、画像の高さ 40、自動プレビューをオン、遅延 1500、Bold。Maccy アイコン、特殊記号、検索欄（Always）、タイトル、色見本、フッターを表示し、最近のコピーとアプリアイコンは非表示。
+- **Advanced** — Turn off はオフ。終了時の履歴消去とシステムクリップボードの消去をオン。
