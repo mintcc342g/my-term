@@ -50,7 +50,7 @@ L_DONE_RESTART_CC="적용하려면 Claude Code 세션을 다시 시작하세요.
 
 # 여러 색상이 섞인 안내 (literal ${HOME} 는 \$ 로 유지).
 lang_done_source_zshrc() {
-  printf "  ${UI_YELLOW_BOLD}'source \${HOME}/.zshrc'${UI_RESET} 를 실행하거나 셸을 ${UI_YELLOW_BOLD}다시 시작${UI_RESET}하세요.\n\n"
+  printf "  ${UI_YELLOW_BOLD}'source \${HOME}/.zprofile && source \${HOME}/.zshrc'${UI_RESET} 를 실행하거나 셸을 ${UI_YELLOW_BOLD}다시 시작${UI_RESET}하세요.\n\n"
 }
 
 # ── 삭제 (ai-tools.sh delete_my_claude) ─────────────────────────

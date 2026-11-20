@@ -49,7 +49,7 @@ L_DONE_RESTART_CC="Restart Claude Code sessions to apply."
 
 # multi-color note (literal ${HOME} kept via \$).
 lang_done_source_zshrc() {
-  printf "  Please run ${UI_YELLOW_BOLD}'source \${HOME}/.zshrc'${UI_RESET} or ${UI_YELLOW_BOLD}restart${UI_RESET} your shell.\n\n"
+  printf "  Please run ${UI_YELLOW_BOLD}'source \${HOME}/.zprofile && source \${HOME}/.zshrc'${UI_RESET} or ${UI_YELLOW_BOLD}restart${UI_RESET} your shell.\n\n"
 }
 
 # ── Delete (ai-tools.sh delete_my_claude) ───────────────────────

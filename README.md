@@ -23,6 +23,12 @@ cd my-term
 
 각종 도구 단계에서는 CLI 도구·macOS 앱·DevOps 도구·패키지 매니저·IDE 및 편집기를 카테고리별 체크박스로 고릅니다. 처음에는 모두 미선택이며, ↑↓로 이동하고 Enter로 체크합니다. 각 카테고리의 `전부 설치`로 전체 선택·해제할 수 있습니다(`[-]`는 일부 선택). 목록 아래의 **설치 / 건너뛰기 / 종료** 행에서는 ←→로 이동하고 Enter로 실행합니다. 선택한 도구만 설치하며, television 셸 연동도 television을 선택했을 때만 설정합니다.
 
+설치 후 새 터미널을 열거나, 현재 zsh 세션에서 아래 명령을 실행해 설정을 반영하세요.
+
+```zsh
+source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
+```
+
 ## 업데이트
 
 프로젝트 코드가 바뀌었을 때만 돌리면 됩니다. 업데이트는 brew 설치나 alias 설정 같은 인스톨 단계를 전부 건너뛰고 `~/.claude/` 로 파일을 sync 하는 일만 합니다. 현재 sync 대상은 AI 어시스턴트 설정과 HUD 입니다.
@@ -197,6 +203,12 @@ The first thing the installer asks is your **display language (한국어 / Engli
 
 The Utilities step groups checkboxes into CLI tools, macOS apps, DevOps tools, package managers, and IDEs and editors. Everything starts unchecked: move with ↑↓ and toggle with Enter. Each category's `Install all` selects or clears its tools (`[-]` means partially selected). Below the list, use ←→ to choose **Install / Skip / Exit**, then press Enter. Only selected tools are installed, and television shell integration is configured only when television is selected.
 
+After installation, open a new terminal or run the following command in your current zsh session to apply the settings.
+
+```zsh
+source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
+```
+
 ## Update
 
 Run this only when the project code has changed. Update skips all install steps (brew installs, alias setup, and so on) and only syncs files into `~/.claude/`. The current sync targets are the AI assistant config and the HUD.
@@ -370,6 +382,12 @@ cd my-term
 インストーラーを起動すると、まず **表示言語（한국어 / English / 日本語）** を選びます。以降のメニューと案内はすべてその言語で出ます。メニューは矢印キー（↑↓）で動かして Enter で選びます。ステップごとにスキップと終了が別々にあるので、欲しい項目だけ入れられます。
 
 各種ツールのステップでは、CLI ツール・macOS アプリ・DevOps ツール・パッケージマネージャー・IDE とエディターをカテゴリ別のチェックボックスで選びます。最初はすべて未選択です。↑↓で移動し、Enter でチェックを切り替えます。各カテゴリの `すべてインストール` で全選択・解除できます（`[-]` は一部選択）。一覧の下にある **インストール / スキップ / 終了** の行では、←→で移動して Enter で実行します。選んだツールだけをインストールし、television のシェル連携も television を選んだ場合にのみ設定します。
+
+インストール後は、新しいターミナルを開くか、現在の zsh セッションで以下のコマンドを実行して設定を反映してください。
+
+```zsh
+source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
+```
 
 ## アップデート
 
