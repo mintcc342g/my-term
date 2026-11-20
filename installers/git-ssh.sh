@@ -34,73 +34,12 @@ install_git_ssh() {
     return 0
   fi
 
-  # default 키 감지 — 두 갈래:
-  #   managed  : 매니지드 블록 안의 Host github.com (이전 installer 실행 결과)
-  #   external : 매니지드 블록 밖의 Host github.com (사용자가 직접 작성)
-  # external 이 있으면 그 키를 default 로 존중하고 첫 등록 루프를 건너뜀.
-  # 둘 다 있으면 ssh first-match 로 external 이 이기고 managed 가 죽는 충돌 상태.
-  local has_managed_default=false has_external_default=false
-  local managed_default_key="" external_default_key=""
-  if [ -f "$SSH_CONFIG" ]; then
-    if _git_ssh_block_has_default "$SSH_CONFIG"; then
-      has_managed_default=true
-      managed_default_key=$(_git_ssh_get_default_key "$SSH_CONFIG")
-    fi
-    external_default_key=$(_git_ssh_find_external_default_key "$SSH_CONFIG")
-    [ -n "$external_default_key" ] && has_external_default=true
-  fi
-
-  # Case D: 매니지드 안팎에 default 가 둘 다 — 사용자가 정리해야 함.
-  if [ "$has_managed_default" = "true" ] && [ "$has_external_default" = "true" ]; then
-    ui_clear_screen
-    lang_gitssh_conflict "$external_default_key" "$managed_default_key"
-    echo -ne " ${UI_DIM}${L_GITSSH_ENTER_NEXT}${UI_RESET}" > /dev/tty
-    read -r _ < /dev/tty
-    umask "$_old_umask"
-    ui_log_skipped "Git SSH"
-    return 0
-  fi
-
-  local has_default=false
-  if [ "$has_managed_default" = "true" ]; then
-    # Case A: my-term 이 관리하는 default 키가 이미 있음 — 추가 등록 여부만 확인.
-    # 예전엔 log_step + sleep 로 잠깐 띄웠다가 다음 화면(ui_clear_screen)이
-    # 덮어써 깜빡였음. Case B 처럼 ui_menu 로 머무르게 함.
-    local note; note="$(lang_gitssh_caseA_note "$managed_default_key")"
-
-    local cont=""
-    UI_MENU_NOTE="$note" ui_menu "$L_GITSSH_CASEA_TITLE" cont "$L_YES" "$L_NO"
-    if [ "$cont" != "0" ]; then
-      umask "$_old_umask"
-      ui_log_skipped "Git SSH"
-      return 0
-    fi
-    has_default=true
-  elif [ "$has_external_default" = "true" ]; then
-    # Case B: 사용자 기존 default 를 존중하되, 매니지드 블록을 파일 맨 위로
-    # 배치해야 이후 추가되는 Match 블록이 가려지지 않음.
-    # ui_menu 는 매 리드로우마다 화면을 지우므로 안내문은 UI_MENU_NOTE 로
-    # 전달해야 메뉴와 함께 표시됨 (obsidian/ai-tools 의 패턴과 동일).
-    local note; note="$(lang_gitssh_caseB_note "$external_default_key")"
-
-    local cont=""
-    UI_MENU_NOTE="$note" ui_menu "$L_GITSSH_CASEB_TITLE" cont "$L_YES" "$L_NO"
-    if [ "$cont" != "0" ]; then
-      umask "$_old_umask"
-      ui_log_skipped "Git SSH"
-      return 0
-    fi
-    _git_ssh_ensure_block_at_top "$SSH_CONFIG"
-    has_default=true
-  fi
-
   local created=false
+  local registered_hosts=" "
   while true; do
-    # rc: 0 = 등록 성공(또는 재시도용 soft error), 1 = 치명적 오류,
-    #     2 = 빈 닉네임으로 사용자가 키 생성을 종료 → 루프 탈출.
-    # set -e 환경이라 비-0 반환이 스크립트를 죽이지 않도록 `|| rc=$?` 로 받는다.
+    # 1: fatal error, 2: stop, 3: retry.
     local rc=0
-    _git_ssh_create_one "$SSH_CONFIG" "$has_default" || rc=$?
+    _git_ssh_create_one "$SSH_CONFIG" || rc=$?
     if [ "$rc" -eq 1 ]; then
       umask "$_old_umask"
       return 1
@@ -115,9 +54,8 @@ install_git_ssh() {
       fi
       break
     fi
+    [ "$rc" -eq 3 ] && continue
     created=true
-    # First successful registration becomes default — subsequent ones are matched.
-    [ "$has_default" = "false" ] && has_default=true
 
     local more=""
     ui_menu "$L_GITSSH_ANOTHER_TITLE" more "$L_YES" "$L_NO_DONE"
@@ -126,21 +64,84 @@ install_git_ssh() {
 
   umask "$_old_umask"
   log_done "Git SSH setup complete."
-  printf "  ${UI_DIM}%s${UI_RESET}\n" "$L_GITSSH_VERIFY"
 }
 
-# One iteration: prompt nickname/email, generate key, register, pbcopy, pause.
-# Returns non-zero only on fatal errors; soft errors (empty input, duplicate
-# nickname) return 0 so the outer loop can re-prompt.
+# Prompt for a host and register one key for that host.
 _git_ssh_create_one() {
-  local SSH_CONFIG="$1" has_default="$2"
+  local SSH_CONFIG="$1"
+  local host
+
+  ui_clear_screen
+  echo -ne " ${UI_YELLOW_BOLD}${L_GITSSH_HOST_LABEL}${UI_RESET}" > /dev/tty
+  read -r host < /dev/tty || return 2
+  host=${host:-github.com}
+  if [[ ! "$host" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$ ]]; then
+    log_fail "$L_GITSSH_INVALID_HOST"
+    sleep 1
+    return 3
+  fi
+  host=$(printf '%s' "$host" | LC_ALL=C tr '[:upper:]' '[:lower:]')
+
+  # default 키 감지 — 두 갈래:
+  #   managed  : 매니지드 블록 안의 Host 설정 (이전 installer 실행 결과)
+  #   external : 매니지드 블록 밖의 Host 설정 (사용자가 직접 작성)
+  # external 이 있으면 그 키를 default 로 존중하고 첫 등록 루프를 건너뜀.
+  # 둘 다 있으면 ssh first-match 로 external 이 이기고 managed 가 죽는 충돌 상태.
+  local has_managed_default=false has_external_default=false
+  local managed_default_key="" external_default_key=""
+  if [ -f "$SSH_CONFIG" ]; then
+    managed_default_key=$(_git_ssh_find_default_key "$SSH_CONFIG" "$host" 1)
+    [ -n "$managed_default_key" ] && has_managed_default=true
+    external_default_key=$(_git_ssh_find_default_key "$SSH_CONFIG" "$host" 0)
+    [ -n "$external_default_key" ] && has_external_default=true
+  fi
+
+  # Case D: 매니지드 안팎에 default 가 둘 다 — 사용자가 정리해야 함.
+  if [ "$has_managed_default" = "true" ] && [ "$has_external_default" = "true" ]; then
+    ui_clear_screen
+    lang_gitssh_conflict "$external_default_key" "$managed_default_key" "$host"
+    echo -ne " ${UI_DIM}${L_GITSSH_ENTER_NEXT}${UI_RESET}" > /dev/tty
+    read -r _ < /dev/tty
+    return 2
+  fi
+
+  local has_default=false
+  if [[ "$registered_hosts" == *" $host "* ]]; then
+    has_default=true
+  elif [ "$has_managed_default" = "true" ]; then
+    # Case A: my-term 이 관리하는 default 키가 이미 있음 — 추가 등록 여부만 확인.
+    # 예전엔 log_step + sleep 로 잠깐 띄웠다가 다음 화면(ui_clear_screen)이
+    # 덮어써 깜빡였음. Case B 처럼 ui_menu 로 머무르게 함.
+    local note; note="$(lang_gitssh_caseA_note "$managed_default_key")"
+
+    local cont=""
+    UI_MENU_NOTE="$note" ui_menu "$L_GITSSH_CASEA_TITLE" cont "$L_YES" "$L_NO"
+    if [ "$cont" != "0" ]; then
+      return 2
+    fi
+    has_default=true
+  elif [ "$has_external_default" = "true" ]; then
+    # Case B: 사용자 기존 default 를 존중하되, 매니지드 블록을 파일 맨 위로
+    # 배치해야 이후 추가되는 Match 블록이 가려지지 않음.
+    # ui_menu 는 매 리드로우마다 화면을 지우므로 안내문은 UI_MENU_NOTE 로
+    # 전달해야 메뉴와 함께 표시됨 (obsidian/ai-tools 의 패턴과 동일).
+    local note; note="$(lang_gitssh_caseB_note "$external_default_key" "$host")"
+
+    local cont=""
+    UI_MENU_NOTE="$note" ui_menu "$L_GITSSH_CASEB_TITLE" cont "$L_YES" "$L_NO"
+    if [ "$cont" != "0" ]; then
+      return 2
+    fi
+    _git_ssh_ensure_block_at_top "$SSH_CONFIG"
+    has_default=true
+  fi
 
   # ── nickname ─────────────────────────────────────────────────
   ui_clear_screen
   lang_gitssh_nick_help "$has_default"
   echo -ne " ${UI_YELLOW_BOLD}${L_GITSSH_NICK_LABEL}${UI_RESET}" > /dev/tty
   local nickname
-  read -r nickname < /dev/tty
+  read -r nickname < /dev/tty || return 2
 
   # 빈 닉네임은 "그만하고 다음 단계로" 신호 — 안내 문구로 미리 고지했으므로
   # 별도 에러 없이 abort code(2) 만 반환한다.
@@ -151,25 +152,28 @@ _git_ssh_create_one() {
   if [[ ! "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     log_fail "$L_GITSSH_INVALID_NICK"
     sleep 1
-    return 0
+    return 3
   fi
   local key_path="$HOME/.ssh/id_$nickname"
   if [ -e "$key_path" ] || [ -e "${key_path}.pub" ]; then
     log_fail "$(tf L_GITSSH_KEY_EXISTS "$key_path")"
     sleep 1
-    return 0
+    return 3
   fi
 
   # ── email ────────────────────────────────────────────────────
-  echo > /dev/tty
-  echo -ne " ${UI_YELLOW_BOLD}${L_GITSSH_EMAIL_LABEL}${UI_RESET}" > /dev/tty
   local email
-  read -r email < /dev/tty
-  if [ -z "$email" ]; then
-    log_fail "$L_GITSSH_EMPTY_EMAIL"
-    sleep 1
-    return 0
-  fi
+  while true; do
+    echo > /dev/tty
+    echo -ne " ${UI_YELLOW_BOLD}${L_GITSSH_EMAIL_LABEL}${UI_RESET}" > /dev/tty
+    read -r email < /dev/tty || return 2
+    [ -n "$email" ] && break
+
+    ui_clear_screen
+    lang_gitssh_nick_help "$has_default"
+    printf ' %s%s%s%s\n' "$UI_YELLOW_BOLD" "$L_GITSSH_NICK_LABEL" "$UI_RESET" "$nickname" > /dev/tty
+    printf ' %s%s%s\n' "$UI_RED_BOLD" "$L_GITSSH_EMPTY_EMAIL" "$UI_RESET" > /dev/tty
+  done
 
   # ── ssh-keygen (passphrase 는 ssh-keygen 이 직접 prompt) ──────
   echo > /dev/tty
@@ -177,30 +181,31 @@ _git_ssh_create_one() {
   if ! ssh-keygen -t ed25519 -f "$key_path" -C "$email" < /dev/tty; then
     log_fail "ssh-keygen failed."
     sleep 1
-    return 0
+    return 3
   fi
 
   # ── register in ~/.ssh/config ────────────────────────────────
   if [ "$has_default" = "false" ]; then
-    _git_ssh_register_default "$SSH_CONFIG" "$key_path"
+    _git_ssh_register_default "$SSH_CONFIG" "$key_path" "$host" || return 1
     log_done "Registered as default key in $SSH_CONFIG"
   else
     local dir_path
-    dir_path=$(_git_ssh_prompt_directory "$nickname") || { log_fail "Directory prompt failed."; sleep 1; return 0; }
+    dir_path=$(_git_ssh_prompt_directory "$nickname") || { log_fail "Directory prompt failed."; sleep 1; return 3; }
     if [ ! -d "$dir_path" ]; then
       if ! mkdir -p "$dir_path"; then
         log_fail "Failed to create $dir_path"
         sleep 1
-        return 0
+        return 3
       fi
       log_done "Created directory: $dir_path"
     else
       log_step "Using existing directory: $dir_path"
     fi
-    _git_ssh_register_match "$SSH_CONFIG" "$key_path" "$dir_path"
+    _git_ssh_register_match "$SSH_CONFIG" "$key_path" "$dir_path" "$host" || return 1
     log_done "Registered $key_path for $dir_path"
   fi
-  chmod 600 "$SSH_CONFIG"
+  chmod 600 "$SSH_CONFIG" || return 1
+  registered_hosts+="$host "
 
   # ── pbcopy + GitHub 등록 안내 ─────────────────────────────────
   local pub_key="${key_path}.pub"
@@ -212,9 +217,13 @@ _git_ssh_create_one() {
   echo -e " ${UI_BOLD}${L_GITSSH_PUBKEY_LABEL}${UI_RESET}" > /dev/tty
   cat "$pub_key" > /dev/tty
   echo > /dev/tty
-  echo -e " ${UI_YELLOW_BOLD}→${UI_RESET} ${L_GITSSH_REGISTER_GH}" > /dev/tty
-  echo -e "    https://github.com/settings/ssh/new" > /dev/tty
-  echo > /dev/tty
+  if [ "$host" = "github.com" ]; then
+    echo -e " ${UI_YELLOW_BOLD}→${UI_RESET} ${L_GITSSH_REGISTER_GH}" > /dev/tty
+    echo "    https://github.com/settings/ssh/new" > /dev/tty
+  else
+    printf ' %s\n' "$(tf L_GITSSH_REGISTER_HOST "$host")" > /dev/tty
+  fi
+  printf ' %s\n\n' "$(tf L_GITSSH_VERIFY "$host")" > /dev/tty
   echo -ne " ${UI_DIM}${L_GITSSH_ENTER_DONE}${UI_RESET}" > /dev/tty
   read -r _ < /dev/tty
   return 0
@@ -237,7 +246,7 @@ _git_ssh_prompt_directory() {
 
   local dir_path
   while true; do
-    read -e -r -p "$prompt" dir_path < /dev/tty
+    read -e -r -p "$prompt" dir_path < /dev/tty || return 1
     dir_path="${dir_path/#\~/$HOME}"
     dir_path="${dir_path%/}"
     [ -n "$dir_path" ] && break
@@ -246,43 +255,17 @@ _git_ssh_prompt_directory() {
   printf '%s' "$dir_path"
 }
 
-# Returns 0 if managed block contains a default 'Host github.com' line.
-_git_ssh_block_has_default() {
-  local file="$1"
-  awk '
-    /^#-- my-term:git-ssh: start$/ { in_block=1; next }
-    /^#-- my-term:git-ssh: end$/   { in_block=0; next }
-    in_block && /^Host github\.com$/ { found=1; exit }
-    END { exit found ? 0 : 1 }
-  ' "$file" 2>/dev/null
-}
-
-# Print the IdentityFile path of the existing default key (Host github.com block).
-_git_ssh_get_default_key() {
-  local file="$1"
-  awk '
-    /^#-- my-term:git-ssh: start$/ { in_block=1; next }
-    /^#-- my-term:git-ssh: end$/   { in_block=0; next }
-    in_block && /^Host github\.com$/ { in_default=1; next }
-    in_block && in_default && /^[[:space:]]+IdentityFile / {
-      print $2; exit
-    }
-  ' "$file" 2>/dev/null
-}
-
-# Find the IdentityFile of the first 'Host github.com' block OUTSIDE the
-# managed block (i.e. user-written). Empty output if none.
-_git_ssh_find_external_default_key() {
-  local file="$1"
-  awk '
-    /^#-- my-term:git-ssh: start$/ { in_managed=1; next }
-    /^#-- my-term:git-ssh: end$/   { in_managed=0; next }
-    in_managed { next }
-    /^Host github\.com[[:space:]]*$/ { in_host=1; next }
-    /^Host /  { in_host=0; next }
-    /^Match / { in_host=0; next }
-    in_host && /^[[:space:]]+IdentityFile / { print $2; exit }
-  ' "$file" 2>/dev/null
+# Find a host's IdentityFile in either the managed or user-written config.
+_git_ssh_find_default_key() {
+  local file="$1" host="$2" managed="$3"
+  awk -v host="$host" -v managed="$managed" '
+    /^#-- my-term:git-ssh: start$/ { in_managed=1; in_host=0; next }
+    /^#-- my-term:git-ssh: end$/   { in_managed=0; in_host=0; next }
+    (in_managed+0) != managed { next }
+    tolower($1) == "host" { in_host=(NF == 2 && tolower($2) == host); next }
+    tolower($1) == "match" { in_host=0; next }
+    in_host && tolower($1) == "identityfile" { print $2; exit }
+  ' "$file"
 }
 
 # Ensure my-term managed block sits at the TOP of the file. Idempotent.
@@ -290,7 +273,7 @@ _git_ssh_find_external_default_key() {
 # - If markers exist but not at top: extract block content, remove old
 #   markers, re-insert (with content) at top.
 # Required for Case B (external default exists) so that subsequently added
-# Match entries evaluate before user's existing Host github.com block.
+# Match entries evaluate before user's existing Host block.
 _git_ssh_ensure_block_at_top() {
   local file="$1"
   local begin="#-- my-term:git-ssh: start"
@@ -346,9 +329,9 @@ _git_ssh_get_block() {
   ' "$file"
 }
 
-# Append default Host github.com block to existing content (or create new).
+# Append the default Host block to existing content (or create new).
 _git_ssh_register_default() {
-  local file="$1" key="$2"
+  local file="$1" key="$2" host="$3"
   local existing block
   existing=$(_git_ssh_get_block "$file")
   if [ -n "$existing" ]; then
@@ -356,8 +339,8 @@ _git_ssh_register_default() {
   else
     block=""
   fi
-  block+="Host github.com"$'\n'
-  block+="  HostName github.com"$'\n'
+  block+="Host $host"$'\n'
+  block+="  HostName $host"$'\n'
   block+="  IdentityFile ${key}"$'\n'
   block+="  IdentitiesOnly yes"
   rc_upsert_block "$file" "git-ssh" "$block"
@@ -367,12 +350,12 @@ _git_ssh_register_default() {
 # 키워드의 첫 일치 값을 사용하므로 (ssh_config(5)), 최신 등록이 우선되도록.
 # 같은 디렉토리를 두 번 등록해도 가장 최근 키가 winning entry 가 됨.
 _git_ssh_register_match() {
-  local file="$1" key="$2" dir="$3"
+  local file="$1" key="$2" dir="$3" host="$4"
   local pattern
   pattern=$(_git_ssh_escape_regex "$dir")
   local match_block
-  match_block="Match host github.com exec \"echo \$PWD | grep -qE '${pattern}(/|\$)'\""$'\n'
-  match_block+="  HostName github.com"$'\n'
+  match_block="Match host $host exec \"echo \$PWD | grep -qE '${pattern}(/|\$)'\""$'\n'
+  match_block+="  HostName $host"$'\n'
   match_block+="  IdentityFile ${key}"$'\n'
   match_block+="  IdentitiesOnly yes"
 

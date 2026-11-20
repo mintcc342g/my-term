@@ -102,6 +102,9 @@ L_GITSSH_CASEB_TITLE="既存の default キーを検出しました — 続け�
 L_GITSSH_ANOTHER_TITLE="キーをもう 1 つ作りますか？"
 L_GITSSH_ENTER_NEXT="Enter で次のステップへ…"
 L_GITSSH_ENTER_DONE="登録を終えたら Enter…"
+L_GITSSH_HOST_LABEL="ホスト [github.com]: "
+L_GITSSH_INVALID_HOST="github.com のようなホスト名を入力してください。"
+L_GITSSH_REGISTER_HOST="%s のアカウントに公開鍵を登録してください。"
 L_GITSSH_NICK_LABEL="ニックネーム: "
 L_GITSSH_INVALID_NICK="ニックネームが正しくありません (a-z, 0-9, _, - のみ)。"
 L_GITSSH_KEY_EXISTS="%s にすでにキーがあります。別のニックネームを入力してください。"
@@ -111,7 +114,7 @@ L_GITSSH_PUBKEY_LABEL="公開鍵:"
 L_GITSSH_REGISTER_GH="GitHub Settings → SSH keys に登録してください:"
 L_GITSSH_DIR_LABEL="ディレクトリ: "
 L_GITSSH_DIR_REQUIRED="ディレクトリは必須です。"
-L_GITSSH_VERIFY="検証: cd <登録したディレクトリ> && ssh -T git@github.com"
+L_GITSSH_VERIFY="検証: cd <登録したディレクトリ> && ssh -T git@%s"
 
 # 導入の案内 (UI_MENU_NOTE; echo -e 用の literal \n).
 lang_gitssh_intro() {
@@ -123,11 +126,11 @@ lang_gitssh_intro() {
   s+="   例)  ~/Documents/my    →  id_my    (個人)\n"
   s+="        ~/Documents/works →  id_work  (仕事)\n"
   s+="\n"
-  s+=" キーが 2 つ以上あると、ssh は github.com の認証で\n"
+  s+=" キーが 2 つ以上あると、ssh は 同じホストの認証で\n"
   s+=" どのキーを使うか判断できないので、ディレクトリ\n"
   s+=" ごとにキーを割り当てます。\n"
   s+="\n"
-  s+=" GitHub の SSH キーを設定しますか？"
+  s+=" Git の SSH キーを設定しますか？"
   printf '%s' "$s"
 }
 
@@ -147,9 +150,9 @@ lang_gitssh_caseA_note() {
 
 # Case B の案内 (外部 default あり).
 lang_gitssh_caseB_note() {
-  local ext="$1"
+  local ext="$1" host="$2"
   local s=""
-  s+=" ${UI_DIM}~/.ssh/config にすでに 'Host github.com' の設定があります。${UI_RESET}\n"
+  s+=" ${UI_DIM}~/.ssh/config にすでに 'Host ${host}' の設定があります。${UI_RESET}\n"
   s+=" ${UI_DIM}このキーをそのまま default として使います:${UI_RESET}\n"
   s+="    ${ext}\n"
   s+="\n"
@@ -159,10 +162,10 @@ lang_gitssh_caseB_note() {
 
 # Case D 競合画面 (/dev/tty 出力).
 lang_gitssh_conflict() {
-  local ext="$1" managed="$2"
-  echo -e "${UI_BLUE_BOLD} 'Host github.com' の設定が 2 つあります${UI_RESET}" > /dev/tty
+  local ext="$1" managed="$2" host="$3"
+  echo -e "${UI_BLUE_BOLD} 'Host ${host}' の設定が 2 つあります${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}~/.ssh/config の 'Host github.com' がマネージドブロックの内と外の${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}~/.ssh/config の 'Host ${host}' がマネージドブロックの内と外の${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}両方にあります。ssh は最初にマッチした 1 つだけを使うので、${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}どちらか一方が隠れています。${UI_RESET}" > /dev/tty
   echo > /dev/tty

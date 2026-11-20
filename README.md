@@ -61,8 +61,9 @@ GitHub 계정을 여러 개 쓸 때, 계정별 키를 디렉토리 단위로 자
 
 ### 동작 방식
 
-- **처음 만든 키가 default 키가 됩니다.** 디렉토리 매칭 없이 fallback 으로 동작하며, 어떤 매칭 규칙에도 걸리지 않는 경로에서는 이 키가 쓰입니다.
-- **두 번째 키부터는 디렉토리를 지정합니다.** 입력한 경로(및 그 하위)에서 작업할 때만 해당 키가 자동으로 선택됩니다. 지정한 디렉토리가 없으면 함께 만들어줍니다.
+- 키를 만들 때 호스트 이름을 입력합니다. 비워 두면 `github.com`을 사용합니다.
+- **호스트별로 처음 만든 키가 default 키가 됩니다.** 디렉토리 매칭 없이 fallback 으로 동작하며, 어떤 매칭 규칙에도 걸리지 않는 경로에서는 이 키가 쓰입니다.
+- **같은 호스트의 두 번째 키부터는 디렉토리를 지정합니다.** 입력한 경로(및 그 하위)에서 작업할 때만 해당 키가 자동으로 선택됩니다. 지정한 디렉토리가 없으면 함께 만들어줍니다.
 - 키 파일명은 입력한 nickname 으로 정해집니다(`~/.ssh/id_<nickname>`). 같은 이름의 키가 이미 있으면 거절하니 다른 nickname 으로 다시 입력해주세요. nickname 을 비우고 Enter 를 누르면 키 생성을 멈추고 다음 단계로 넘어갑니다.
 - 키를 만들면 public key 가 클립보드에 자동 복사됩니다. [GitHub Settings → SSH keys](https://github.com/settings/ssh/new) 에 바로 붙여넣으면 됩니다.
 - GitHub 등록을 마치고 Enter 를 누르면 "키를 더 만들지" 를 묻습니다. 필요한 만큼 반복하세요.
@@ -234,8 +235,9 @@ When you use multiple GitHub accounts, this routes each account's key per direct
 
 ### How it works
 
-- **The first key you create becomes the default key.** It works as a fallback with no directory matching, and is used in any path that doesn't hit a matching rule.
-- **From the second key on, you specify a directory.** That key is selected automatically only when you work in the given path (and below). If the directory doesn't exist, it's created for you.
+- Enter a hostname when creating a key, or press Enter to use `github.com`.
+- **The first key you create for each host becomes the default key.** It works as a fallback with no directory matching, and is used in any path that doesn't hit a matching rule.
+- **From the second key for the same host on, you specify a directory.** That key is selected automatically only when you work in the given path (and below). If the directory doesn't exist, it's created for you.
 - The key filename comes from the nickname you enter (`~/.ssh/id_<nickname>`). If a key with the same name already exists, it's rejected — enter a different nickname. Pressing Enter with an empty nickname stops key creation and moves on to the next step.
 - After a key is created, the public key is copied to your clipboard automatically. Paste it straight into [GitHub Settings → SSH keys](https://github.com/settings/ssh/new).
 - Once you finish registering on GitHub and press Enter, you're asked whether to create another key. Repeat as many times as you need.
@@ -409,8 +411,9 @@ GitHub アカウントを複数使うとき、アカウントごとのキーを�
 
 ### 仕組み
 
-- **最初に作ったキーが default キーになります。** ディレクトリのマッチングなしに fallback として動き、どのマッチング規則にも当たらないパスではこのキーが使われます。
-- **2 つめ以降はディレクトリを指定します。** 入力したパス（とその配下）で作業するときだけ、そのキーが自動的に選ばれます。指定したディレクトリが無ければ一緒に作ります。
+- キーを作るときにホスト名を入力します。空欄のまま Enter を押すと `github.com` を使います。
+- **ホストごとに最初に作ったキーが default キーになります。** ディレクトリのマッチングなしに fallback として動き、どのマッチング規則にも当たらないパスではこのキーが使われます。
+- **同じホストの 2 つめ以降はディレクトリを指定します。** 入力したパス（とその配下）で作業するときだけ、そのキーが自動的に選ばれます。指定したディレクトリが無ければ一緒に作ります。
 - キーのファイル名は入力した nickname で決まります（`~/.ssh/id_<nickname>`）。同じ名前のキーがすでにあると断られるので、別の nickname で入力し直してください。nickname を空のまま Enter を押すと、キーの作成をやめて次のステップに進みます。
 - キーを作ると public key が自動でクリップボードにコピーされます。[GitHub Settings → SSH keys](https://github.com/settings/ssh/new) にそのまま貼り付ければ大丈夫です。
 - GitHub への登録を終えて Enter を押すと、「キーをもう 1 つ作るか」を聞かれます。必要なだけ繰り返してください。

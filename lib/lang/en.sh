@@ -101,6 +101,9 @@ L_GITSSH_CASEB_TITLE="Existing default key detected — continue?"
 L_GITSSH_ANOTHER_TITLE="Create another SSH key?"
 L_GITSSH_ENTER_NEXT="Press Enter for the next step…"
 L_GITSSH_ENTER_DONE="Press Enter when done…"
+L_GITSSH_HOST_LABEL="host [github.com]: "
+L_GITSSH_INVALID_HOST="Enter a hostname such as github.com."
+L_GITSSH_REGISTER_HOST="Add the public key to your account on %s."
 L_GITSSH_NICK_LABEL="nickname: "
 L_GITSSH_INVALID_NICK="Invalid nickname (a-z, 0-9, _, - only)."
 L_GITSSH_KEY_EXISTS="Key already exists at %s. Enter a different nickname."
@@ -110,7 +113,7 @@ L_GITSSH_PUBKEY_LABEL="Public key:"
 L_GITSSH_REGISTER_GH="Register it at GitHub Settings → SSH keys:"
 L_GITSSH_DIR_LABEL="directory: "
 L_GITSSH_DIR_REQUIRED="Directory is required."
-L_GITSSH_VERIFY="Verify: cd <registered dir> && ssh -T git@github.com"
+L_GITSSH_VERIFY="Verify: cd <registered dir> && ssh -T git@%s"
 
 # intro note (UI_MENU_NOTE; literal \n for echo -e).
 lang_gitssh_intro() {
@@ -123,10 +126,10 @@ lang_gitssh_intro() {
   s+="         ~/Documents/works →  id_work  (work)\n"
   s+="\n"
   s+=" With two or more keys, ssh can't tell which key to use\n"
-  s+=" when authenticating to github.com, so you assign\n"
+  s+=" when authenticating to the same host, so you assign\n"
   s+=" a key per directory.\n"
   s+="\n"
-  s+=" Set up GitHub SSH keys now?"
+  s+=" Set up Git SSH keys now?"
   printf '%s' "$s"
 }
 
@@ -146,9 +149,9 @@ lang_gitssh_caseA_note() {
 
 # Case B note (external default exists).
 lang_gitssh_caseB_note() {
-  local ext="$1"
+  local ext="$1" host="$2"
   local s=""
-  s+=" ${UI_DIM}~/.ssh/config already has a 'Host github.com' entry.${UI_RESET}\n"
+  s+=" ${UI_DIM}~/.ssh/config already has a 'Host ${host}' entry.${UI_RESET}\n"
   s+=" ${UI_DIM}It will be kept as your default key:${UI_RESET}\n"
   s+="    ${ext}\n"
   s+="\n"
@@ -158,10 +161,10 @@ lang_gitssh_caseB_note() {
 
 # Case D conflict screen (prints to /dev/tty).
 lang_gitssh_conflict() {
-  local ext="$1" managed="$2"
-  echo -e "${UI_BLUE_BOLD} Two 'Host github.com' entries found${UI_RESET}" > /dev/tty
+  local ext="$1" managed="$2" host="$3"
+  echo -e "${UI_BLUE_BOLD} Two 'Host ${host}' entries found${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}~/.ssh/config has 'Host github.com' both inside and outside${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}~/.ssh/config has 'Host ${host}' both inside and outside${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}the managed block. ssh uses only the first match, so one${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}of them is shadowed.${UI_RESET}" > /dev/tty
   echo > /dev/tty

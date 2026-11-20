@@ -102,6 +102,9 @@ L_GITSSH_CASEB_TITLE="기존 default 키가 감지됐습니다 — 진행할까�
 L_GITSSH_ANOTHER_TITLE="키를 더 만들까요?"
 L_GITSSH_ENTER_NEXT="Enter 로 다음 단계로…"
 L_GITSSH_ENTER_DONE="등록을 마쳤으면 Enter…"
+L_GITSSH_HOST_LABEL="호스트 [github.com]: "
+L_GITSSH_INVALID_HOST="github.com과 같은 호스트 이름을 입력하세요."
+L_GITSSH_REGISTER_HOST="%s 계정에 공개 키를 등록하세요."
 L_GITSSH_NICK_LABEL="닉네임: "
 L_GITSSH_INVALID_NICK="닉네임이 올바르지 않습니다 (a-z, 0-9, _, - 만 사용)."
 L_GITSSH_KEY_EXISTS="%s 에 이미 키가 있습니다. 다른 닉네임을 입력하세요."
@@ -111,7 +114,7 @@ L_GITSSH_PUBKEY_LABEL="공개 키:"
 L_GITSSH_REGISTER_GH="GitHub Settings → SSH keys 에 등록하세요:"
 L_GITSSH_DIR_LABEL="디렉토리: "
 L_GITSSH_DIR_REQUIRED="디렉토리는 필수입니다."
-L_GITSSH_VERIFY="검증: cd <등록한 디렉토리> && ssh -T git@github.com"
+L_GITSSH_VERIFY="검증: cd <등록한 디렉토리> && ssh -T git@%s"
 
 # 진입 안내 (UI_MENU_NOTE; echo -e 용 literal \n).
 lang_gitssh_intro() {
@@ -123,11 +126,11 @@ lang_gitssh_intro() {
   s+="   예)  ~/Documents/my    →  id_my    (개인)\n"
   s+="        ~/Documents/works →  id_work  (회사)\n"
   s+="\n"
-  s+=" 키가 2개 이상이면 ssh 가 github.com 을 인증할 때\n"
+  s+=" 키가 2개 이상이면 ssh 가 같은 호스트를 인증할 때\n"
   s+=" 어느 키를 쓸지 판단하지 못하므로, 디렉토리별로\n"
   s+=" 키를 지정해줘야 합니다.\n"
   s+="\n"
-  s+=" GitHub SSH Key 설정을 진행할까요?"
+  s+=" Git SSH 키를 설정할까요?"
   printf '%s' "$s"
 }
 
@@ -147,9 +150,9 @@ lang_gitssh_caseA_note() {
 
 # Case B 안내 (external default 존재).
 lang_gitssh_caseB_note() {
-  local ext="$1"
+  local ext="$1" host="$2"
   local s=""
-  s+=" ${UI_DIM}~/.ssh/config 에 이미 'Host github.com' 설정이 있어요.${UI_RESET}\n"
+  s+=" ${UI_DIM}~/.ssh/config 에 이미 'Host ${host}' 설정이 있어요.${UI_RESET}\n"
   s+=" ${UI_DIM}이 키를 그대로 default 로 사용합니다:${UI_RESET}\n"
   s+="    ${ext}\n"
   s+="\n"
@@ -159,10 +162,10 @@ lang_gitssh_caseB_note() {
 
 # Case D 충돌 화면 (/dev/tty 출력).
 lang_gitssh_conflict() {
-  local ext="$1" managed="$2"
-  echo -e "${UI_BLUE_BOLD} 'Host github.com' 설정이 둘 다 있습니다${UI_RESET}" > /dev/tty
+  local ext="$1" managed="$2" host="$3"
+  echo -e "${UI_BLUE_BOLD} 'Host ${host}' 설정이 둘 다 있습니다${UI_RESET}" > /dev/tty
   echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}~/.ssh/config 에 'Host github.com' 이 매니지드 블록 안팎에 모두${UI_RESET}" > /dev/tty
+  echo -e " ${UI_DIM}~/.ssh/config 에 'Host ${host}' 이 매니지드 블록 안팎에 모두${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}존재합니다. ssh 는 둘 중 위쪽 값만 사용하므로 한 쪽이 가려진${UI_RESET}" > /dev/tty
   echo -e " ${UI_DIM}상태예요.${UI_RESET}" > /dev/tty
   echo > /dev/tty
