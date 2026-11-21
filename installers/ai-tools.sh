@@ -68,6 +68,7 @@ install_ai_tools() {
       log_step "brew install codex…"
       brew install codex
       log_done "codex installed."
+      _setup_ai_alias Codex codex cdx
       _setup_codex_mcp
     fi
     if [ "${UI_CHECKLIST_SELECTED[2]}" -eq 1 ]; then
@@ -112,7 +113,7 @@ _install_claude_code() {
       ;;
   esac
 
-  _setup_ai_alias Claude claude c
+  _setup_ai_alias Claude claude cld
 
   # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab).
   # Korean-default instruction blocks (response style) are installed inside
@@ -631,7 +632,7 @@ _delete_owned_dirs() {
 # SSH key files referenced by the git-ssh block are left in place.
 _delete_rc_blocks() {
   local f t
-  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television claude-alias herdr-alias git-ssh"
+  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television claude-alias codex-alias herdr-alias git-ssh"
   for f in "${ZDOTDIR:-$HOME}/.zshrc" "$HOME/.zshrc" "$HOME/.zprofile"; do
     [ -f "$f" ] || continue
     for t in $tags; do
