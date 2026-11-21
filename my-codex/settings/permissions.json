@@ -1,0 +1,69 @@
+{
+  "edits": [
+    {
+      "keyPath": "permissions.my-term",
+      "value": {
+        "extends": ":workspace",
+        "filesystem": {
+          "~/.aws": "deny",
+          "~/.codex/auth.json": "deny",
+          "~/.codex/sessions": "deny",
+          "~/.config/gh/hosts.yml": "deny",
+          "~/.docker/config.json": "deny",
+          "~/.env": "deny",
+          "~/.env.local": "deny",
+          "~/.gcp": "deny",
+          "~/.git-credentials": "deny",
+          "~/.gnupg": "deny",
+          "~/.kube/config": "deny",
+          "~/.netrc": "deny",
+          "~/.npmrc": "deny",
+          "~/.pypirc": "deny",
+          "~/.ssh": "deny",
+          "~/.zprofile": "deny",
+          "~/.zsh_history": "deny",
+          "~/.zshrc": "deny",
+          "~/secrets": "deny",
+          ":workspace_roots": {
+            "**/*.key": "deny",
+            "**/*.pem": "deny",
+            "**/.aws": "deny",
+            "**/.aws/**": "deny",
+            "**/.codex/auth.json": "deny",
+            "**/.codex/sessions": "deny",
+            "**/.codex/sessions/**": "deny",
+            "**/.config/gh/hosts.yml": "deny",
+            "**/.credentials*": "deny",
+            "**/.docker/config.json": "deny",
+            "**/.env": "deny",
+            "**/.env.*": "deny",
+            "**/.env.local": "deny",
+            "**/.gcp": "deny",
+            "**/.gcp/**": "deny",
+            "**/.git-credentials": "deny",
+            "**/.gnupg": "deny",
+            "**/.gnupg/**": "deny",
+            "**/.kube/config": "deny",
+            "**/.netrc": "deny",
+            "**/.npmrc": "deny",
+            "**/.pypirc": "deny",
+            "**/.secret*": "deny",
+            "**/.ssh": "deny",
+            "**/.ssh/**": "deny",
+            "**/.zprofile": "deny",
+            "**/.zsh_history": "deny",
+            "**/.zshrc": "deny",
+            "**/secrets": "deny",
+            "**/secrets/**": "deny"
+          }
+        }
+      },
+      "mergeStrategy": "replace"
+    },
+    {
+      "keyPath": "default_permissions",
+      "value": "my-term",
+      "mergeStrategy": "replace"
+    }
+  ]
+}

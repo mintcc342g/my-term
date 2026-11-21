@@ -7,8 +7,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# install.sh 가 넘긴 언어를 ui.sh(MYTERM_LANG 덮어씀)보다 먼저 캡처.
-# 비어있으면 단독 실행 → 설치본 config.json .lang 으로 폴백.
+# Capture the installer language before ui.sh resets MYTERM_LANG.
+# When launched independently, fall back to the language in the installed config.json.
 _ENV_LANG="${MYTERM_LANG:-}"
 
 # Config location: use installed config if exists, else project
@@ -60,23 +60,23 @@ on_off() {
 
 # ── Theme submenu ───────────────────────────────────────────────
 select_theme() {
-  # themes/themes.json manifest 우선(id·name·언어별 desc), 없으면 themes/*.sh glob 폴백
+  # Prefer themes/themes.json for IDs, names, and descriptions. Fall back to themes/*.sh.
   local themes_dir="$SCRIPT_DIR/themes"
   local manifest="$themes_dir/themes.json"
   local -a themes=() opts=() descs=()
   local id name d f
 
-  # 언어: install.sh가 넘긴 값 우선(프로젝트/설치 맥락) → 없으면 설치본 config.json .lang → en
+  # Prefer the installer language, then the installed config.json language, then English.
   local lang="${_ENV_LANG:-}"
   [ -z "$lang" ] && lang=$(jq -r '.lang // ""' "$CONFIG" 2>/dev/null)
   [ -z "$lang" ] && lang="en"
   lang_is_known "$lang" || lang="en"
 
   if [ -f "$manifest" ] && jq -e '.themes' "$manifest" >/dev/null 2>&1; then
-    # desc 는 요청 언어 우선, 없으면 en→ja→ko 중 첫 비어있지 않은 값
+    # Prefer the requested description language, then the first available of en, ja, and ko.
     while IFS=$'\t' read -r id name d; do
       [ -z "$id" ] && continue
-      [ -f "$themes_dir/${id}.sh" ] || continue   # .sh 없는 항목은 건너뜀
+      [ -f "$themes_dir/${id}.sh" ] || continue   # Skip entries whose script is missing.
       themes+=("$id")
       if [ "$id" = "$theme" ]; then opts+=("${name:-$id} (current)"); else opts+=("${name:-$id}"); fi
       if [ -n "$d" ]; then descs+=("“${d}”"); else descs+=(""); fi
@@ -101,7 +101,7 @@ select_theme() {
   UI_MENU_DESC=("${descs[@]}")
   ui_menu "Select Theme" choice "${opts[@]}"
 
-  # choice가 테마 인덱스 범위면 선택, 마지막(← Back)·취소(255)는 무시
+  # Use valid theme indices. Ignore Back and cancellation (255).
   if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -lt "${#themes[@]}" ]; then
     theme="${themes[$choice]}"
   fi

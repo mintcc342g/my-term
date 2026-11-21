@@ -51,7 +51,7 @@ install_ai_tools() {
     return 0
   fi
 
-  local choice=""
+  local choice="" claude_configured=false
   local -a UI_CHECKLIST_CATEGORIES=(
     "$L_AI_AGENTS_CATEGORY" "$L_AI_MULTIPLEXERS_CATEGORY" "$L_AI_KNOWLEDGE_CATEGORY"
   )
@@ -62,13 +62,20 @@ install_ai_tools() {
   echo
   if [ "$choice" = install ]; then
     if [ "${UI_CHECKLIST_SELECTED[0]}" -eq 1 ]; then
-      _install_claude_code
+      _install_claude_code claude_configured
     fi
     if [ "${UI_CHECKLIST_SELECTED[1]}" -eq 1 ]; then
       log_step "brew install codex…"
-      brew install codex
+      brew install codex || {
+        log_fail "codex install failed"
+        return 1
+      }
       log_done "codex installed."
       _setup_ai_alias Codex codex cdx
+      _sync_codex_files
+      _update_agent_wiki _sync_codex_wiki
+    fi
+    if [ "$claude_configured" = true ] && command -v codex &>/dev/null; then
       _setup_codex_mcp
     fi
     if [ "${UI_CHECKLIST_SELECTED[2]}" -eq 1 ]; then
@@ -92,7 +99,7 @@ install_ai_tools() {
 }
 
 _install_claude_code() {
-  local method=""
+  local result_var="$1" method=""
   ui_menu "$L_AI_METHOD_TITLE" method \
     "$L_AI_METHOD_STABLE" \
     "$L_AI_METHOD_LATEST"
@@ -119,6 +126,7 @@ _install_claude_code() {
   # Korean-default instruction blocks (response style) are installed inside
   # _sync_claude_files, so they apply on both install and Update.
   _sync_claude_files
+  _update_agent_wiki _sync_claude_wiki
 
   # Per-language PostToolUse hooks (e.g. gofmt). Fresh-install only —
   # Update no longer touches user-defined hooks.
@@ -134,6 +142,7 @@ _install_claude_code() {
     0) _install_hud ;;
     *) log_step "skipping HUD install." ;;
   esac
+  printf -v "$result_var" '%s' true
 }
 
 _setup_ai_alias() {
@@ -206,8 +215,7 @@ _sync_claude_files() {
   # auto-install the default blocks (response style per install language +
   # shared code style). Both are no-ops when nothing applies, so this is safe
   # on install + Update.
-  _sync_claude_md_block
-  _install_default_instructions "$_claude_md"
+  _sync_agent_instructions "$_claude_md"
 
   # hooks
   mkdir -p "$HOME/.claude/my-hooks"
@@ -243,18 +251,14 @@ _sync_claude_files() {
   tmp="$(mktemp)"
   cp "$SETTINGS" "$tmp"
 
-  # codex MCP: auto-configure if codex is installed (migration for existing users)
-  if command -v codex &>/dev/null; then
-    _setup_codex_mcp
-  fi
-
   # permissions.deny: union (add new items, keep existing)
-  if jq -e '.permissions.deny' "$proj_settings" >/dev/null 2>&1; then
+  local permissions="$SCRIPT_DIR/my-claude/settings/permissions.json"
+  if jq -e '.deny' "$permissions" >/dev/null 2>&1; then
     local perm_tmp
     perm_tmp=$(mktemp)
-    jq -s '.[0].permissions.deny as $user | .[1].permissions.deny as $proj |
+    jq -s '.[0].permissions.deny as $user | .[1].deny as $proj |
       .[0] | .permissions.deny = (($user // []) + ($proj // []) | unique)
-    ' "$tmp" "$proj_settings" > "$perm_tmp" && mv "$perm_tmp" "$tmp"
+    ' "$tmp" "$permissions" > "$perm_tmp" && mv "$perm_tmp" "$tmp"
   fi
 
   # hooks: migrate legacy paths + add-only merge (never modify existing hooks)
@@ -322,15 +326,14 @@ _sync_claude_files() {
   log_done "claude settings configured."
 }
 
-# Refresh managed OPTIONAL blocks in user's CLAUDE.md from repo source — so
-# repo edits to those files (e.g. response style) propagate on Update. Only
-# rebuilds blocks already present; initial install is _install_default_instructions.
-_sync_claude_md_block() {
-  md_refresh_optional_blocks "$HOME/.claude/CLAUDE.md"
+_sync_agent_instructions() {
+  local dst="$1"
+  md_refresh_optional_blocks "$dst"
+  _install_default_instructions "$dst"
 }
 
-# Auto-install the managed instruction blocks from $SCRIPT_DIR/my-claude/optional/
-# into the destination CLAUDE.md. File naming decides language handling:
+# Add the shared instruction blocks to CLAUDE.md or AGENTS.md.
+# File naming decides language handling:
 #   <name>.md         — shared block, installed for every language (e.g. code-style)
 #   <name>.<lang>.md  — language variant; only the one matching the install
 #                       language is installed (e.g. response-style.ko.md)
@@ -338,12 +341,10 @@ _sync_claude_md_block() {
 # marker stays stable across languages and matches already-deployed blocks.
 #
 # Each block becomes a MYTERM:OPTIONAL:<name>:BEGIN/END pair so that Update
-# (md_refresh_optional_blocks) keeps it in sync with the repo source. Opt-out is
-# manual — user removes the block from the destination file (already-present
-# blocks are skipped here, so a manual removal sticks).
+# (md_refresh_optional_blocks) keeps it in sync with the repo source.
 _install_default_instructions() {
   local dst="$1"
-  local src_dir="$SCRIPT_DIR/my-claude/optional"
+  local src_dir="$SCRIPT_DIR/my-ai/instructions"
   [ -d "$src_dir" ] || return 0
 
   local lang="${MYTERM_LANG:-en}"
@@ -364,8 +365,7 @@ _install_default_instructions() {
     begin="<!-- MYTERM:OPTIONAL:${name}:BEGIN -->"
     end="<!-- MYTERM:OPTIONAL:${name}:END -->"
 
-    # Already present (or user re-added manually) — skip. A manual removal of
-    # the block therefore persists across Update.
+    # Existing blocks were refreshed from the same source before this step.
     if [ -f "$dst" ] && grep -qF "$begin" "$dst"; then
       continue
     fi
@@ -447,7 +447,7 @@ _mirror_sh() {
 # Sync HUD scripts/themes/lib without launching the configure UI.
 # Top-level scripts/lib are pure cp; themes are mirrored (prune orphans).
 # Legacy layout cleanup lives in _migrate_legacy_hud. Shared by _install_hud
-# and update_my_claude.
+# and update_ai_tools.
 _sync_hud_files() {
   log_step "syncing HUD files…"
 
@@ -528,55 +528,69 @@ _install_hud() {
   MYTERM_LANG="${MYTERM_LANG:-en}" bash "$HOME/.claude/my-hud/configure.sh"
 }
 
-# Pull latest Claude/HUD config from this repo into ~/.claude. No brew/alias
+# Pull the latest CLI and HUD config from this repo. No brew/alias
 # prompts, no interactive HUD configure — just file sync. Idempotent.
-update_my_claude() {
-  log_start "Updating ~/.claude config from this repo…"
+update_ai_tools() {
+  log_start "Updating AI tools config from this repo…"
+  local wiki_path
+  wiki_path="$(_configured_wiki_path)"
 
-  if [ -d "$HOME/.claude" ] || command -v claude &>/dev/null; then
+  if command -v claude &>/dev/null; then
     _sync_claude_files
+    if command -v codex &>/dev/null; then
+      _setup_codex_mcp
+    fi
+    if [ -n "$wiki_path" ] && [ -d "$wiki_path" ]; then
+      _sync_claude_wiki "$wiki_path"
+    fi
+    if [ -f "$HOME/.claude/my-hud/configure.sh" ] \
+       || [ -f "$HOME/.claude/my-hud/statusline.sh" ] \
+       || [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ]; then
+      _migrate_legacy_hud
+      _sync_hud_files
+    fi
   else
     log_step "Claude Code not installed — skipping Claude config sync."
   fi
 
-  if [ -d "$HOME/.claude/my-wiki" ]; then
-    # wiki path 를 기존 deploy 된 wk-trigger.sh 에서 추출 (install 시 sed 치환된 값).
-    # 추출 실패 시 wiki sync 만 skip — install 재실행으로 복구해야 함.
-    local _wk_trigger="$HOME/.claude/my-wiki/wk-trigger.sh"
-    local _wiki_path=""
-    if [ -f "$_wk_trigger" ]; then
-      _wiki_path=$(sed -nE 's/^WIKI_PATH="(.*)"$/\1/p' "$_wk_trigger" | head -1)
-    fi
-    if [ -n "$_wiki_path" ] && [ -d "$_wiki_path" ]; then
-      _sync_obsidian_wiki_files "$_wiki_path"
-      _install_wiki_defaults "$_wiki_path"
-    else
-      log_fail "wiki path extraction failed (file: $_wk_trigger). Re-run obsidian installer to fix."
+  if command -v codex &>/dev/null; then
+    _sync_codex_files
+    if [ -n "$wiki_path" ] && [ -d "$wiki_path" ]; then
+      _sync_codex_wiki "$wiki_path"
     fi
   else
-    log_step "Obsidian wiki tooling not installed — skipping wiki sync."
+    log_step "Codex not installed — skipping Codex config sync."
   fi
 
-  if [ -f "$HOME/.claude/my-hud/configure.sh" ] \
-     || [ -f "$HOME/.claude/my-hud/statusline.sh" ] \
-     || [ -f "$HOME/.claude/my-hud/powerline-statusline.sh" ]; then
-    _migrate_legacy_hud
-    _sync_hud_files
-  else
-    log_step "HUD not installed — skipping HUD sync."
+  if [ -n "$wiki_path" ] && { command -v claude &>/dev/null || command -v codex &>/dev/null; }; then
+    if [ -d "$wiki_path" ]; then
+      _install_wiki_defaults "$wiki_path"
+    else
+      log_fail "Wiki folder unavailable: $wiki_path"
+    fi
   fi
+}
+
+_has_claude_files() {
+  local dir
+  for dir in my-hud my-hooks my-collab my-wiki; do
+    [ ! -d "$HOME/.claude/$dir" ] || return 0
+  done
+  _has_wk_skill "$HOME/.claude/skills/wk" ||
+    grep -qF '<!-- MYTERM:OPTIONAL:' "$HOME/.claude/CLAUDE.md" 2>/dev/null
 }
 
 # ── Delete: remove my-term's deployed footprint (inverse of install/update) ──
 # Pure removal. Explains scope, then requires an explicit Yes before touching
 # anything. Re-run Install afterwards to set things up again — Update only
-# re-syncs ~/.claude and would NOT restore the removed shell rc / ssh blocks.
+# re-syncs the agents and would NOT restore the removed shell rc / ssh blocks.
 #
 # Removed:
 #   - Owned dirs:  ~/.claude/{my-hud,my-hooks,my-collab,my-wiki} (incl. user-
 #                  customized config.json / co-agents.json — true clean slate)
 #   - Marker blocks in ~/.zshrc, ~/.zprofile and ~/.ssh/config (#-- my-term:*)
-#   - OPTIONAL instruction blocks in ~/.claude/CLAUDE.md
+#   - OPTIONAL instruction blocks in CLAUDE.md and AGENTS.md
+#   - my-term @wk hooks and wk skills for installed agents
 #   - statusLine + my-term hook entries in ~/.claude/settings.json
 #   - The codex MCP entry my-term added to ~/.claude.json (exact match only)
 #
@@ -584,9 +598,10 @@ update_my_claude() {
 #   - ~/.claude/memory  (user-accumulated; install/update never write it)
 #   - SSH key files (~/.ssh/id_*) — credentials; only the config block is removed
 #   - permissions.deny security rules in settings.json (additive hardening)
+#   - Codex global permission profile and command rules
 #   - Third-party tools (brew packages, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian)
 #   - Any user content outside my-term markers
-delete_my_claude() {
+delete_ai_tools() {
   # Explain scope, then require explicit confirmation. Nothing is removed yet.
   local choice=""
   UI_MENU_NOTE="$(lang_delete_plan)" ui_menu "$L_DELETE_CONFIRM_TITLE" choice \
@@ -600,10 +615,16 @@ delete_my_claude() {
   fi
 
   log_start "Deleting my-term footprint…"
-  _delete_owned_dirs
-  _delete_settings_json
-  _delete_claude_json_codex
-  _delete_claude_md_optional
+  if command -v claude &>/dev/null && _has_claude_files; then
+    _delete_settings_json
+    _delete_owned_dirs
+    _delete_claude_json_codex
+    _delete_claude_md_optional
+    _delete_wk_skill "$HOME/.claude/skills/wk"
+  fi
+  if command -v codex &>/dev/null && _has_codex_files; then
+    _delete_codex_files
+  fi
   _delete_rc_blocks
   DELETE_LAST_ACTION="delete"
   log_done "Delete complete. Re-run Install to set things up again."
@@ -632,7 +653,13 @@ _delete_owned_dirs() {
 # SSH key files referenced by the git-ssh block are left in place.
 _delete_rc_blocks() {
   local f t
-  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television claude-alias codex-alias herdr-alias git-ssh"
+  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television git-ssh"
+  local tool
+  for tool in claude codex herdr; do
+    if command -v "$tool" &>/dev/null; then
+      tags="$tags $tool-alias"
+    fi
+  done
   for f in "${ZDOTDIR:-$HOME}/.zshrc" "$HOME/.zshrc" "$HOME/.zprofile"; do
     [ -f "$f" ] || continue
     for t in $tags; do
@@ -666,7 +693,10 @@ _delete_settings_json() {
         .hooks |= (
           with_entries(
             .value |= (
-              map(.hooks |= map(select((.command // "") | test("my-hooks/|my-collab/|my-hud/") | not)))
+              map(.hooks |= map(select(
+                .command != "bash $HOME/.claude/my-wiki/wk-trigger.sh"
+                and ((.command // "") | test("my-hooks/|my-collab/|my-hud/") | not)
+              )))
               | map(select((.hooks // []) | length > 0))
             )
           )

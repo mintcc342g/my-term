@@ -123,8 +123,8 @@ ui_menu() {
   while true; do
     frame=$(
       echo "${UI_BLUE_BOLD} ${title}${UI_RESET}"
-      # Optional note set by caller via env var (e.g. red warning). 호출자가
-      # `UI_MENU_NOTE=... ui_menu ...` 형태로 inline 설정 시 자동 unset.
+      # The caller can set an optional note, such as an error message,
+      # with an inline UI_MENU_NOTE assignment when invoking ui_menu.
       if [ -n "${UI_MENU_NOTE:-}" ]; then
         echo -e "${UI_MENU_NOTE}"
       fi

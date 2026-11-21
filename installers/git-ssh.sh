@@ -1,7 +1,7 @@
 #!/bin/bash
 # installers/git-ssh.sh — Git SSH multi-account key setup.
-# 디렉토리 기반 키 분기 (~/.ssh/config Match exec). 첫 키는 default (fallback),
-# 이후 키들은 사용자가 입력한 디렉토리에 매칭되어 동작.
+# Select SSH keys by directory through Match exec in ~/.ssh/config. The first key is the default.
+# Subsequent keys match the directories entered by the user.
 # source'd by install.sh
 
 install_git_ssh() {
@@ -20,10 +20,10 @@ install_git_ssh() {
   mkdir -p "$SSH_DIR"
   chmod 700 "$SSH_DIR"
 
-  # 진입 안내 — 키-디렉토리 매칭 동작을 키 생성 전에 알리고 진행 여부를 확인.
-  # 디렉토리 컨벤션을 사후에 깨달으면 리포 재배치 + .git/config / .gitmodules
-  # 의 host alias 잔재 정리까지 가야 해서 비용이 큼. ui_menu 는 리드로우마다
-  # 화면을 지우므로 안내문은 UI_MENU_NOTE 로 전달 (Case B 와 동일 패턴).
+  # Explain directory-based key selection before creating any keys.
+  # Changing the convention later may require reorganizing repositories and cleaning up
+  # host aliases in .git/config and .gitmodules. The menu redraw clears the screen,
+  # so pass the explanation through UI_MENU_NOTE as in Case B.
   local intro; intro="$(lang_gitssh_intro)"
 
   local proceed=""
@@ -44,8 +44,8 @@ install_git_ssh() {
       umask "$_old_umask"
       return 1
     fi
-    # 빈 닉네임으로 종료. 이번 실행에서 등록한 키가 하나도 없으면 (예: 첫
-    # 화면에서 바로 비우고 나감) 완료가 아니라 skip 으로 표기한다.
+    # An empty nickname ends setup. With no keys added in this run, show a skip
+    # message instead of a completion message.
     if [ "$rc" -eq 2 ]; then
       if [ "$created" = "false" ]; then
         umask "$_old_umask"
@@ -82,11 +82,11 @@ _git_ssh_create_one() {
   fi
   host=$(printf '%s' "$host" | LC_ALL=C tr '[:upper:]' '[:lower:]')
 
-  # default 키 감지 — 두 갈래:
-  #   managed  : 매니지드 블록 안의 Host 설정 (이전 installer 실행 결과)
-  #   external : 매니지드 블록 밖의 Host 설정 (사용자가 직접 작성)
-  # external 이 있으면 그 키를 default 로 존중하고 첫 등록 루프를 건너뜀.
-  # 둘 다 있으면 ssh first-match 로 external 이 이기고 managed 가 죽는 충돌 상태.
+  # Detect the two kinds of default key:
+  #   managed: Host entry inside a block created by a previous installer run
+  #   external: Host entry outside the managed block, typically written by the user
+  # An external default is respected, so skip the first-key registration step.
+  # If both exist, SSH uses the first match and the external default shadows the managed one.
   local has_managed_default=false has_external_default=false
   local managed_default_key="" external_default_key=""
   if [ -f "$SSH_CONFIG" ]; then
@@ -96,7 +96,7 @@ _git_ssh_create_one() {
     [ -n "$external_default_key" ] && has_external_default=true
   fi
 
-  # Case D: 매니지드 안팎에 default 가 둘 다 — 사용자가 정리해야 함.
+  # Case D: Both managed and external defaults exist. The user must resolve the conflict.
   if [ "$has_managed_default" = "true" ] && [ "$has_external_default" = "true" ]; then
     ui_clear_screen
     lang_gitssh_conflict "$external_default_key" "$managed_default_key" "$host"
@@ -109,9 +109,9 @@ _git_ssh_create_one() {
   if [[ "$registered_hosts" == *" $host "* ]]; then
     has_default=true
   elif [ "$has_managed_default" = "true" ]; then
-    # Case A: my-term 이 관리하는 default 키가 이미 있음 — 추가 등록 여부만 확인.
-    # 예전엔 log_step + sleep 로 잠깐 띄웠다가 다음 화면(ui_clear_screen)이
-    # 덮어써 깜빡였음. Case B 처럼 ui_menu 로 머무르게 함.
+    # Case A: A managed default already exists. Ask whether to add another key.
+    # A standalone log message disappeared when the menu cleared the screen.
+    # Show the explanation in the menu, as in Case B.
     local note; note="$(lang_gitssh_caseA_note "$managed_default_key")"
 
     local cont=""
@@ -121,10 +121,10 @@ _git_ssh_create_one() {
     fi
     has_default=true
   elif [ "$has_external_default" = "true" ]; then
-    # Case B: 사용자 기존 default 를 존중하되, 매니지드 블록을 파일 맨 위로
-    # 배치해야 이후 추가되는 Match 블록이 가려지지 않음.
-    # ui_menu 는 매 리드로우마다 화면을 지우므로 안내문은 UI_MENU_NOTE 로
-    # 전달해야 메뉴와 함께 표시됨 (obsidian/ai-tools 의 패턴과 동일).
+    # Case B: Keep the external default. Explain why the managed block goes
+    # at the top of the file, where later settings cannot shadow its Match blocks.
+    # Pass the note as UI_MENU_NOTE so it stays visible across menu redraws,
+    # as in the Obsidian and AI tools menus.
     local note; note="$(lang_gitssh_caseB_note "$external_default_key" "$host")"
 
     local cont=""
@@ -143,12 +143,12 @@ _git_ssh_create_one() {
   local nickname
   read -r nickname < /dev/tty || return 2
 
-  # 빈 닉네임은 "그만하고 다음 단계로" 신호 — 안내 문구로 미리 고지했으므로
-  # 별도 에러 없이 abort code(2) 만 반환한다.
+  # An empty nickname means the user chose to stop.
+  # Return status 2 without an additional error message.
   if [ -z "$nickname" ]; then
     return 2
   fi
-  # 파일명에 안전한 문자만 허용.
+  # Allow only characters that are safe in filenames.
   if [[ ! "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     log_fail "$L_GITSSH_INVALID_NICK"
     sleep 1
@@ -175,7 +175,7 @@ _git_ssh_create_one() {
     printf ' %s%s%s\n' "$UI_RED_BOLD" "$L_GITSSH_EMPTY_EMAIL" "$UI_RESET" > /dev/tty
   done
 
-  # ── ssh-keygen (passphrase 는 ssh-keygen 이 직접 prompt) ──────
+  # Generate the key. ssh-keygen prompts for its passphrase.
   echo > /dev/tty
   log_step "Generating ed25519 key at ${key_path}…"
   if ! ssh-keygen -t ed25519 -f "$key_path" -C "$email" < /dev/tty; then
@@ -207,7 +207,7 @@ _git_ssh_create_one() {
   chmod 600 "$SSH_CONFIG" || return 1
   registered_hosts+="$host "
 
-  # ── pbcopy + GitHub 등록 안내 ─────────────────────────────────
+  # Copy the public key and show GitHub registration instructions.
   local pub_key="${key_path}.pub"
   if command -v pbcopy &>/dev/null; then
     pbcopy < "$pub_key"
@@ -229,9 +229,9 @@ _git_ssh_create_one() {
   return 0
 }
 
-# Tab-completing directory prompt (obsidian.sh wiki path 와 동일 패턴).
-# 결과는 stdout 으로 반환 — 호출부는 command substitution 으로 받음.
-# 빈 입력은 거절 (디렉토리는 필수).
+# Prompt for a directory with Tab completion, as in the Obsidian installer.
+# Print the result to stdout for the caller to capture.
+# Require a nonempty directory.
 _git_ssh_prompt_directory() {
   local nickname="${1:-}"
   ui_clear_screen
@@ -346,9 +346,9 @@ _git_ssh_register_default() {
   rc_upsert_block "$file" "git-ssh" "$block"
 }
 
-# Prepend new Match block at the TOP of existing content. ssh_config 는 매칭
-# 키워드의 첫 일치 값을 사용하므로 (ssh_config(5)), 최신 등록이 우선되도록.
-# 같은 디렉토리를 두 번 등록해도 가장 최근 키가 winning entry 가 됨.
+# Prepend the new Match block to the existing content.
+# ssh_config(5) uses the first matching value, so the latest entry wins.
+# Registering the same directory again gives the newest entry precedence.
 _git_ssh_register_match() {
   local file="$1" key="$2" dir="$3" host="$4"
   local pattern

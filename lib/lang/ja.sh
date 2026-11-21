@@ -1,10 +1,10 @@
 #!/bin/bash
-# lib/lang/ja.sh — 日本語メッセージカタログ.
-# en.sh / ko.sh と同じキー/関数の集合を定義すること (検証: lib/lang パリティチェック).
-# 色は ui.sh の UI_* のみ使用 (source 時点で定義済み).
-# 作成基準: 翻訳調・AI っぽさを避け、自然な日本語で書く.
+# Japanese message catalog.
+# Keep the keys and functions in sync across catalogs. Verify with the catalog parity check.
+# Use UI_* colors from ui.sh, which defines them before loading this file.
+# Use natural Japanese and avoid literal translation.
 
-# ── 共通 ────────────────────────────────────────────────────────
+# Common messages
 L_YES="はい"
 L_NO="いいえ"
 L_NO_SKIP="いいえ (スキップ)"
@@ -13,7 +13,7 @@ L_NO_DONE="いいえ (完了)"
 L_UI_HINT="↑↓ 移動 │ Enter 選択"
 L_EXIT_ABORTED="インストールを中断して終了します。"
 
-# ── メインメニュー (install.sh) ─────────────────────────────────
+# Main menu (install.sh)
 L_MENU_TITLE="my-term インストーラー"
 L_MENU_INSTALL="インストール"
 L_MENU_UPDATE="アップデート"
@@ -21,14 +21,14 @@ L_MENU_HUD_CONFIG="HUD 設定"
 L_MENU_DELETE="削除 (my-term の設定を削除)"
 L_MENU_EXIT="✗ 終了"
 
-# ── ステップのラベル (install.sh ui_confirm_run / ai-tools) ─────
+# Step labels (install.sh and ai-tools.sh)
 L_STEP_CONVENIENCE="各種ツール"
 L_STEP_GIT_SSH="Git SSH キー (マルチアカウント)"
 L_STEP_OMZ="Oh-my-zsh + zsh プラグイン"
 L_STEP_THEME="シェルテーマ (newro)"
 L_STEP_LANGUAGE_TOOLS="言語バージョン管理ツール"
 
-# ── 便利ツールのチェックボックス ─────────────────────────────────
+# Optional tool checkboxes
 L_CONVENIENCE_CLI="CLI ツール"
 L_CONVENIENCE_APPS="macOS アプリ"
 L_CONVENIENCE_DEVOPS="DevOps ツール"
@@ -39,7 +39,7 @@ L_CHECKLIST_SKIP="スキップ"
 L_CHECKLIST_ALL="すべてインストール"
 L_CHECKLIST_EMPTY="ツールを1つ以上選ぶか、スキップを選んでください。"
 
-# ── 完了バナー (ui.sh ui_print_completion) ──────────────────────
+# Completion banner (ui_print_completion in ui.sh)
 L_DONE_INSTALL="インストール完了！"
 L_DONE_UPDATE="アップデート完了！"
 L_DONE_HUDCFG="HUD の設定が完了しました。"
@@ -48,21 +48,23 @@ L_DONE_DELETE_HINT="もう一度設定するには Install を実行してくだ
 L_DELETE_CANCELLED="削除をキャンセルしました。"
 L_DONE_RESTART_CC="反映するには Claude Code のセッションを再起動してください。"
 
-# 複数色が混ざった案内 (literal ${HOME} は \$ で維持).
+# Escape the dollar sign to keep the HOME variable literal in colorized instructions.
 lang_done_source_zshrc() {
   printf "  ${UI_YELLOW_BOLD}'source \${HOME}/.zprofile && source \${HOME}/.zshrc'${UI_RESET} を実行するか、シェルを ${UI_YELLOW_BOLD}再起動${UI_RESET}してください。\n\n"
 }
 
-# ── 削除 (ai-tools.sh delete_my_claude) ─────────────────────────
+# Delete confirmation (delete_ai_tools in ai-tools.sh)
 L_DELETE_CONFIRM_TITLE="my-term の設定を削除しますか？ 元に戻せません。"
 
-# 何を削除して何を残すかを示す確認案内. メニューノートとして出力される.
+# List what the installer removes and preserves in the confirmation menu.
 lang_delete_plan() {
   local s="\n"
   s+="   ${UI_RED_BOLD}削除するもの:${UI_RESET}\n"
   s+="     ~/.claude/my-hud, my-hooks, my-collab, my-wiki ${UI_DIM}(自分で変えた HUD テーマ・collab 設定を含む)${UI_RESET}\n"
   s+="     ~/.zshrc, ~/.zprofile, ~/.ssh/config の #-- my-term: ブロック\n"
   s+="     ~/.claude/CLAUDE.md の OPTIONAL 指示ブロック\n"
+  s+="     Codex AGENTS.md の管理ブロック、my-term の @wk フックとファイル\n"
+  s+="     インストール済みエージェントの my-term wk スキル\n"
   s+="     ~/.claude/settings.json の statusLine + my-term フック\n"
   s+="     ~/.claude.json の codex MCP エントリ\n"
   s+="\n"
@@ -70,15 +72,17 @@ lang_delete_plan() {
   s+="     ~/.claude/memory ${UI_DIM}(保存しておいた記憶)${UI_RESET}\n"
   s+="     SSH キーファイル ~/.ssh/id_* ${UI_DIM}(config ブロックだけ削除)${UI_RESET}\n"
   s+="     settings.json の permissions.deny セキュリティルール\n"
+  s+="     アンインストール済みエージェントの設定と保管庫のパス\n"
+  s+="     Codex のユーザー権限プロファイルとコマンド拒否ルール\n"
   s+="     brew パッケージ, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian\n"
   printf '%s' "$s"
 }
 
-# ── 共通エラー案内 ──────────────────────────────────────────────
+# Shared error messages
 L_ERR_NO_BREW="Homebrew が見つかりません。先に Homebrew をインストールしてください。"
 L_ERR_NO_OMZ="oh-my-zsh が見つかりません。先に oh-my-zsh をインストールしてください。"
 
-# ── 必須ツール (required.sh) ────────────────────────────────────
+# Required tools (required.sh)
 L_REQ_TITLE="必須ツールをインストールしますか？ (Homebrew + jq)"
 L_REQ_NOTE="⚠ 必須項目です — 断るとインストーラーがすぐに終了します。"
 L_REQ_ALREADY="必須ツール(Homebrew・jq)はすでに入っているので、このステップは飛ばします。"
@@ -116,7 +120,7 @@ L_GITSSH_DIR_LABEL="ディレクトリ: "
 L_GITSSH_DIR_REQUIRED="ディレクトリは必須です。"
 L_GITSSH_VERIFY="検証: cd <登録したディレクトリ> && ssh -T git@%s"
 
-# 導入の案内 (UI_MENU_NOTE; echo -e 用の literal \n).
+# Introductory menu note. Use literal \n for echo -e.
 lang_gitssh_intro() {
   local s=""
   s+=" ─────────────────────\n"
@@ -134,7 +138,7 @@ lang_gitssh_intro() {
   printf '%s' "$s"
 }
 
-# Case A の案内 (マネージド default あり).
+# Case A note for an existing managed default.
 lang_gitssh_caseA_note() {
   local managed="$1"
   local s=""
@@ -148,7 +152,7 @@ lang_gitssh_caseA_note() {
   printf '%s' "$s"
 }
 
-# Case B の案内 (外部 default あり).
+# Case B note for an existing external default.
 lang_gitssh_caseB_note() {
   local ext="$1" host="$2"
   local s=""
@@ -160,7 +164,7 @@ lang_gitssh_caseB_note() {
   printf '%s' "$s"
 }
 
-# Case D 競合画面 (/dev/tty 出力).
+# Case D conflict screen, displayed through /dev/tty.
 lang_gitssh_conflict() {
   local ext="$1" managed="$2" host="$3"
   echo -e "${UI_BLUE_BOLD} 'Host ${host}' の設定が 2 つあります${UI_RESET}" > /dev/tty
@@ -175,7 +179,7 @@ lang_gitssh_conflict() {
   echo -e " ${UI_DIM}~/.ssh/config を自分で整理してから、もう一度実行してください。${UI_RESET}\n" > /dev/tty
 }
 
-# ニックネームの案内画面.
+# Nickname prompt.
 lang_gitssh_nick_help() {
   local has_default="$1"
   echo -e "${UI_BLUE_BOLD} SSH キー — ニックネーム${UI_RESET}" > /dev/tty
@@ -190,7 +194,7 @@ lang_gitssh_nick_help() {
   echo -e " ${UI_DIM}${UI_ITALIC}ニックネームを入力せず Enter を押すと、ここで止めて次のステップへ進みます。${UI_RESET}\n" > /dev/tty
 }
 
-# ディレクトリの案内画面.
+# Directory prompt.
 lang_gitssh_dir_help() {
   local nickname="${1:-}"
   echo -e "${UI_BLUE_BOLD} SSH キー — ディレクトリ${UI_RESET}" > /dev/tty
@@ -208,7 +212,7 @@ L_OBS_WIKIPATH_LABEL="wiki パス: "
 L_OBS_EMPTY_PATH="wiki パスが空のため、wiki 設定をスキップします。"
 L_OBS_PLUGIN_HINT="Claude Code を初めて起動したあと、obsidian-skills プラグインを手動でインストールしてください:"
 
-# wiki パスの案内画面 (storage: 0=ローカル 1=icloud 2=git).
+# Vault path instructions. Storage values are 0 for local, 1 for iCloud, and 2 for Git.
 lang_obs_wikipath_help() {
   local storage="$1"
   echo -e "${UI_BLUE_BOLD} wiki パス${UI_RESET}" > /dev/tty
@@ -230,7 +234,7 @@ lang_obs_wikipath_help() {
   esac
 }
 
-# ── AI ツール (ai-tools.sh) ─────────────────────────────────────
+# AI tools (ai-tools.sh)
 L_AI_MENU_TITLE="AI ツール"
 L_AI_AGENTS_CATEGORY="AI コーディングエージェント"
 L_AI_MULTIPLEXERS_CATEGORY="ターミナルマルチプレクサ"

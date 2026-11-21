@@ -2,7 +2,7 @@
 # lib/instructions-block.sh — managed-block helper for AI agent instruction
 # markdown files.
 #
-# Managed instruction blocks live in $SCRIPT_DIR/my-claude/optional/.
+# Managed instruction blocks live in $SCRIPT_DIR/my-ai/instructions/.
 # _install_default_instructions appends a per-name OPTIONAL marker block to the
 # destination (the marker name is the source filename minus any .<lang> suffix,
 # and is retained for backward compatibility with already-deployed blocks):
@@ -26,7 +26,7 @@
 
 md_refresh_optional_blocks() {
   local dst="$1"
-  local src_dir="$SCRIPT_DIR/my-claude/optional"
+  local src_dir="$SCRIPT_DIR/my-ai/instructions"
   [ -f "$dst" ] || return 0
   [ -d "$src_dir" ] || return 0
 

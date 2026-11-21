@@ -1,7 +1,7 @@
 #!/bin/bash
 # lib/lang/en.sh — English message catalog.
-# ko.sh 와 동일한 키/함수 집합을 정의해야 한다 (검증: lib/lang 패리티 체크).
-# 색상은 ui.sh 의 UI_* 만 사용 (source 시점에 이미 정의됨).
+# Keep the keys and functions in sync with ko.sh. Verify with the catalog parity check.
+# Use UI_* colors from ui.sh, which defines them before loading this file.
 
 # ── Common ──────────────────────────────────────────────────────
 L_YES="Yes"
@@ -52,7 +52,7 @@ lang_done_source_zshrc() {
   printf "  Please run ${UI_YELLOW_BOLD}'source \${HOME}/.zprofile && source \${HOME}/.zshrc'${UI_RESET} or ${UI_YELLOW_BOLD}restart${UI_RESET} your shell.\n\n"
 }
 
-# ── Delete (ai-tools.sh delete_my_claude) ───────────────────────
+# ── Delete (ai-tools.sh delete_ai_tools) ───────────────────────
 L_DELETE_CONFIRM_TITLE="Delete my-term config? This cannot be undone."
 
 # Confirmation note: what gets removed vs. kept. Shown as the menu note.
@@ -62,6 +62,8 @@ lang_delete_plan() {
   s+="     ~/.claude/my-hud, my-hooks, my-collab, my-wiki ${UI_DIM}(incl. your HUD theme / collab config)${UI_RESET}\n"
   s+="     #-- my-term: blocks in ~/.zshrc, ~/.zprofile, ~/.ssh/config\n"
   s+="     OPTIONAL instruction blocks in ~/.claude/CLAUDE.md\n"
+  s+="     Managed Codex AGENTS.md blocks and my-term @wk hook and files\n"
+  s+="     my-term wk skills for installed agents\n"
   s+="     statusLine + my-term hooks in ~/.claude/settings.json\n"
   s+="     codex MCP entry in ~/.claude.json\n"
   s+="\n"
@@ -69,6 +71,8 @@ lang_delete_plan() {
   s+="     ~/.claude/memory ${UI_DIM}(your saved memory)${UI_RESET}\n"
   s+="     SSH key files ~/.ssh/id_* ${UI_DIM}(only the config block is removed)${UI_RESET}\n"
   s+="     permissions.deny security rules in settings.json\n"
+  s+="     Settings for uninstalled agents and the configured vault path\n"
+  s+="     Codex global permission profile and command rules\n"
   s+="     brew packages, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian\n"
   printf '%s' "$s"
 }

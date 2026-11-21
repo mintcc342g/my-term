@@ -1,5 +1,5 @@
 #!/bin/bash
-# Theme: mygo — MyGO 로고 블루(#549DC2) → Nord4 light gray
+# Theme: MyGO logo blue (#549DC2) to Nord4 light gray.
 
 GRAD_START_R=103;  GRAD_START_G=168; GRAD_START_B=201
 GRAD_END_R=216;   GRAD_END_G=222;   GRAD_END_B=233
@@ -36,8 +36,8 @@ C_ICON_UPSTREAM="$LB"
 C_SEP="$(fg 255 255 136)"
 
 # Compact powerline segment colors (bg R G B, fg R G B)
-COMPACT_FG="$(fg 255 255 255)"  # compact 글자색 — 순백
-COMPACT_SEP="$(fg 255 255 255)"  # 순백
+COMPACT_FG="$(fg 255 255 255)"  # Pure white text in compact mode.
+COMPACT_SEP="$(fg 255 255 255)"  # Pure white separator.
 CSEG1_BG=(94 129 172);   CSEG1_FG=(216 222 233)   # dir — Nord10 bg
 CSEG2_BG=(76 86 106);    CSEG2_FG=(216 222 233)   # branch — Nord3 bg
 CSEG3_BG=(59 66 82);     CSEG3_FG=(155 176 202)   # model — Nord1 bg

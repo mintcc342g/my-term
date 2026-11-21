@@ -31,7 +31,7 @@ source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
 
 ## 업데이트
 
-프로젝트 코드가 바뀌었을 때만 돌리면 됩니다. 업데이트는 brew 설치나 alias 설정 같은 인스톨 단계를 전부 건너뛰고 `~/.claude/` 로 파일을 sync 하는 일만 합니다. 현재 sync 대상은 AI 어시스턴트 설정과 HUD 입니다.
+프로젝트 코드가 바뀌었을 때 실행합니다. 업데이트는 brew 설치와 alias 설정을 건너뛰고 설치된 Claude Code·Codex 설정과 Claude HUD를 동기화합니다.
 
 > ⚠️ `~/.claude/` 안의 `my-hooks/`, `my-collab/` 는 `cp -f` 로 덮어쓰기 때문에 직접 고친 내용은 사라집니다. `CLAUDE.md` 는 인스톨러가 관리하는 블록(`MYTERM:OPTIONAL:...`)만 갱신하고, 그 밖에 직접 쓴 내용은 보존합니다. (HUD `config.json` 과 Claude `settings.json` 은 사용자 변경분을 병합·보존합니다.)
 
@@ -39,7 +39,7 @@ source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
 
 1. `git pull origin main` 으로 최신 코드를 받습니다.
 2. `./install.sh` 실행 후 **Update** 를 선택합니다.
-3. 변경 사항은 **새 Claude Code 세션부터** 반영됩니다. 열려 있는 세션은 재시작이 필요합니다.
+3. 새 Claude Code 또는 Codex 세션을 시작합니다. Codex에서 @wk 방식을 처음 쓸 때는 `/hooks`에서 검토하고 신뢰합니다.
 
 ## 설치 항목
 
@@ -113,7 +113,7 @@ ssh -T git@github.com
 
 ### 주요 기능
 
-- **답변·코드 스타일 지시문 (`CLAUDE.md`)**: `~/.claude/CLAUDE.md` 에 답변 스타일·코드 스타일 지시문 블록(`MYTERM:OPTIONAL:...`)을 넣습니다. 답변 스타일은 설치 언어에 맞는 버전(한국어판 / 영어판 / 일본어판)으로, 코드 스타일은 공용으로 들어갑니다. 원하지 않으면 해당 블록을 지우세요 — 업데이트해도 다시 추가되지 않습니다.
+- **답변·코드 스타일**은 `my-ai/instructions/`에서 관리합니다. 선택한 언어의 응답 스타일과 공통 코딩 규칙을 `~/.claude/CLAUDE.md`와 `$CODEX_HOME/AGENTS.md`(기본 `~/.codex/AGENTS.md`)에 배포합니다.
 - **멀티 에이전트 협업 (`@co`)**: 프롬프트에 `@co` 를 붙이면 Codex 를 MCP 도구로 병렬 호출한 뒤 답변을 종합합니다(토론 루프 지원). 에이전트는 `~/.claude/my-collab/co-agents.json` 에서 추가합니다.
   ```json
   [
@@ -124,7 +124,18 @@ ssh -T git@github.com
 - **SessionStart 훅**: asdf 언어 환경변수(GOROOT, JAVA_HOME 등)를 Claude Code 세션에 자동 주입합니다.
 - **언어별 자동 포맷팅 훅 (PostToolUse)**: Claude 가 파일을 고치면 해당 언어 표준 포매터를 자동 실행합니다. 현재는 Go(`gofmt`)만 지원하며 다른 언어도 추가할 수 있습니다.
 - 상태줄 보호 훅과 캐시 자동 정리 스크립트가 포함돼 있습니다.
-- **Obsidian wiki (`@wk`)**: `@wk` 프롬프트가 감지되면 UserPromptSubmit 훅이 wiki 활용 지시문을 주입합니다. 운영 규칙은 wiki 의 `schema.md` 에 있고, wiki 경로는 설치할 때 입력한 값을 씁니다.
+
+### Obsidian 위키 호출
+
+설치 메뉴에서 **Obsidian**을 선택해 위키 폴더를 지정합니다. 위키를 이미 설정했다면 **Update**가 기존 경로를 사용해 설치된 CLI에 `wk` 스킬과 훅을 배포합니다.
+
+| 호출 방식 | 입력 예 |
+|---|---|
+| 두 CLI에서 훅 사용 | `지난 회의 기록을 @wk에서 찾아줘` |
+| Claude Code 스킬 | `/wk 지난 회의 기록을 찾아줘` |
+| Codex 스킬 | `지난 회의 기록을 찾아줘. $wk` |
+
+세 방식은 같은 위키 폴더와 `schema.md`를 사용합니다. Codex의 `/hooks`에서 `my-term wk`를 검토하고 신뢰한 뒤 `@wk`를 사용합니다. `$wk` 스킬은 훅 신뢰 절차 없이 사용할 수 있습니다.
 
 ### HUD Statusline
 
@@ -142,7 +153,7 @@ ssh -T git@github.com
 
 - 기본적으로 `.env`, `.ssh`, `.pem`, `.key` 등 주요 민감 파일의 읽기·수정이 차단돼 있습니다.
 - 클라우드/인프라 조작 명령어인 `aws`, `kubectl` 의 실행도 차단돼 있습니다.
-- 패턴을 더 추가하려면 `my-claude/settings/settings.json` 의 `permissions.deny` 에 넣으세요.
+- Claude 차단 규칙은 `my-claude/settings/permissions.json`에서 관리합니다. Codex는 `my-codex/settings/permissions.json`의 권한 프로필을 자체 설정 기능으로 적용하고, `my-codex/rules/my-term.rules`를 복사합니다. 설치·업데이트에 Python은 필요하지 않습니다. Codex에 별도의 기본 샌드박스나 권한 프로필이 있으면 충돌을 알리고 해당 설정을 보존합니다.
 
 ## 각 프로그램 설정값
 
@@ -211,7 +222,7 @@ source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
 
 ## Update
 
-Run this only when the project code has changed. Update skips all install steps (brew installs, alias setup, and so on) and only syncs files into `~/.claude/`. The current sync targets are the AI assistant config and the HUD.
+Update syncs the installed Claude Code and Codex settings and the Claude HUD. It skips package installation and alias setup.
 
 > ⚠️ Inside `~/.claude/`, `my-hooks/` and `my-collab/` are overwritten with `cp -f`, so any manual edits there are lost. For `CLAUDE.md`, only the installer-managed blocks (`MYTERM:OPTIONAL:...`) are refreshed — anything you wrote outside them is preserved. (The HUD `config.json` and Claude `settings.json` merge and preserve your changes.)
 
@@ -219,7 +230,7 @@ Run this only when the project code has changed. Update skips all install steps 
 
 1. Pull the latest code with `git pull origin main`.
 2. Run `./install.sh` and choose **Update**.
-3. Changes apply **from the next Claude Code session** — open sessions need a restart.
+3. Start a new Claude Code or Codex session. Before first using the Codex @wk hook, review and trust it with `/hooks`.
 
 ## What gets installed
 
@@ -293,7 +304,7 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 ### Key features
 
-- **Response & code style instructions (`CLAUDE.md`)**: adds response-style and code-style instruction blocks (`MYTERM:OPTIONAL:...`) to `~/.claude/CLAUDE.md`. The response style matches your install language (Korean / English / Japanese); the code style is shared across languages. Don't want them? Delete the block — Update won't re-add it.
+- **Response and code style** comes from `my-ai/instructions/`. The installer deploys the selected response style and shared coding rules to `~/.claude/CLAUDE.md` and `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`).
 - **Multi-agent collaboration (`@co`)**: prefix a prompt with `@co` to call Codex in parallel as an MCP tool, then synthesize the answers (discussion loop supported). Add agents in `~/.claude/my-collab/co-agents.json`:
   ```json
   [
@@ -304,7 +315,18 @@ Syncs the config in `my-claude/` into `~/.claude`.
 - **SessionStart hook**: injects asdf language environment variables (GOROOT, JAVA_HOME, etc.) into the Claude Code session.
 - **Per-language auto-formatting hook (PostToolUse)**: when Claude edits a file, the language's standard formatter runs automatically. Currently only Go (`gofmt`) is supported; more languages can be added.
 - Includes a statusline-protection hook and a cache auto-cleanup script.
-- **Obsidian wiki (`@wk`)**: when an `@wk` prompt is detected, a UserPromptSubmit hook injects wiki-usage instructions. The operating rules live in the wiki's `schema.md`, and the wiki path is whatever you entered during install.
+
+### Use the Obsidian wiki
+
+Select **Obsidian** in the installer and choose a vault folder. If you already configured a vault, **Update** uses that path to deploy the `wk` skill and hook to the installed CLIs.
+
+| Invocation | Example |
+|---|---|
+| Hook in either CLI | `Find the last meeting notes with @wk` |
+| Claude Code skill | `/wk Find the last meeting notes` |
+| Codex skill | `Use $wk to find the last meeting notes` |
+
+All three forms use the same vault and `schema.md`. Review and trust `my-term wk` in Codex’s `/hooks` before using `@wk`. The `$wk` skill is available without hook approval.
 
 ### HUD statusline
 
@@ -322,7 +344,7 @@ Syncs the config in `my-claude/` into `~/.claude`.
 
 - By default, reading/editing of major sensitive files (`.env`, `.ssh`, `.pem`, `.key`, etc.) is blocked.
 - Running the cloud/infra commands `aws` and `kubectl` is also blocked.
-- To add more patterns, put them in `permissions.deny` in `my-claude/settings/settings.json`.
+- Claude deny rules live in `my-claude/settings/permissions.json`. Codex applies the profile in `my-codex/settings/permissions.json` through its own configuration editor and copies `my-codex/rules/my-term.rules`. Install and Update need no Python for permissions. The installer reports conflicts with an existing default sandbox or profile and preserves that configuration.
 
 ## Per-app settings
 
@@ -391,7 +413,7 @@ source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
 
 ## アップデート
 
-プロジェクトのコードが変わったときだけ実行すれば大丈夫です。アップデートは brew のインストールや alias 設定といったインストール手順をすべて飛ばして、`~/.claude/` へファイルを sync するだけです。今の sync 対象は AI アシスタントの設定と HUD です。
+プロジェクトのコードを更新したら実行します。パッケージのインストールとエイリアス設定を省略し、インストール済みの Claude Code・Codex の設定と Claude の HUD を同期します。
 
 > ⚠️ `~/.claude/` の中の `my-hooks/`、`my-collab/` は `cp -f` で上書きするので、自分で直した内容は消えます。`CLAUDE.md` はインストーラーが管理するブロック（`MYTERM:OPTIONAL:...`）だけを更新し、それ以外に自分で書いた内容はそのまま残します。（HUD の `config.json` と Claude の `settings.json` はユーザーの変更分をマージして残します。）
 
@@ -399,7 +421,7 @@ source "${HOME}/.zprofile" && source "${HOME}/.zshrc"
 
 1. `git pull origin main` で最新のコードを取得します。
 2. `./install.sh` を実行して **Update** を選びます。
-3. 変更は **次の Claude Code セッションから** 反映されます。開いているセッションは再起動が要ります。
+3. Claude Code または Codex の新しいセッションを開始します。Codex で初めて @wk フックを使う前に `/hooks` を開き、wiki フックを確認して信頼します。
 
 ## インストール項目
 
@@ -475,7 +497,7 @@ ssh -T git@github.com
 
 ### 主な機能
 
-- **応答・コードスタイルの指示文（`CLAUDE.md`）**: `~/.claude/CLAUDE.md` に応答スタイル・コードスタイルの指示ブロック（`MYTERM:OPTIONAL:...`）を入れます。応答スタイルはインストール言語に合わせた版（韓国語版 / 英語版 / 日本語版）、コードスタイルは共通のものが入ります。要らなければそのブロックを消してください — アップデートしても再追加されません。
+- **応答とコードのスタイル**は `my-ai/instructions/` で管理します。選択した応答言語と共通のコーディングルールを `~/.claude/CLAUDE.md` と `$CODEX_HOME/AGENTS.md`（既定は `~/.codex/AGENTS.md`）に配布します。
 - **マルチエージェント協調（`@co`）**: プロンプトに `@co` を付けると、Codex を MCP ツールとして並列に呼び出したうえで回答をまとめます（議論ループに対応）。エージェントは `~/.claude/my-collab/co-agents.json` で追加します。
   ```json
   [
@@ -486,7 +508,18 @@ ssh -T git@github.com
 - **SessionStart フック**: asdf の言語環境変数（GOROOT、JAVA_HOME など）を Claude Code のセッションに自動で注入します。
 - **言語別の自動フォーマットフック（PostToolUse）**: Claude がファイルを直すと、その言語の標準フォーマッターが自動で走ります。今は Go（`gofmt`）だけ対応していて、他の言語も追加できます。
 - ステータスラインの保護フックと、キャッシュの自動整理スクリプトが含まれています。
-- **Obsidian wiki（`@wk`）**: `@wk` プロンプトを検出すると、UserPromptSubmit フックが wiki 活用の指示文を注入します。運用ルールは wiki の `schema.md` にあり、wiki のパスはインストール時に入力した値を使います。
+
+### Obsidian の保管庫を使う
+
+インストーラーで **Obsidian** を選び、保管庫のフォルダーを指定します。設定済みの場合は **Update** がそのパスを使い、インストール済みの CLI に `wk` スキルとフックを配置します。
+
+| 呼び出し方法 | 入力例 |
+|---|---|
+| 両方の CLI で使えるフック | `@wkで前回の議事録を探して` |
+| Claude Code のスキル | `/wk 前回の議事録を探して` |
+| Codex のスキル | `$wk で前回の議事録を探して` |
+
+どの方法でも同じ保管庫と `schema.md` を使います。Codex で `@wk` を使う前に、`/hooks` で `my-term wk` を確認して信頼します。`$wk` スキルはフックの承認なしで使えます。
 
 ### HUD ステータスライン
 
@@ -504,7 +537,7 @@ ssh -T git@github.com
 
 - デフォルトで `.env`、`.ssh`、`.pem`、`.key` など主要な機密ファイルの読み取り・編集が遮断されています。
 - クラウド/インフラ操作コマンドの `aws`、`kubectl` の実行も遮断されています。
-- パターンを追加したいときは `my-claude/settings/settings.json` の `permissions.deny` に入れてください。
+- Claude の拒否ルールは `my-claude/settings/permissions.json` で管理します。Codex は `my-codex/settings/permissions.json` のプロファイルを自身の設定機能で適用し、`my-codex/rules/my-term.rules` をコピーします。インストールとアップデートに Python は不要です。既定のサンドボックスや権限プロファイルが競合する場合は通知し、既存設定を保持します。
 
 <a id="ja-per-app-settings"></a>
 

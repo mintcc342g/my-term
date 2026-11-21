@@ -100,8 +100,8 @@ git_behind=0
 if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   git_branch=$(git -C "$cwd" branch --show-current 2>/dev/null | tr -d '\n')
   if [ -n "$git_branch" ]; then
-    # 비교 ref 결정: @{upstream} 우선, 없으면 push 대상 리모트의 동명 ref로 fallback.
-    # fallback 리모트 해석 순서는 git push가 따르는 것과 동일:
+    # Compare with the upstream ref when set. Otherwise use the same branch name on the push remote.
+    # Resolve the fallback push remote in the same order as git push:
     #   branch.<n>.pushRemote → remote.pushDefault → origin
     cmp_ref=""
     if git -C "$cwd" rev-parse --abbrev-ref "${git_branch}@{upstream}" >/dev/null 2>&1; then

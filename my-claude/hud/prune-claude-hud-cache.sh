@@ -40,7 +40,7 @@ for f in "$cache_dir"/*; do
   esac
 done
 
-# tmp 디렉토리 내 고아 파일 정리
+# Remove orphaned temporary files.
 for f in "$tmp_dir"/*; do
   [ -f "$f" ] || continue
   m=$(stat -f %m "$f" 2>/dev/null || echo 0)

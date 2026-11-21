@@ -20,7 +20,7 @@ install_obsidian() {
   }
   log_done "Obsidian installed."
 
-  # 2. Wiki storage type (Obsidian vault 의 저장 방식 선택)
+  # 2. Choose the Obsidian vault storage type.
   local storage=""
   ui_menu "$L_OBS_STORAGE_TITLE" storage \
     "$L_OBS_STORAGE_LOCAL" \
@@ -38,16 +38,16 @@ install_obsidian() {
   # Prompt embedded in `read -p` so readline knows its length and can't
   # backspace-erase past it. \001\002 mark non-printing escape sequences
   # (color codes) so readline accounts for visible width correctly.
-  # bash 3.2 (macOS 기본) 는 -i (prefill) 미지원이라 prefix 안내는 위 텍스트로만.
-  # readline 기본은 첫 Tab → 공통 prefix 만 완성하고 침묵 → 두 번째 Tab 에 목록.
-  # show-all-if-ambiguous 로 첫 Tab 에 바로 후보 목록 노출.
-  # completion-ignore-case 로 `~/documents` ↔ `~/Documents` 대소문자 무시.
-  # 비대화형 스크립트는 readline 이 기본 비활성 → `set -o emacs` 로 enable 후 bind.
-  # `|| true` 로 set -euo pipefail 환경에서도 안전.
-  # Tab → menu-complete: 후보 목록 출력 X, 인라인으로 후보 하나씩 교체 cycling.
-  # Shift+Tab (\e[Z) → 역방향 cycling 으로 overshoot 복구.
-  # completion-ignore-case 로 `~/documents` ↔ `~/Documents` 대소문자 무시.
-  # match-hidden-files off 로 cycling 에 `.foo` 류 숨김 제외 (사용자가 `.` 입력 시 포함).
+  # macOS Bash 3.2 does not support read -i, so the prefix appears in the instructions.
+  # By default, Readline completes the common prefix on the first Tab and lists matches on the second.
+  # show-all-if-ambiguous displays matches immediately.
+  # completion-ignore-case matches paths such as ~/documents and ~/Documents.
+  # Enable Emacs mode before binding keys because noninteractive shells start with Readline disabled.
+  # Use || true so a failed binding is harmless under set -euo pipefail.
+  # menu-complete cycles through matches inline with Tab.
+  # Shift+Tab (\e[Z) cycles backward.
+  # Keep completion case-insensitive for common directory name variations.
+  # Keep hidden names out of the cycle unless the user types a leading dot.
   set -o emacs 2>/dev/null || true
   bind '"\t": menu-complete' 2>/dev/null || true
   bind '"\e[Z": menu-complete-backward' 2>/dev/null || true
@@ -73,71 +73,129 @@ install_obsidian() {
     log_step "Using existing wiki directory: $wiki_path"
   fi
 
-  # 5. Sync wiki hook script (path 가 sed 로 치환되어 deploy 됨) + register @wk matcher in settings.json
-  _sync_obsidian_wiki_files "$wiki_path"
-  _setup_wiki_hook
+  # 5. Share one wiki workflow with each installed agent.
+  _save_wiki_path "$wiki_path"
+  if command -v claude &>/dev/null; then
+    _sync_claude_wiki "$wiki_path"
+  fi
+  if command -v codex &>/dev/null; then
+    _sync_codex_wiki "$wiki_path"
+  fi
 
-  # 6. Install default wiki content (schema.md 등) — 기존 파일 있으면 skip.
+  # 6. Install default vault files such as schema.md when they are missing.
   _install_wiki_defaults "$wiki_path"
 
   log_done "Obsidian + wiki tooling configured."
 
   # 7. obsidian-skills plugin guidance — printed AFTER ✔ as a follow-up hint,
-  # matching ui_print_completion 의 "Please run …" 스타일 (indent, 아이콘 X).
+  # using the same indented, icon-free style as the completion hints.
   printf "  %s\n" "$L_OBS_PLUGIN_HINT"
   printf "    /plugin marketplace add kepano/obsidian-skills\n"
   printf "    /plugin install obsidian@obsidian-skills\n"
 }
 
-# Sync my-claude/wiki/ hook scripts to ~/.claude/my-wiki/. Reused by
-# update_my_claude when wiki tooling is already installed.
-#
-# $1: wiki_path — {{WIKI_PATH}} placeholder 치환에 사용.
-#     install 시에는 사용자 입력값, update 시에는 기존 deploy 된 wk-trigger.sh 에서 추출한 값.
-_sync_obsidian_wiki_files() {
-  local wiki_path="${1:-}"
-
-  if [ -z "$wiki_path" ]; then
-    log_fail "_sync_obsidian_wiki_files called without wiki_path argument"
-    return 1
-  fi
-
-  local _old_umask
-  _old_umask=$(umask)
-  umask 077
-
-  if [[ -L "$HOME/.claude/my-wiki" ]]; then
-    log_fail "symlink detected at $HOME/.claude/my-wiki — aborting for safety."
-    umask "$_old_umask"
-    return 1
-  fi
-
-  mkdir -p "$HOME/.claude/my-wiki"
-  chmod 700 "$HOME/.claude/my-wiki"
-  if [ -d "$SCRIPT_DIR/my-claude/wiki" ]; then
-    # wk-* 만 ~/.claude/my-wiki/ 로 deploy (schema.md 는 _install_wiki_defaults 담당).
-    #   - wk-trigger.sh: install 시점에 WIKI_PATH 치환
-    #   - wk-directive.md: 응답 언어({{RESPONSE_LANG}}) 를 설치 언어로 치환
-    local _lang_name; _lang_name="$(lang_response_name)"
-    sed "s|{{WIKI_PATH}}|${wiki_path}|g" "$SCRIPT_DIR/my-claude/wiki/wk-trigger.sh" \
-      > "$HOME/.claude/my-wiki/wk-trigger.sh"
-    sed "s|{{RESPONSE_LANG}}|${_lang_name}|g" "$SCRIPT_DIR/my-claude/wiki/wk-directive.md" \
-      > "$HOME/.claude/my-wiki/wk-directive.md"
-    chmod +x "$HOME/.claude/my-wiki/"*.sh 2>/dev/null || true
-  fi
-
-  umask "$_old_umask"
-  log_done "wiki hook synced."
+_configured_wiki_path() {
+  local dir path
+  for dir in "${XDG_CONFIG_HOME:-$HOME/.config}/my-term" "$HOME/.claude/my-wiki" "${CODEX_HOME:-$HOME/.codex}/my-wiki"; do
+    if [ -s "$dir/wiki-path" ]; then
+      cat "$dir/wiki-path"
+      return
+    fi
+    if [ -f "$dir/wk-trigger.sh" ]; then
+      # Earlier installations embedded the selected path in the script.
+      path="$(sed -nE 's/^WIKI_PATH="(.*)"$/\1/p' "$dir/wk-trigger.sh")"
+      if [ -n "$path" ]; then
+        printf '%s\n' "$path"
+        return
+      fi
+    fi
+  done
 }
 
-# Install default wiki content (schema.md 등) into user wiki if missing.
-# 기존 파일이 있으면 절대 덮어쓰지 않음 — 사용자 수정분 보호.
-# Reused by install_obsidian (최초) 와 update_my_claude (실수 삭제 복구) 양쪽에서.
+_save_wiki_path() (
+  local dir="${XDG_CONFIG_HOME:-$HOME/.config}/my-term" tmp
+  umask 077
+  mkdir -p "$dir"
+  tmp="$(mktemp "$dir/.wiki-path.XXXXXX")"
+  trap 'rm -f "$tmp"' EXIT
+  printf '%s\n' "$1" > "$tmp"
+  mv -f "$tmp" "$dir/wiki-path"
+)
+
+_update_agent_wiki() {
+  local wiki_path
+  wiki_path="$(_configured_wiki_path)"
+  if [ -n "$wiki_path" ] && [ -d "$wiki_path" ]; then
+    "$1" "$wiki_path"
+  fi
+}
+
+_sync_claude_wiki() {
+  _sync_wiki_files "$1" "$HOME/.claude/my-wiki"
+  _setup_wiki_hook
+  _sync_wk_skill "$HOME/.claude/my-wiki" "$HOME/.claude/skills/wk"
+}
+
+_sync_wiki_files() (
+  local wiki_path="$1" dest="$2"
+  umask 077
+
+  if [ -L "$dest" ]; then
+    log_fail "Cannot update symlinked wiki directory: $dest"
+    return 1
+  fi
+
+  mkdir -p "$dest"
+  chmod 700 "$dest"
+  local tmp
+  tmp="$(mktemp -d "$dest/.sync.XXXXXX")"
+  trap 'rm -f "$tmp/wiki-path" "$tmp/wk-directive.md" "$tmp/wk-trigger.sh"; rmdir "$tmp"' EXIT
+  printf '%s\n' "$wiki_path" > "$tmp/wiki-path"
+  sed "s|{{RESPONSE_LANG}}|$(lang_response_name)|g" "$SCRIPT_DIR/my-ai/wiki/wk-directive.md" \
+    > "$tmp/wk-directive.md"
+  cp "$SCRIPT_DIR/my-ai/wiki/wk-trigger.sh" "$tmp/wk-trigger.sh"
+  chmod 700 "$tmp/wk-trigger.sh"
+  mv -f "$tmp/wiki-path" "$tmp/wk-directive.md" "$tmp/wk-trigger.sh" "$dest/"
+)
+
+_has_wk_skill() {
+  [ ! -L "$1" ] && [ ! -L "$1/SKILL.md" ] &&
+    grep -qxF '<!-- managed by my-term -->' "$1/SKILL.md" 2>/dev/null
+}
+
+_sync_wk_skill() (
+  local wiki_dir="$1" dest="$2" tmp
+  if [ -L "$dest" ] || { { [ -e "$dest/SKILL.md" ] || [ -L "$dest/SKILL.md" ]; } && ! _has_wk_skill "$dest"; }; then
+    log_step "Keeping existing wk skill: $dest"
+    return 0
+  fi
+
+  umask 077
+  mkdir -p "$dest"
+  tmp="$(mktemp "$dest/.skill.XXXXXX")"
+  trap 'rm -f "$tmp"' EXIT
+  cat "$SCRIPT_DIR/my-ai/wiki/wk/SKILL.md" > "$tmp"
+  printf '\n' >> "$tmp"
+  /bin/bash "$wiki_dir/wk-trigger.sh" --instructions >> "$tmp"
+  mv -f "$tmp" "$dest/SKILL.md"
+)
+
+_delete_wk_skill() {
+  local dest="$1"
+  if _has_wk_skill "$dest"; then
+    rm -f "$dest/SKILL.md"
+    rmdir "$dest" 2>/dev/null || true
+  fi
+}
+
+# Install default vault files such as schema.md when they are missing.
+# Keep existing vault files to preserve user edits.
+# Used on initial installation and on Update to restore missing defaults.
 #
 # $1: wiki_path
-# Placeholders 치환:
+# Replace these placeholders:
 #   {{WIKI_NAME}}    → basename of wiki_path
-#   {{INSTALL_DATE}} → 오늘 (YYYY-MM-DD)
+#   {{INSTALL_DATE}} — current date (YYYY-MM-DD)
 _install_wiki_defaults() {
   local wiki_path="${1:-}"
 
@@ -150,7 +208,7 @@ _install_wiki_defaults() {
     return 1
   fi
 
-  local wiki_dir="$SCRIPT_DIR/my-claude/wiki"
+  local wiki_dir="$SCRIPT_DIR/my-ai/wiki"
   if [ ! -d "$wiki_dir" ]; then
     return 0
   fi
@@ -159,23 +217,24 @@ _install_wiki_defaults() {
   wiki_name=$(basename "$wiki_path")
   install_date=$(date +%Y-%m-%d)
 
-  # my-claude/wiki/ 안의 wk-* 는 훅 파일 (_sync_obsidian_wiki_files 가 처리),
-  # 나머지는 사용자 wiki 로 들어가는 default content (schema.md 등).
+  # The installer deploys wk-* through _sync_wiki_files.
+  # This step copies the remaining default files into the vault.
   local _lang_name; _lang_name="$(lang_response_name)"
-  local src dst base
+  local src dst base escaped_name
+  escaped_name="$(printf '%s' "$wiki_name" | sed 's/[\\&|]/\\&/g')"
   for src in "$wiki_dir"/*; do
     [ -f "$src" ] || continue
     base=$(basename "$src")
     case "$base" in
-      wk-*) continue ;;                 # 훅 지시문은 _sync_obsidian_wiki_files 담당
+      wk-*) continue ;;                 # Skip the files deployed with the hook.
     esac
-    # 사용자 wiki 에 같은 파일(예: schema.md)이 이미 있으면 절대 안 덮음.
+    # Keep any existing vault file, such as a customized schema.md.
     dst="$wiki_path/$base"
     if [ -e "$dst" ]; then
       log_step "wiki default exists, keep user copy: $base"
       continue
     fi
-    sed -e "s|{{WIKI_NAME}}|${wiki_name}|g" \
+    sed -e "s|{{WIKI_NAME}}|${escaped_name}|g" \
         -e "s|{{INSTALL_DATE}}|${install_date}|g" \
         -e "s|{{RESPONSE_LANG}}|${_lang_name}|g" \
         "$src" > "$dst"

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# codex-collab.sh — @co 키워드로 멀티 에이전트 협업 모드를 Claude에 주입
+# Inject Claude Code collaboration instructions when a prompt contains @co.
 #
-# Hook: UserPromptSubmit (동기)
-# 트리거: 프롬프트에 "@co" 포함 시 (위치 무관)
-# 동작: @co 제거 후 에이전트 설정을 읽어 Claude에 협업 지시문을 주입
-#        (실제 에이전트 호출은 Claude가 MCP 도구로 병렬 수행)
+# Use a synchronous UserPromptSubmit hook.
+# Match @co anywhere in the prompt.
+# Strip @co, read the agent configuration, and inject the collaboration instructions.
+# Claude Code invokes the configured agents in parallel through their MCP tools.
 #
 
 set -euo pipefail
@@ -13,7 +13,7 @@ set -euo pipefail
 KEYWORD="@co"
 AGENTS_CONFIG="$HOME/.claude/my-collab/co-agents.json"
 
-# --- stdin에서 JSON 파싱 ---
+# Parse JSON from stdin.
 raw_input="$(cat)"
 
 if printf '%s' "$raw_input" | jq -e '.prompt' >/dev/null 2>&1; then
@@ -22,12 +22,12 @@ else
   prompt="$raw_input"
 fi
 
-# --- @co 키워드 없으면 즉시 종료 ---
+# Exit early when the prompt contains no @co.
 if [[ "$prompt" != *"$KEYWORD"* ]]; then
   exit 0
 fi
 
-# --- @co 제거 후 프롬프트 추출 ---
+# Extract the prompt with @co removed.
 clean_prompt="$(printf '%s' "$prompt" | jq -Rrs 'gsub("@co\\s*"; "") | gsub("^\\s+|\\s+$"; "")')"
 
 if [[ -z "$clean_prompt" || "$clean_prompt" == '""' ]]; then
@@ -35,13 +35,13 @@ if [[ -z "$clean_prompt" || "$clean_prompt" == '""' ]]; then
   exit 0
 fi
 
-# --- 에이전트 설정 로드 ---
+# Load the agent configuration.
 if [[ ! -f "$AGENTS_CONFIG" ]]; then
   printf '%s\n' "[co-mux] Agent config file not found: $AGENTS_CONFIG"
   exit 0
 fi
 
-# --- 에이전트 설정 파일 무결성 검증 ---
+# Validate the agent configuration file.
 if [[ -L "$AGENTS_CONFIG" ]]; then
   printf '%s\n' "[co-mux] Agent config file is a symlink. Refusing."
   exit 1
@@ -62,13 +62,13 @@ if [[ "$agent_count" -eq 0 ]]; then
   exit 0
 fi
 
-# --- 에이전트 목록을 텍스트로 구성 (MCP 전용) ---
+# Build a text list of the configured MCP agents.
 agent_list=""
 while IFS=$'\t' read -r name server tool timeout params_json; do
   [ -z "$timeout" ] || [ "$timeout" = "null" ] && timeout=300000
   mcp_tool="mcp__${server}__${tool}"
 
-  # params가 있으면 호출 시 포함할 파라미터 안내 생성
+  # Include any configured parameters in the tool instructions.
   params_note=""
   if [ -n "$params_json" ] && [ "$params_json" != "null" ] && [ "$params_json" != "{}" ]; then
     params_note=" (extra params: ${params_json})"
@@ -84,7 +84,7 @@ done < <(jq -r '.[] | [
   (.params // {} | tostring)
 ] | @tsv' "$AGENTS_CONFIG" 2>/dev/null)
 
-# --- Claude에 협업 지시문 주입 ---
+# Print the collaboration instructions for Claude Code.
 DIRECTIVE_FILE="$(dirname "$0")/co-directive.md"
 if [[ -L "$DIRECTIVE_FILE" ]]; then
   printf '%s\n' "[co-mux] Directive file is a symlink. Refusing."

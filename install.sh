@@ -26,6 +26,7 @@ source "$SCRIPT_DIR/installers/asdf-langs.sh"
 source "$SCRIPT_DIR/installers/pyenv.sh"
 source "$SCRIPT_DIR/installers/language-tools.sh"
 source "$SCRIPT_DIR/installers/ai-tools.sh"
+source "$SCRIPT_DIR/installers/codex.sh"
 source "$SCRIPT_DIR/installers/obsidian.sh"
 
 # ── Terminal cleanup on exit/interrupt ──────────────────────────
@@ -73,10 +74,9 @@ while true; do
   menu_items+=("$L_MENU_INSTALL");  menu_actions+=("install")
   menu_items+=("$L_MENU_UPDATE");   menu_actions+=("update")
 
-  # Delete menu only when a my-term footprint exists in ~/.claude. Removes
-  # my-term's deployed config; preserves memory, SSH keys, and third-party tools.
-  if [ -d "$HOME/.claude/my-hud" ] || [ -d "$HOME/.claude/my-hooks" ] \
-     || [ -d "$HOME/.claude/my-collab" ] || [ -d "$HOME/.claude/my-wiki" ]; then
+  # Show Delete when an installed agent has my-term config to remove.
+  if { command -v claude &>/dev/null && _has_claude_files; } \
+     || { command -v codex &>/dev/null && _has_codex_files; }; then
     menu_items+=("$L_MENU_DELETE"); menu_actions+=("delete")
   fi
 
@@ -95,8 +95,8 @@ while true; do
 
   case "$action" in
     install)      last_action="install" ; run_install_interactive ; break ;;
-    update)       last_action="update"  ; update_my_claude ; break ;;
-    delete)       delete_my_claude ; last_action="${DELETE_LAST_ACTION:-delete}" ; break ;;
+    update)       last_action="update"  ; update_ai_tools ; break ;;
+    delete)       delete_ai_tools ; last_action="${DELETE_LAST_ACTION:-delete}" ; break ;;
     hud-config)
       last_action="hud-config"
       MYTERM_LANG="${MYTERM_LANG:-en}" bash "$SCRIPT_DIR/my-claude/hud/configure.sh"

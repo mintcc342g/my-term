@@ -1,8 +1,8 @@
 #!/bin/zsh
-# Claude Code SessionStart 훅용 환경 초기화 스크립트.
-# .zprofile을 source하여 PATH/환경변수를 확보한 뒤,
-# asdf plugin의 precmd 함수들을 직접 호출하여 언어별 환경변수를 설정.
-# 최종 결과를 CLAUDE_ENV_FILE에 write하여 이후 모든 Bash 명령에 적용.
+# Initialize the environment for the Claude Code SessionStart hook.
+# Source .zprofile for PATH and environment variables.
+# Run asdf plugin precmd functions to initialize language environments.
+# Write the resulting exports to CLAUDE_ENV_FILE for subsequent Bash commands.
 
 [ -z "$CLAUDE_ENV_FILE" ] && exit 0
 
@@ -11,16 +11,16 @@ if [ -f "$ZPROFILE" ] && [ ! -L "$ZPROFILE" ]; then
   source "$ZPROFILE"
 fi
 
-# 호출 전 환경변수 스냅샷
+# Snapshot the environment before running the plugin functions.
 env_before=$(env | sort)
 
-# asdf plugin의 asdf_update_* precmd 함수들을 모두 호출
-# (source된 set-env.zsh 등이 precmd에 등록만 하고 실행은 안 하므로)
+# Run all asdf_update_* precmd functions.
+# Sourcing set-env.zsh registers these functions without running them.
 for func in ${(k)functions[(I)asdf_update_*]}; do
   $func
 done
 
-# 변경된 환경변수를 CLAUDE_ENV_FILE에 write (allowlist 방식)
+# Write changed, allowlisted environment variables to CLAUDE_ENV_FILE.
 ALLOWED_VARS='^(PATH|GOROOT|GOPATH|JAVA_HOME|ASDF_.*|PYENV_.*|RUBY_.*|NVM_.*|VOLTA_.*|SDKMAN_.*|CARGO_HOME|RUSTUP_HOME|BREW_PREFIX|HOMEBREW_.*)$'
 {
   printf 'export PATH=%q\n' "$PATH"

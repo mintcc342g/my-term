@@ -29,7 +29,7 @@ esac
 # Check if statusLine command was changed
 LOCK="$tmp_dir/settings.lock"
 if ! mkdir "$LOCK" 2>/dev/null; then
-  # Stale lock: 소유 프로세스가 죽었으면 제거 후 재시도
+  # Remove the stale lock and retry if its owner process is gone.
   if [ -f "$LOCK/pid" ]; then
     lock_pid=$(cat "$LOCK/pid" 2>/dev/null)
     if [ -n "$lock_pid" ] && ! kill -0 "$lock_pid" 2>/dev/null; then

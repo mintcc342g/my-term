@@ -1,10 +1,10 @@
 #!/bin/bash
-# lib/lang/ko.sh — 한국어 메시지 카탈로그.
-# en.sh 와 동일한 키/함수 집합을 정의해야 한다 (검증: lib/lang 패리티 체크).
-# 색상은 ui.sh 의 UI_* 만 사용 (source 시점에 이미 정의됨).
-# 작성 기준: im-not-ai(번역투·AI 티 회피). 기존 자연스러운 문구는 그대로 추출.
+# Korean message catalog.
+# Keep the keys and functions in sync across catalogs. Verify with the catalog parity check.
+# Use UI_* colors from ui.sh, which defines them before loading this file.
+# Use natural Korean and preserve existing wording where possible.
 
-# ── 공통 ────────────────────────────────────────────────────────
+# Common messages
 L_YES="예"
 L_NO="아니요"
 L_NO_SKIP="아니요 (건너뛰기)"
@@ -13,7 +13,7 @@ L_NO_DONE="아니요 (완료)"
 L_UI_HINT="↑↓ 이동 │ Enter 선택"
 L_EXIT_ABORTED="설치를 중단하고 종료합니다."
 
-# ── 메인 메뉴 (install.sh) ──────────────────────────────────────
+# Main menu (install.sh)
 L_MENU_TITLE="my-term 설치 도구"
 L_MENU_INSTALL="설치"
 L_MENU_UPDATE="업데이트"
@@ -21,14 +21,14 @@ L_MENU_HUD_CONFIG="HUD 설정"
 L_MENU_DELETE="삭제 (my-term 설정 제거)"
 L_MENU_EXIT="✗ 종료"
 
-# ── 단계 라벨 (install.sh ui_confirm_run / ai-tools) ────────────
+# Step labels (install.sh and ai-tools.sh)
 L_STEP_CONVENIENCE="각종 도구"
 L_STEP_GIT_SSH="Git SSH 키 (멀티 계정)"
 L_STEP_OMZ="Oh-my-zsh + zsh 플러그인"
 L_STEP_THEME="셸 테마 (newro)"
 L_STEP_LANGUAGE_TOOLS="언어 관리 도구"
 
-# ── 편의 도구 체크박스 ───────────────────────────────────────────
+# Optional tool checkboxes
 L_CONVENIENCE_CLI="CLI 도구"
 L_CONVENIENCE_APPS="macOS 앱"
 L_CONVENIENCE_DEVOPS="DevOps 도구"
@@ -39,7 +39,7 @@ L_CHECKLIST_SKIP="건너뛰기"
 L_CHECKLIST_ALL="전부 설치"
 L_CHECKLIST_EMPTY="도구를 하나 이상 선택하거나 건너뛰기를 선택하세요."
 
-# ── 완료 배너 (ui.sh ui_print_completion) ───────────────────────
+# Completion banner (ui_print_completion in ui.sh)
 L_DONE_INSTALL="설치 완료!"
 L_DONE_UPDATE="업데이트 완료!"
 L_DONE_HUDCFG="HUD 설정 완료."
@@ -48,21 +48,23 @@ L_DONE_DELETE_HINT="다시 설정하려면 Install 을 실행하세요."
 L_DELETE_CANCELLED="삭제를 취소했습니다."
 L_DONE_RESTART_CC="적용하려면 Claude Code 세션을 다시 시작하세요."
 
-# 여러 색상이 섞인 안내 (literal ${HOME} 는 \$ 로 유지).
+# Escape the dollar sign to keep the HOME variable literal in colorized instructions.
 lang_done_source_zshrc() {
   printf "  ${UI_YELLOW_BOLD}'source \${HOME}/.zprofile && source \${HOME}/.zshrc'${UI_RESET} 를 실행하거나 셸을 ${UI_YELLOW_BOLD}다시 시작${UI_RESET}하세요.\n\n"
 }
 
-# ── 삭제 (ai-tools.sh delete_my_claude) ─────────────────────────
+# Delete confirmation (delete_ai_tools in ai-tools.sh)
 L_DELETE_CONFIRM_TITLE="my-term 설정을 삭제할까요? 되돌릴 수 없습니다."
 
-# 무엇을 지우고 무엇을 남기는지 보여주는 확인 안내. 메뉴 노트로 출력된다.
+# List what the installer removes and preserves in the confirmation menu.
 lang_delete_plan() {
   local s="\n"
   s+="   ${UI_RED_BOLD}삭제하는 것:${UI_RESET}\n"
   s+="     ~/.claude/my-hud, my-hooks, my-collab, my-wiki ${UI_DIM}(직접 바꾼 HUD 테마·collab 설정 포함)${UI_RESET}\n"
   s+="     ~/.zshrc, ~/.zprofile, ~/.ssh/config 의 #-- my-term: 블록\n"
   s+="     ~/.claude/CLAUDE.md 의 OPTIONAL 지시문 블록\n"
+  s+="     Codex AGENTS.md 의 관리 지침과 my-term @wk 훅 및 파일\n"
+  s+="     설치된 에이전트의 my-term wk 스킬\n"
   s+="     ~/.claude/settings.json 의 statusLine + my-term 훅\n"
   s+="     ~/.claude.json 의 codex MCP 항목\n"
   s+="\n"
@@ -70,15 +72,17 @@ lang_delete_plan() {
   s+="     ~/.claude/memory ${UI_DIM}(저장해 둔 기억)${UI_RESET}\n"
   s+="     SSH 키 파일 ~/.ssh/id_* ${UI_DIM}(config 블록만 지움)${UI_RESET}\n"
   s+="     settings.json 의 permissions.deny 보안 규칙\n"
+  s+="     CLI가 제거된 에이전트의 설정과 위키 경로\n"
+  s+="     Codex 전역 권한 프로필과 명령 차단 규칙\n"
   s+="     brew 패키지, oh-my-zsh, asdf/pyenv, CLI, IDE, Obsidian\n"
   printf '%s' "$s"
 }
 
-# ── 공용 오류 안내 ──────────────────────────────────────────────
+# Shared error messages
 L_ERR_NO_BREW="Homebrew를 찾지 못했습니다. 먼저 Homebrew를 설치하세요."
 L_ERR_NO_OMZ="oh-my-zsh 를 찾지 못했습니다. 먼저 oh-my-zsh 를 설치하세요."
 
-# ── 필수 도구 (required.sh) ─────────────────────────────────────
+# Required tools (required.sh)
 L_REQ_TITLE="필수 도구를 설치할까요? (Homebrew + jq)"
 L_REQ_NOTE="⚠ 필수 항목입니다 — 거절하면 설치 도구가 바로 종료됩니다."
 L_REQ_ALREADY="필수 도구(Homebrew·jq)가 이미 설치돼 있어 이 단계를 건너뜁니다."
@@ -116,7 +120,7 @@ L_GITSSH_DIR_LABEL="디렉토리: "
 L_GITSSH_DIR_REQUIRED="디렉토리는 필수입니다."
 L_GITSSH_VERIFY="검증: cd <등록한 디렉토리> && ssh -T git@%s"
 
-# 진입 안내 (UI_MENU_NOTE; echo -e 용 literal \n).
+# Introductory menu note. Use literal \n for echo -e.
 lang_gitssh_intro() {
   local s=""
   s+=" ─────────────────────\n"
@@ -134,7 +138,7 @@ lang_gitssh_intro() {
   printf '%s' "$s"
 }
 
-# Case A 안내 (매니지드 default 존재).
+# Case A note for an existing managed default.
 lang_gitssh_caseA_note() {
   local managed="$1"
   local s=""
@@ -148,7 +152,7 @@ lang_gitssh_caseA_note() {
   printf '%s' "$s"
 }
 
-# Case B 안내 (external default 존재).
+# Case B note for an existing external default.
 lang_gitssh_caseB_note() {
   local ext="$1" host="$2"
   local s=""
@@ -160,7 +164,7 @@ lang_gitssh_caseB_note() {
   printf '%s' "$s"
 }
 
-# Case D 충돌 화면 (/dev/tty 출력).
+# Case D conflict screen, displayed through /dev/tty.
 lang_gitssh_conflict() {
   local ext="$1" managed="$2" host="$3"
   echo -e "${UI_BLUE_BOLD} 'Host ${host}' 설정이 둘 다 있습니다${UI_RESET}" > /dev/tty
@@ -175,7 +179,7 @@ lang_gitssh_conflict() {
   echo -e " ${UI_DIM}~/.ssh/config 를 직접 정리하신 뒤 다시 실행해주세요.${UI_RESET}\n" > /dev/tty
 }
 
-# 닉네임 안내 화면.
+# Nickname prompt.
 lang_gitssh_nick_help() {
   local has_default="$1"
   echo -e "${UI_BLUE_BOLD} SSH 키 — 닉네임${UI_RESET}" > /dev/tty
@@ -190,7 +194,7 @@ lang_gitssh_nick_help() {
   echo -e " ${UI_DIM}${UI_ITALIC}닉네임을 입력하지 않고 Enter 를 누르면 키 생성을 종료하고 다음 단계로 넘어갑니다.${UI_RESET}\n" > /dev/tty
 }
 
-# 디렉토리 안내 화면.
+# Directory prompt.
 lang_gitssh_dir_help() {
   local nickname="${1:-}"
   echo -e "${UI_BLUE_BOLD} SSH 키 — 디렉토리${UI_RESET}" > /dev/tty
@@ -209,7 +213,7 @@ L_OBS_WIKIPATH_LABEL="위키 경로: "
 L_OBS_EMPTY_PATH="위키 경로를 입력하지 않아 위키 설정을 건너뜁니다."
 L_OBS_PLUGIN_HINT="Claude Code 를 처음 실행한 뒤 obsidian-skills 플러그인을 직접 설치하세요:"
 
-# 위키 경로 안내 화면 (storage: 0=로컬 1=icloud 2=git).
+# Vault path instructions. Storage values are 0 for local, 1 for iCloud, and 2 for Git.
 lang_obs_wikipath_help() {
   local storage="$1"
   echo -e "${UI_BLUE_BOLD} 위키 경로${UI_RESET}" > /dev/tty
@@ -231,7 +235,7 @@ lang_obs_wikipath_help() {
   esac
 }
 
-# ── AI 도구 (ai-tools.sh) ───────────────────────────────────────
+# AI tools (ai-tools.sh)
 L_AI_MENU_TITLE="AI 도구"
 L_AI_AGENTS_CATEGORY="AI 코딩 에이전트"
 L_AI_MULTIPLEXERS_CATEGORY="터미널 멀티플렉서"

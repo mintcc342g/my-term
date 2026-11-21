@@ -159,7 +159,7 @@ install_convenience() {
     done
   fi
 
-  # TODO: 도커랑 cli 그 툴 뭐더라 그거 설치하는 옵션 추가. 메뉴 별도로 빼고 유저가 선택할 수 있도록.
+  # TODO: Offer Docker and its related CLI tool in a separate optional menu.
 
   # television shell integration. `tv init zsh` calls compdef, so load the
   # completion system first — otherwise new shells print "command not found:
