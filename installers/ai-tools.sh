@@ -79,6 +79,7 @@ install_ai_tools() {
       log_step "brew install herdr…"
       brew install herdr
       log_done "herdr installed."
+      _setup_ai_alias Herdr herdr hd
     fi
     if [ "${UI_CHECKLIST_SELECTED[4]}" -eq 1 ]; then
       install_obsidian
@@ -111,26 +112,7 @@ _install_claude_code() {
       ;;
   esac
 
-  # Claude alias
-  ui_clear_screen
-  echo -e "${UI_BLUE_BOLD} ${L_AI_ALIAS_HEADER}${UI_RESET}" > /dev/tty
-  echo -e " ─────────────────────" > /dev/tty
-  echo -e " ${UI_DIM}${L_AI_ALIAS_PROMPT}${UI_RESET}\n" > /dev/tty
-  echo -ne " ${UI_YELLOW_BOLD}${L_AI_ALIAS_LABEL}${UI_RESET}" > /dev/tty
-  local alias_name
-  read -r alias_name < /dev/tty
-  [ -z "$alias_name" ] && alias_name="c"
-
-  # Sanitize: only allow valid shell identifier chars
-  if [[ ! "$alias_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-    log_fail "$L_AI_INVALID_ALIAS"
-    alias_name="c"
-  fi
-
-  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
-  rc_upsert_block "$ZSHRC" "claude-alias" "alias ${alias_name}=\"claude\""
-  export ZSHRC_MODIFIED=true
-  log_done "alias '${alias_name}=claude' added."
+  _setup_ai_alias Claude claude c
 
   # Claude settings (memory, CLAUDE.md, settings.json, hooks, collab).
   # Korean-default instruction blocks (response style) are installed inside
@@ -151,6 +133,35 @@ _install_claude_code() {
     0) _install_hud ;;
     *) log_step "skipping HUD install." ;;
   esac
+}
+
+_setup_ai_alias() {
+  local tool_name="$1" command_name="$2" default_alias="$3"
+  local header prompt alias_name
+  printf -v header "$L_AI_ALIAS_HEADER" "$tool_name"
+  printf -v prompt "$L_AI_ALIAS_PROMPT" "$command_name" "$default_alias"
+
+  ui_clear_screen
+  {
+    printf '%s %s%s\n' "$UI_BLUE_BOLD" "$header" "$UI_RESET"
+    printf ' ─────────────────────\n'
+    printf ' %s%s%s\n\n' "$UI_DIM" "$prompt" "$UI_RESET"
+    printf ' %s%s%s' "$UI_YELLOW_BOLD" "$L_AI_ALIAS_LABEL" "$UI_RESET"
+  } > /dev/tty
+  read -r alias_name < /dev/tty
+  alias_name="${alias_name:-$default_alias}"
+
+  if [[ ! "$alias_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+    local message
+    printf -v message "$L_AI_INVALID_ALIAS" "$default_alias"
+    log_fail "$message"
+    alias_name="$default_alias"
+  fi
+
+  local ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+  rc_upsert_block "$ZSHRC" "${command_name}-alias" "alias ${alias_name}=\"${command_name}\""
+  export ZSHRC_MODIFIED=true
+  log_done "alias '${alias_name}=${command_name}' added."
 }
 
 _sync_claude_files() {
@@ -620,8 +631,8 @@ _delete_owned_dirs() {
 # SSH key files referenced by the git-ssh block are left in place.
 _delete_rc_blocks() {
   local f t
-  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television claude-alias git-ssh"
-  for f in "$HOME/.zshrc" "$HOME/.zprofile"; do
+  local tags="brew-shellenv asdf-shims asdf-golang asdf-java pyenv-path pyenv-init zsh-syntax-highlighting zsh-autosuggestions television claude-alias herdr-alias git-ssh"
+  for f in "${ZDOTDIR:-$HOME}/.zshrc" "$HOME/.zshrc" "$HOME/.zprofile"; do
     [ -f "$f" ] || continue
     for t in $tags; do
       rc_remove_block "$f" "$t"
